@@ -16,6 +16,9 @@
             background-color: #1a202c;
             border-color: #2d3748;
             cursor: grab;
+            /* FIX 3: Verhindert Text-Überlauf */
+            word-break: break-word;
+            overflow-wrap: break-word;
         }
         .note-card.dragging {
             opacity: 0.5;
@@ -41,11 +44,20 @@
             pointer-events: none;
             display: block;
         }
-        .toolbar-btn.active, .dropdown-item.active {
-            /* Stil für den aktiven Zustand */
+        
+        /* FIX 2: Trennung der Active-Klassen, um Farbfehler zu beheben */
+        .toolbar-btn.active {
+            /* Für Standard-Buttons (Bold, Italic, etc.) */
             background-color: #2563eb;
             color: #ffffff;
         }
+        .dropdown-item.active {
+            /* Für Dropdown-Items (Farbe, Größe, etc.) */
+            /* Behält die originale Textfarbe (z.B. text-black) bei */
+            background-color: #2563eb !important; 
+        }
+        /* ENDE FIX 2 */
+
         #note-editor h2 {
             font-size: 1.5rem;
             font-weight: 700;
@@ -67,7 +79,6 @@
             list-style-type: decimal;
         }
         
-        /* FIX: CSS für Aufzählungen in den Notizkarten */
         .note-card ul {
             margin-left: 1.5rem;
             list-style-type: disc;
@@ -76,7 +87,6 @@
             margin-left: 1.5rem;
             list-style-type: decimal;
         }
-        /* ENDE FIX */
 
         #note-editor blockquote {
             margin-left: 2rem;
@@ -460,7 +470,7 @@
          */
         const applyFormat = (command, value = null) => {
             document.execCommand(command, false, value);
-            noteEditor.focus();
+            // noteEditor.focus() wird nicht mehr benötigt, da preventDefault() den Fokusverlust verhindert
         };
 
         /**
@@ -472,10 +482,16 @@
             document.querySelectorAll('.dropdown-item.active').forEach(btn => btn.classList.remove('active'));
             
             const selection = window.getSelection();
-            if (!selection || !noteEditor.contains(selection.anchorNode)) {
-                // Wenn keine Auswahl getroffen wurde oder außerhalb des Editors ist, Standard auf 'weiß'
+            
+            // Wenn keine Auswahl im Editor ist ODER der Editor nicht fokussiert ist (kein Cursor)
+            if (!selection || selection.rangeCount === 0 || !noteEditor.contains(selection.anchorNode)) {
+                // Setze Standardzustände für Dropdowns
                 const defaultColorBtn = document.querySelector(`.dropdown-item[data-value="white"]`);
                 if (defaultColorBtn) defaultColorBtn.classList.add('active');
+                
+                const defaultSizeBtn = document.querySelector(`.dropdown-item[data-value="3"]`);
+                if (defaultSizeBtn) defaultSizeBtn.classList.add('active');
+                
                 return;
             }
 
@@ -495,7 +511,6 @@
                     sizeButton.classList.add('active');
                 }
             } else {
-                // Wenn queryCommandValue leer ist, ist es die Standardgröße (Mittel)
                 const defaultSizeBtn = document.querySelector(`.dropdown-item[data-value="3"]`);
                 if (defaultSizeBtn) defaultSizeBtn.classList.add('active');
             }
@@ -509,11 +524,17 @@
                 const currentColor = currentNode.style.color ||
                 currentNode.getAttribute('color');
                 if (currentColor) {
-                    const colorButton = document.querySelector(`.dropdown-item[data-value="${Object.keys(colorMap).find(key => colorMap[key] === currentColor)}"]`);
-                    if (colorButton) {
-                        colorButton.classList.add('active');
-                        colorFound = true;
-                        break; // Beende die Schleife, sobald eine Farbe gefunden wurde
+                    // Normalize to lowercase for comparison
+                    const normalizedColor = currentColor.toLowerCase();
+                    const colorKey = Object.keys(colorMap).find(key => colorMap[key] === normalizedColor);
+                    
+                    if (colorKey) {
+                        const colorButton = document.querySelector(`.dropdown-item[data-value="${colorKey}"]`);
+                        if (colorButton) {
+                            colorButton.classList.add('active');
+                            colorFound = true;
+                            break; 
+                        }
                     }
                 }
                 currentNode = currentNode.parentElement;
@@ -531,11 +552,20 @@
                 if (decimalBtn) decimalBtn.classList.add('active');
             } else if (document.queryCommandState('insertUnorderedList')) {
                 const parentList = selection.anchorNode.closest('ul');
+                // Wenn wir in einer Liste sind, aber der Cursor NICHT am Anfang ist, ist parentList null oder es ist nur der li-Tag.
                 if (parentList) {
                     const style = parentList.style.listStyleType || 'disc'; // Standardwert, falls nicht gesetzt
                     const styleButton = document.querySelector(`.dropdown-item[data-value="${style}"]`);
                     if (styleButton) {
                         styleButton.classList.add('active');
+                    }
+                } else {
+                    // Fallback, wenn Cursor in einem <li>-Element ist, aber nicht im <ul> selbst.
+                    const liParent = selection.anchorNode.closest('li');
+                    if (liParent && liParent.parentElement.tagName === 'UL') {
+                         const style = liParent.parentElement.style.listStyleType || 'disc';
+                         const styleButton = document.querySelector(`.dropdown-item[data-value="${style}"]`);
+                         if (styleButton) styleButton.classList.add('active');
                     }
                 }
             }
@@ -603,9 +633,9 @@
 
             let noteContentHtml = '';
             if (note.title.trim() === '') {
-                noteContentHtml = `<div>${note.content}</div>`;
+                noteContentHtml = `<div class="text-gray-300">${note.content}</div>`;
             } else {
-                noteContentHtml = `<h3 class="text-xl font-bold mb-2 text-gray-200">${note.title}</h3><div>${note.content}</div>`;
+                noteContentHtml = `<h3 class="text-xl font-bold mb-2 text-gray-200">${note.title}</h3><div class="text-gray-300">${note.content}</div>`;
             }
 
             div.innerHTML = `
@@ -750,18 +780,34 @@
             }
         };
 
-        // Event-Listener für Editor-Toolbar
-        // FIX: updateToolbarState wird in setTimeout(..., 0) aufgerufen, um Verzögerungen im DOM-Update zu umgehen.
-        boldBtn.addEventListener('click', () => { applyFormat('bold'); setTimeout(updateToolbarState, 0); });
-        italicBtn.addEventListener('click', () => { applyFormat('italic'); setTimeout(updateToolbarState, 0); });
-        underlineBtn.addEventListener('click', () => { applyFormat('underline'); setTimeout(updateToolbarState, 0); });
-        indentBtn.addEventListener('click', () => { applyFormat('indent'); setTimeout(updateToolbarState, 0); });
-        outdentBtn.addEventListener('click', () => { applyFormat('outdent'); setTimeout(updateToolbarState, 0); });
-        
+        // FIX 1: Neue Funktion zur Einrichtung der Toolbar-Buttons
+        const setupToolbarButton = (button, command, value = null) => {
+            // Verhindert, dass der Button beim Mousedown den Fokus vom Editor stiehlt (essentiell für sofortige Markierung)
+            button.addEventListener('mousedown', (e) => { 
+                e.preventDefault(); 
+                // Fokussiert den Editor sofort zurück, um die Auswahl für die Formatierung zu sichern
+                noteEditor.focus();
+            });
+            
+            button.addEventListener('click', () => { 
+                applyFormat(command, value); 
+                // Führt updateToolbarState mit minimaler Verzögerung aus, um sicherzustellen, dass das DOM aktualisiert wurde
+                setTimeout(updateToolbarState, 0); 
+            });
+        };
+
+        // Anwendung der neuen Funktion auf alle Standard-Buttons
+        setupToolbarButton(boldBtn, 'bold');
+        setupToolbarButton(italicBtn, 'italic');
+        setupToolbarButton(underlineBtn, 'underline');
+        setupToolbarButton(indentBtn, 'indent');
+        setupToolbarButton(outdentBtn, 'outdent');
+
         // Link-Funktion
+        linkBtn.addEventListener('mousedown', (e) => { e.preventDefault(); noteEditor.focus(); });
         linkBtn.addEventListener('click', async () => {
             const selection = window.getSelection();
-            if (selection.rangeCount === 0) {
+            if (selection.rangeCount === 0 || selection.isCollapsed) { // Prüft, ob Text ausgewählt ist
                 await showModal("Bitte wählen Sie zuerst den Text aus, den Sie verlinken möchten.");
                 return;
             }
@@ -769,6 +815,7 @@
             savedRange = selection.getRangeAt(0);
             const url = await showLinkModal();
             if (url) {
+                // Stellt die Auswahl wieder her
                 selection.removeAllRanges();
                 selection.addRange(savedRange);
                 applyFormat('createLink', url);
@@ -791,9 +838,14 @@
             const btn = container.querySelector('button');
             const menu = container.querySelector('.dropdown-menu');
             if (btn && menu) {
+                // Verhindert, dass das Dropdown-Menü den Fokusverlust vom Editor auslöst
+                btn.addEventListener('mousedown', (e) => { e.preventDefault(); });
+
                 btn.addEventListener('click', (e) => {
                     e.stopPropagation();
                     toggleDropdown(menu);
+                    // Aktualisiert den Status, sobald das Menü geöffnet ist
+                    updateToolbarState(); 
                 });
             }
         });
@@ -826,7 +878,6 @@
                     applyFormat('insertOrderedList');
                 } else {
                     applyFormat('insertUnorderedList');
-                    // Find the newly created list and apply the style
                     const listEl = selection.anchorNode.closest('ul');
                     if (listEl) {
                         listEl.style.listStyleType = listStyle;
@@ -867,9 +918,10 @@
         
 
         // Event listener zur Aktualisierung des Toolbar-Zustands
-        // FIX: 'keyup' und 'blur' ENTFERNT, um das "Springen" zu verhindern.
-        // updateToolbarState wird nur beim Auswählen/Klicken (mouseup) und beim Betreten (focus) aufgerufen.
+        // Diese sind für das Aktualisieren beim Markieren (Maus) oder beim Betreten (Fokus)
         noteEditor.addEventListener('mouseup', updateToolbarState); 
+        // Für mobile Geräte oder wenn man mit der Tastatur navigiert
+        noteEditor.addEventListener('keyup', updateToolbarState); 
         noteEditor.addEventListener('focus', updateToolbarState); 
 
         // Initial loading of notes
