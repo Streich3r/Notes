@@ -57,22 +57,31 @@
             color: inherit; /* Stellt sicher, dass die Textfarbe erhalten bleibt */
         }
 
+        /* --- FIX: Aufzählungssymbole sichtbar machen und korrekt stylen --- */
+        /* Stellt sicher, dass die Marker die helle Textfarbe erben und somit sichtbar sind */
+        #note-editor li::marker, .note-card li::marker {
+            color: #e2e8f0; /* Light gray für Sichtbarkeit */
+        }
+
         /* Liste-Styles für die Notizen-Vorschau und den Editor */
         #note-editor ul, .note-card ul {
              margin-left: 1.5rem;
         }
+        /* Kreise (Hohle Kreise) */
         #note-editor ul[style*="list-style-type: circle"], .note-card ul[style*="list-style-type: circle"] {
             list-style-type: circle;
         }
+        /* Quadrate (Gefüllte Quadrate) */
         #note-editor ul[style*="list-style-type: square"], .note-card ul[style*="list-style-type: square"] {
             list-style-type: square;
         }
+        /* Punkte (Gefüllte Scheiben/Discs - der Standard) */
         #note-editor ul:not([style]), .note-card ul:not([style]),
         #note-editor ul[style*="list-style-type: disc"], .note-card ul[style*="list-style-type: disc"] {
             list-style-type: disc;
         }
         /* Ende Liste-Styles */
-
+        
         #note-editor h2 {
             font-size: 1.5rem;
             font-weight: 700;
@@ -688,19 +697,22 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors">
         setupToolbarButton(indentBtn, 'indent');
         setupToolbarButton(outdentBtn, 'outdent');
 
-        linkBtn.addEventListener('mousedown', (e) => { e.preventDefault(); });
+        // FIX: Entferne mousedown.preventDefault() für den Link-Button, damit der Klick sicher das Modal öffnet.
         linkBtn.addEventListener('click', async () => {
             const selection = window.getSelection();
             if (selection.rangeCount === 0 || selection.isCollapsed) { 
                 await showModal("Bitte wählen Sie zuerst den Text aus, den Sie verlinken möchten.");
                 return;
             }
+            // Speichere die Auswahl, bevor das Modal den Fokus wegnimmt
             savedRange = selection.getRangeAt(0);
+            
             const url = await showLinkModal();
+            
             if (url) {
                 noteEditor.focus(); 
                 selection.removeAllRanges();
-                selection.addRange(savedRange);
+                selection.addRange(savedRange); // Auswahl wiederherstellen
                 applyFormat('createLink', url);
                 window.requestAnimationFrame(() => {
                     updateToolbarState(); 
@@ -709,7 +721,7 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors">
         });
         // *************** ENDE KORRIGIERTER CODE-ABSCHNITT (Button-Setup) *******************
 
-        // --- FIX: Vollständige Dropdown-Funktionalität hinzugefügt ---
+        // --- Dropdown-Funktionalität ---
         const toggleDropdown = (menu) => {
             document.querySelectorAll('.dropdown-menu').forEach(m => {
                 // Schließe alle anderen Dropdowns
@@ -724,18 +736,17 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors">
             const btn = container.querySelector('button');
             const menu = container.querySelector('.dropdown-menu');
             if (btn && menu) {
-                // Verhindert Fokusverlust beim Klicken auf den Dropdown-Button
+                // Verhindert Fokusverlust beim Klicken auf den Dropdown-Button (wichtig, außer beim Link)
                 btn.addEventListener('mousedown', (e) => { e.preventDefault(); });
 
                 btn.addEventListener('click', (e) => {
                     e.stopPropagation();
                     toggleDropdown(menu);
                     
-                    // Aktualisiere den Zustand, damit die Markierung im Dropdown erscheint, wenn es geöffnet wird
                     if (menu.classList.contains('active')) {
                        updateToolbarState();
                     }
-                    noteEditor.focus(); // Fokus im Editor lassen
+                    noteEditor.focus(); 
                 });
             }
         });
@@ -744,7 +755,7 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors">
         document.body.addEventListener('click', () => {
             document.querySelectorAll('.dropdown-menu').forEach(m => m.classList.remove('active'));
         });
-        // --- ENDE FIX: Dropdown-Funktionalität ---
+        // --- ENDE Dropdown-Funktionalität ---
 
         // Sortier-Logik (Platzhalter)
         sortDropdownItems.forEach(item => { /* ... unverändert ... */ });
@@ -762,15 +773,21 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors">
 
                 if (listStyle === 'decimal') {
                     applyFormat('insertOrderedList');
-                    window.requestAnimationFrame(() => {
-                        updateToolbarState(); 
-                    });
                 } else {
                     applyFormat('insertUnorderedList');
                     
                     // Warten, bis die Liste im DOM ist, um den Style anzuwenden
                     window.requestAnimationFrame(() => {
-                        const listEl = selection.anchorNode.closest('ul');
+                        let listEl = selection.anchorNode.closest('ul');
+                        
+                        // Fallback, falls der Cursor direkt im <li> ist, aber closest('ul') fehlschlägt
+                        if (!listEl) {
+                           const parentLi = selection.anchorNode.closest('li');
+                           if (parentLi) {
+                               listEl = parentLi.parentElement;
+                           }
+                        }
+                        
                         if (listEl) {
                              // Setzt den Style (disc, circle, square)
                             listEl.style.listStyleType = listStyle;
@@ -782,6 +799,9 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors">
                 }
             
                 noteEditor.focus();
+                window.requestAnimationFrame(() => { // Auch für geordnete Listen
+                    updateToolbarState(); 
+                });
             });
         });
         
@@ -811,7 +831,6 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors">
                 
                 noteEditor.focus();
                 
-                // FIX: updateToolbarState() wird sofort nach der Formatierung aufgerufen
                 window.requestAnimationFrame(() => {
                     updateToolbarState(); 
                 });
