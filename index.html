@@ -52,13 +52,12 @@
             background-color: #2563eb;
             color: #ffffff;
         }
-        /* WICHTIG: Die Dropdown-Elemente verlieren den Fokus sofort, daher muss nur der :hover Zustand den blauen Hintergrund bei aktiv beibehalten */
         .dropdown-item.active {
             background-color: #2563eb !important;
             color: #ffffff !important; 
         }
 
-        /* --- FINAL FIX FÜR QUADRATFARBE und HOHLES QUADRAT --- */
+        /* --- STABILISIERTE LISTE-STYLES --- */
         #note-editor li, .note-card li {
             color: #ffffff !important;
         }
@@ -719,7 +718,6 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors">
                 applyFormat(command, value); 
                 
                 // FIX: Fokus sofort lösen, um den aktiven Status sichtbar zu machen
-                // Dadurch verschwindet der hartnäckige hellgraue Fokusring
                 setTimeout(() => {
                     e.currentTarget.blur(); 
                     updateToolbarState();   
@@ -865,44 +863,39 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors">
                 if (!selection.rangeCount) return;
                 
                 if (listStyle === 'decimal') {
-                    // Nummerierung: Funktioniert am besten mit execCommand
                     applyFormat('insertOrderedList');
                 } else { // disc, circle, square
                     
-                    // 1. execCommand nutzen, um sicherzustellen, dass eine UL-Liste erstellt/getoggelt wird
-                    applyFormat('insertUnorderedList');
-                    
-                    // 2. Warten, bis der DOM-Befehl ausgeführt wurde, dann den Stil manuell setzen
-                    window.requestAnimationFrame(() => {
-                        let newUl = selection.anchorNode.closest('ul');
+                    let currentUl = selection.anchorNode.closest('ul');
+                    const currentStyle = currentUl ? (currentUl.style.listStyleType || 'disc') : '';
+
+                    // 1. Fall: Toggling des gleichen Stils
+                    if (currentUl && currentStyle === listStyle) {
+                        applyFormat('insertUnorderedList'); // Schaltet die Liste AUS
+                    } else {
+                        // 2. Fall: Stil ändern oder neue Liste erstellen
                         
-                        if (newUl) {
-                            if (listStyle === 'disc') {
-                                // Für Disc den Inline-Style entfernen (nutzt den CSS Standard)
-                                newUl.style.listStyleType = '';
-                            } else {
-                                // Für Circle/Square den gewünschten Inline-Style setzen
-                                newUl.style.listStyleType = listStyle;
-                            }
+                        // Zuerst OL entfernen, falls aktiv (wird zu normalem Text)
+                        if (selection.anchorNode.closest('ol')) {
+                            applyFormat('insertOrderedList'); 
                         }
-                        
-                        // FIX: Fokus sofort lösen, um den aktiven Status sichtbar zu machen
-                        setTimeout(() => {
-                            e.currentTarget.blur(); 
-                            updateToolbarState(); 
-                            noteEditor.focus();
-                        }, 1);
-                    });
-                    return; 
+
+                        // UL sicherstellen/einschalten (Toggling-Befehl)
+                        applyFormat('insertUnorderedList'); 
+
+                        // Stil unmittelbar setzen
+                        currentUl = selection.anchorNode.closest('ul');
+                        if (currentUl) {
+                            currentUl.style.listStyleType = listStyle === 'disc' ? '' : listStyle;
+                        }
+                    }
                 }
             
-                // Nur für decimal (falls keine ul-style oben)
-                noteEditor.focus();
-                
                 // FIX: Fokus sofort lösen, um den aktiven Status sichtbar zu machen
                 setTimeout(() => {
                     e.currentTarget.blur(); 
                     updateToolbarState(); 
+                    noteEditor.focus();
                 }, 1);
             });
         });
