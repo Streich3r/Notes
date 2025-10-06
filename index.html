@@ -717,7 +717,7 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors focus:out
             }
         };
 
-        // *************** FIX: FOKUS-LÖSUNG FÜR EINFACHE BUTTONS (JETZT MIT collapseSelection) *******************
+        // *************** FIX: FOKUS-LÖSUNG FÜR EINFACHE BUTTONS *******************
         const setupToolbarButton = (button, command, value = null) => {
             button.addEventListener('mousedown', (e) => { 
                 e.preventDefault(); // Verhindert Fokus
@@ -727,7 +727,6 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors focus:out
                 // Aggressive blur + Editor Focus
                 e.currentTarget.blur(); 
                 setTimeout(() => {
-                    collapseSelection(); // <--- NEU: Hebt die Markierung sofort auf!
                     noteEditor.focus(); 
                     updateToolbarState();   
                 }, 1);
@@ -764,7 +763,6 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors focus:out
                 }
                 
                 applyFormat('createLink', url);
-                collapseSelection(); // <--- NEU: Hebt die Markierung sofort auf!
             }
             
             // Fokus sofort lösen (Auch für Link)
@@ -941,7 +939,6 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors focus:out
                                     }
                                     
                                     // Letzter Schritt: Fokus und Update
-                                    collapseSelection(); // <--- NEU: Hebt die Markierung sofort auf!
                                     updateToolbarState(); 
                                     noteEditor.focus(); 
                                 }, 1);
@@ -950,7 +947,6 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors focus:out
                         }
                         
                         // Final focus/update für Decimal und erfolgreiches Toggle-Off
-                        collapseSelection(); // <--- NEU: Hebt die Markierung sofort auf!
                         updateToolbarState(); 
                         noteEditor.focus(); 
                     };
@@ -981,7 +977,6 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors focus:out
                 applyFormat('fontSize', sizeValue);
                 
                 setTimeout(() => {
-                    collapseSelection(); // <--- NEU: Hebt die Markierung sofort auf!
                     updateToolbarState(); 
                 }, 1);
             });
@@ -1009,7 +1004,6 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors focus:out
                 document.execCommand('styleWithCSS', false, false);
                 
                 setTimeout(() => {
-                    collapseSelection(); // <--- NEU: Hebt die Markierung sofort auf!
                     updateToolbarState(); 
                 }, 1);
             });
@@ -1070,7 +1064,7 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors focus:out
         // Event listener zur Aktualisierung des Toolbar-Zustands
         noteEditor.addEventListener('mouseup', updateToolbarState); 
         
-        // ** GEÄNDERT: Implementiert Touch-Click-Verhalten bei Tastenfreigabe **
+        // ** GEÄNDERT: Implementiert Touch-Click-Verhalten **
         noteEditor.addEventListener('keyup', () => {
             collapseSelection();
             updateToolbarState();
