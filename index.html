@@ -877,6 +877,7 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors">
                 const selection = window.getSelection();
                 if (!selection.rangeCount) return;
                 
+                // Wir verwenden styleWithCSS, um inline-Styles zu setzen, was zuverlässiger ist
                 document.execCommand('styleWithCSS', false, true);
                 applyFormat('foreColor', colorMap[colorValue]);
                 document.execCommand('styleWithCSS', false, false);
@@ -891,6 +892,7 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors">
 
         /**
          * Erstellt ein HTML-Element für eine einzelne Notiz.
+         * HINWEIS: Hier wurde die Logik zur Vorschau-Anzeige korrigiert.
          */
         const createNoteElement = (note) => {
              const div = document.createElement('div');
@@ -900,14 +902,20 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors">
              div.dataset.id = note.id;
 
              let noteContentHtml = '';
-             // Wenn ein Titel vorhanden ist, zeige nur den Titel an
+             
              if (note.title.trim() !== '') {
-                 noteContentHtml = `<h3 class="text-xl font-bold mb-2 text-gray-200">${note.title}</h3>`;
-                 // Füge den Inhalt in einem versteckten Element hinzu, damit er für die Suche verfügbar ist.
-                 // Und zeige eine gekürzte Version, falls der Titel gesetzt ist.
-                  noteContentHtml += `<div class="text-gray-400 mt-2 text-sm" style="max-height: 50px; overflow: hidden;">${note.content.substring(0, 100).replace(/<[^>]*>?/gm, '')}...</div>`;
+                 // **FIX:** Wenn ein Titel vorhanden ist, zeige den Titel + eine gekürzte Textvorschau
+                 // HTML-Tags aus dem Snippet entfernen, um Darstellungsprobleme zu vermeiden
+                 const snippet = note.content.substring(0, 100).replace(/<[^>]*>?/gm, '');
+                 
+                 noteContentHtml = `
+                     <h3 class="text-xl font-bold mb-2 text-gray-200">${note.title}</h3>
+                     <div class="text-gray-400 mt-2 text-sm" style="max-height: 50px; overflow: hidden;">
+                         ${snippet}${note.content.length > 100 ? '...' : ''}
+                     </div>
+                 `;
              } else {
-                 // Wenn kein Titel vorhanden ist, zeige den Notizinhalt an
+                 // Wenn KEIN Titel vorhanden ist, zeige den formatierten Notizinhalt in einer größeren Vorschau
                  noteContentHtml = `<div class="text-gray-300" style="max-height: 100px; overflow: hidden;">${note.content}</div>`;
              }
              
