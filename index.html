@@ -30,7 +30,8 @@
             border-radius: 0.75rem;
             border: 1px solid #4a5568;
             background-color: #1a202c;
-            color: #e2e8f0;
+            /* Textfarbe auf reines Weiß setzen */
+            color: #ffffff; 
             outline: none;
             transition: all 0.3s;
         }
@@ -56,14 +57,20 @@
             color: #ffffff !important; /* Textfarbe auf weiß setzen */
         }
 
-        /* --- FIX: Aufzählungssymbole sichtbar machen und korrekt stylen --- */
-        /* Setzt die Marker-Farbe AGGRESSIV auf Weiß für ALLE Listentypen (Editor und Vorschau) */
+        /* --- FINAL FIX FÜR QUADRATFARBE --- */
+        /* Setzt die Textfarbe für die Listenelemente auf Weiß (wichtig für gefüllte Symbole wie Quadrate) */
+        #note-editor li, .note-card li {
+            color: #ffffff !important;
+        }
+
+        /* Setzt die Marker-Farbe AGGRESSIV auf Weiß für ALLE Listentypen */
         #note-editor li::marker, .note-card li::marker {
             color: #ffffff !important; 
         }
         /* Stellt sicher, dass die Liste in der Vorschau sichtbar ist */
         #note-editor ul, #note-editor ol, .note-card ul, .note-card ol {
-            color: #e2e8f0; 
+            /* Wir entfernen diese redundante Farbangabe, da sie nun auf li gesetzt ist. */
+            /* color: #e2e8f0; */ 
             margin-left: 1.5rem;
         }
 
@@ -699,6 +706,7 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors">
             button.addEventListener('mousedown', (e) => { 
                 e.preventDefault(); 
                 applyFormat(command, value); 
+                e.currentTarget.blur(); // FIX: Fokus vom Button nehmen
                 noteEditor.focus(); 
                 window.requestAnimationFrame(() => {
                     updateToolbarState(); 
@@ -735,6 +743,7 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors">
                 }
                 
                 applyFormat('createLink', url);
+                e.currentTarget.blur(); // FIX: Fokus vom Button nehmen
 
                 window.requestAnimationFrame(() => {
                     updateToolbarState(); 
@@ -763,7 +772,8 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors">
                     if (menu.classList.contains('active')) {
                        updateToolbarState();
                     }
-                    noteEditor.focus(); 
+                    // Wir behalten den Fokus hier, da wir ihn nach Auswahl eines Dropdown-Items setzen
+                    // noteEditor.focus(); 
                 });
             }
         });
@@ -874,6 +884,7 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors">
                                 }
                             }
                             noteEditor.focus();
+                            e.currentTarget.blur(); // FIX: Fokus vom Dropdown-Item nehmen
                             updateToolbarState(); 
                         });
                         return; // Beende hier
@@ -881,6 +892,7 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors">
                 }
             
                 noteEditor.focus();
+                e.currentTarget.blur(); // FIX: Fokus vom Dropdown-Item nehmen
                 window.requestAnimationFrame(() => { 
                     updateToolbarState(); 
                 });
@@ -897,6 +909,7 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors">
                 const sizeValue = e.target.getAttribute('data-value');
                 applyFormat('fontSize', sizeValue);
                 noteEditor.focus();
+                e.currentTarget.blur(); // FIX: Fokus vom Dropdown-Item nehmen
                 
                 window.requestAnimationFrame(() => {
                     updateToolbarState(); 
@@ -917,6 +930,7 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors">
                 document.execCommand('styleWithCSS', false, false);
                 
                 noteEditor.focus();
+                e.currentTarget.blur(); // FIX: Fokus vom Dropdown-Item nehmen
                 
                 window.requestAnimationFrame(() => {
                     updateToolbarState(); 
@@ -926,7 +940,6 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors">
 
         /**
          * Erstellt ein HTML-Element für eine einzelne Notiz.
-         * FIX: Die Logik zur Vorschau-Anzeige wurde korrigiert, um bei Titel 0 Inhalt zu zeigen.
          */
         const createNoteElement = (note) => {
              const div = document.createElement('div');
@@ -938,7 +951,7 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors">
              let noteContentHtml = '';
              
              if (note.title.trim() !== '') {
-                 // **FIX:** Wenn ein Titel vorhanden ist, zeige NUR den Titel (0 Zeichen Inhalt)
+                 // **KORREKT:** Wenn ein Titel vorhanden ist, zeige NUR den Titel (0 Zeichen Inhalt)
                  noteContentHtml = `<h3 class="text-xl font-bold mb-2 text-gray-200">${note.title}</h3>`;
              } else {
                  // Wenn KEIN Titel vorhanden ist, zeige den formatierten Notizinhalt in voller Länge (mit max-height: 100px)
