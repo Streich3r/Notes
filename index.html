@@ -45,7 +45,7 @@
             display: block;
         }
         
-        /* FIX: Stil für den aktiven Zustand (sofort blau) */
+        /* FIX 2.1: Stil für den aktiven Zustand (sofort blau) */
         .toolbar-btn.active {
             background-color: #2563eb;
             /* Blau */
@@ -54,7 +54,7 @@
         .dropdown-item.active {
             /* Hintergrundfarbe auf Blau setzen */
             background-color: #2563eb !important;
-            /* Textfarbe beibehalten, um z.B. text-black oder text-blue-500 zu respektieren */
+            color: inherit; /* FIX: Stellt sicher, dass die Textfarbe erhalten bleibt */
         }
         /* ENDE FIX */
 
@@ -512,7 +512,8 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors">
             if (document.queryCommandState('indent')) indentBtn.classList.add('active');
             if (document.queryCommandState('outdent')) outdentBtn.classList.add('active');
             if (document.queryCommandState('createLink')) linkBtn.classList.add('active');
-            // Status für Schriftgröße
+            
+            // Status für Schriftgröße (Funktioniert bereits gut)
             const currentSize = document.queryCommandValue('fontSize');
             const sizeButton = document.querySelector(`.dropdown-item[data-value="${currentSize || '3'}"]`); 
             if (sizeButton) sizeButton.classList.add('active');
@@ -521,13 +522,17 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors">
             // Status für Schriftfarbe
             let colorFound = false;
             let currentNode = selection.anchorNode.nodeType === Node.TEXT_NODE ? selection.anchorNode.parentNode : selection.anchorNode;
+            
+            // Schleife nach oben, um die angewendete Farbe zu finden
             while (currentNode && currentNode !== noteEditor) {
-                const currentColor = currentNode.style.color ||
-                currentNode.getAttribute('color');
+                const currentColor = currentNode.style.color || currentNode.getAttribute('color');
                 if (currentColor) {
-                    // Normalisiere die Farbe, um CSS vs. <font> Tags korrekt zu vergleichen
                     const normalizedColor = currentColor.toLowerCase().trim();
-                    const colorKey = Object.keys(colorMap).find(key => colorMap[key].toLowerCase() === normalizedColor || colorMap[key].toLowerCase() === rgbToHex(normalizedColor));
+                    const hexColor = rgbToHex(normalizedColor);
+                    
+                    // Finde den passenden Schlüssel in der colorMap
+                    const colorKey = Object.keys(colorMap).find(key => colorMap[key].toLowerCase() === hexColor || colorMap[key].toLowerCase() === normalizedColor);
+                    
                     if (colorKey) {
                         const colorButton = document.querySelector(`.dropdown-item[data-value="${colorKey}"]`);
                         if (colorButton) {
@@ -553,8 +558,7 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors">
             } else if (document.queryCommandState('insertUnorderedList')) {
                 const parentList = selection.anchorNode.closest('ul');
                 if (parentList) {
-                    const style = parentList.style.listStyleType ||
-                    'disc'; 
+                    const style = parentList.style.listStyleType || 'disc'; 
                     const styleButton = document.querySelector(`.dropdown-item[data-value="${style}"]`);
                     if (styleButton) styleButton.classList.add('active');
                 }
@@ -579,8 +583,9 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors">
         function renderNotes() { 
             // Hier müssten die Notizen basierend auf notesData gerendert werden
             notesList.innerHTML = '';
+            const searchTerm = searchInput.value.toLowerCase();
             const filteredNotes = notesData.filter(note => {
-                const searchTerm = searchInput.value.toLowerCase();
+                // Suchen im Titel und im (unsichtbaren) Inhalt
                 return note.title.toLowerCase().includes(searchTerm) || note.content.toLowerCase().includes(searchTerm);
             });
             if (filteredNotes.length === 0 && notesData.length > 0) {
@@ -771,7 +776,7 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors">
                 }
             
                 noteEditor.focus();
-                // NEU: Update im nächsten Frame
+                // FIX 2.3: Update im nächsten Frame
                 window.requestAnimationFrame(() => {
                     updateToolbarState(); 
                 });
@@ -785,7 +790,7 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors">
                 applyFormat('fontSize', sizeValue);
                 noteEditor.focus();
                 
-                // NEU: Update im nächsten Frame
+                // FIX 2.3: Update im nächsten Frame
                 window.requestAnimationFrame(() => {
                     updateToolbarState(); 
                 });
@@ -805,7 +810,7 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors">
                 document.execCommand('styleWithCSS', false, false);
                 noteEditor.focus();
                 
-                // NEU: Update im nächsten Frame
+                // FIX 2.3: Update im nächsten Frame
                 window.requestAnimationFrame(() => {
                     updateToolbarState(); 
                 });
@@ -836,10 +841,15 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors">
              div.dataset.id = note.id;
 
              let noteContentHtml = '';
-             if (note.title.trim() === '') {
-                 noteContentHtml = `<div class="text-gray-300">${note.content}</div>`;
+             // FIX 1: Wenn ein Titel vorhanden ist, zeige nur den Titel an
+             if (note.title.trim() !== '') {
+                 noteContentHtml = `<h3 class="text-xl font-bold mb-2 text-gray-200">${note.title}</h3>`;
+                 // FIX: Füge den Inhalt in einem versteckten Element hinzu, damit er für die Suche verfügbar ist.
+                 noteContentHtml += `<div class="hidden">${note.content}</div>`;
              } else {
-                 noteContentHtml = `<h3 class="text-xl font-bold mb-2 text-gray-200">${note.title}</h3><div class="text-gray-300">${note.content}</div>`;
+                 // FIX 1: Wenn kein Titel vorhanden ist, zeige den Notizinhalt an
+                 // Begrenzt auf 100px Höhe für saubere Vorschau
+                 noteContentHtml = `<div class="text-gray-300" style="max-height: 100px; overflow: hidden;">${note.content}</div>`;
              }
 
              div.innerHTML = `
