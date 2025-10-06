@@ -35,6 +35,7 @@
             outline: none;
             transition: all 0.3s;
         }
+        /* Der :focus-Ring bleibt standardmäßig erhalten, um die Barrierefreiheit zu gewährleisten, wird aber durch JS sofort entfernt */
         #note-editor:focus {
             border-color: #4299e1;
             box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.5);
@@ -57,16 +58,18 @@
             color: #ffffff !important; /* Textfarbe auf weiß setzen */
         }
 
-        /* --- FINAL FIX FÜR QUADRATFARBE: Muss auf li gesetzt werden, da Square die Textfarbe erbt. --- */
+        /* --- FINAL FIX FÜR QUADRATFARBE und HOHLES QUADRAT --- */
+        /* Setzt die Textfarbe für die Listenelemente auf Weiß */
         #note-editor li, .note-card li {
             color: #ffffff !important;
         }
 
-        /* Setzt die Marker-Farbe AGGRESSIV auf Weiß für ALLE Listentypen */
+        /* Stellt sicher, dass die Marker-Farbe Weiß ist (für disc und circle) */
         #note-editor li::marker, .note-card li::marker {
             color: #ffffff !important; 
         }
-        /* Stellt sicher, dass die Liste in der Vorschau sichtbar ist */
+        
+        /* Allgemeine Listen-Einrückung */
         #note-editor ul, #note-editor ol, .note-card ul, .note-card ol {
             margin-left: 1.5rem;
         }
@@ -75,14 +78,27 @@
         #note-editor ul[style*="list-style-type: circle"], .note-card ul[style*="list-style-type: circle"] {
             list-style-type: circle !important; 
         }
-        /* Quadrate (Gefüllte Quadrate) */
-        #note-editor ul[style*="list-style-type: square"], .note-card ul[style*="list-style-type: square"] {
-            list-style-type: square !important; 
-        }
+        
         /* Punkte (Gefüllte Scheiben/Discs - der Standard) */
         #note-editor ul:not([style]), .note-card ul:not([style]),
         #note-editor ul[style*="list-style-type: disc"], .note-card ul[style*="list-style-type: disc"] {
             list-style-type: disc !important;
+        }
+        
+        /* Quadrate (Jetzt: Hohle Quadrate mit Unicode-Charakter) */
+        #note-editor ul[style*="list-style-type: square"], .note-card ul[style*="list-style-type: square"] {
+            list-style-type: none !important; /* Deaktiviere standard square marker */
+        }
+        #note-editor ul[style*="list-style-type: square"] li::before, 
+        .note-card ul[style*="list-style-type: square"] li::before {
+            content: "□"; /* Unicode Hollow Square U+25A1 */
+            color: #ffffff !important;
+            font-weight: bold;
+            display: inline-block;
+            width: 1.5rem; /* Platz für den Marker */
+            margin-left: -1.5rem; /* Einzug für den Marker */
+            /* Damit der Text richtig ausgerichtet ist */
+            text-align: right; 
         }
         /* Ende Liste-Styles */
         
@@ -188,7 +204,7 @@ bg-gray-600 text-gray-200 hover:bg-gray-500 transition-colors underline">U</butt
                         <button class="dropdown-item w-full text-left px-4 py-2 hover:bg-gray-600 rounded-lg" data-value="disc">Punkte</button>
     
                         <button class="dropdown-item w-full text-left px-4 py-2 hover:bg-gray-600 rounded-lg" data-value="circle">Kreise</button>
-                        <button class="dropdown-item w-full text-left px-4 py-2 hover:bg-gray-600 rounded-lg" data-value="square">Quadrate</button>
+                        <button class="dropdown-item w-full text-left px-4 py-2 hover:bg-gray-600 rounded-lg" data-value="square">Hohle Quadrate</button>
                     </div>
                 </div>
 
@@ -699,17 +715,18 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors">
             }
         };
 
+        // *************** FIX: FOKUS-LÖSUNG FÜR EINFACHE BUTTONS *******************
         const setupToolbarButton = (button, command, value = null) => {
             button.addEventListener('mousedown', (e) => { 
                 e.preventDefault(); 
                 applyFormat(command, value); 
                 
-                // FIX: Fokus sofort lösen, um den aktiven Status sichtbar zu machen
+                // Fokus sofort lösen, um den aktiven Status sichtbar zu machen
                 setTimeout(() => {
                     e.currentTarget.blur(); 
-                    noteEditor.focus(); 
-                    updateToolbarState(); 
+                    updateToolbarState();   
                 }, 1);
+                noteEditor.focus(); // Fokus auf Editor zurück
             });
         };
 
@@ -743,13 +760,15 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors">
                 
                 applyFormat('createLink', url);
                 
-                // FIX: Fokus sofort lösen, um den aktiven Status sichtbar zu machen
+                // Fokus sofort lösen, um den aktiven Status sichtbar zu machen
                 setTimeout(() => {
                     e.currentTarget.blur(); 
                     updateToolbarState(); 
                 }, 1);
             }
         });
+        // *************** ENDE FIX: FOKUS-LÖSUNG FÜR EINFACHE BUTTONS *******************
+
 
         // --- Dropdown-Funktionalität ---
         const toggleDropdown = (menu) => {
@@ -763,6 +782,7 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors">
             const btn = container.querySelector('button');
             const menu = container.querySelector('.dropdown-menu');
             if (btn && menu) {
+                // Mousedown verhindert, dass der Button sofort den Fokus verliert
                 btn.addEventListener('mousedown', (e) => { e.preventDefault(); });
 
                 btn.addEventListener('click', (e) => {
@@ -772,13 +792,15 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors">
                     if (menu.classList.contains('active')) {
                        updateToolbarState();
                     }
-                    // Fokus bleibt auf dem Editor, der Button behält nur den :hover/:active Zustand
+                    // Wichtig: Der Fokus bleibt hier, solange das Menü offen ist (gewünschtes Verhalten)
                 });
             }
         });
         
         document.body.addEventListener('click', () => {
             document.querySelectorAll('.dropdown-menu').forEach(m => m.classList.remove('active'));
+            // Beim Schließen des Dropdowns wird der Fokus entfernt, falls er noch da ist
+            document.querySelectorAll('.toolbar-btn').forEach(btn => btn.blur());
         });
         // --- ENDE Dropdown-Funktionalität ---
 
@@ -860,14 +882,19 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors">
                             applyFormat('insertUnorderedList'); 
                         } else {
                             // Stil ändern (circle/square/disc)
-                            // HINWEIS: Wegen der CSS-Regeln muss 'disc' mit '' gesetzt werden
+                            // HINWEIS: Für 'disc' den Inline-Style entfernen (was den Standard disc nutzt)
                             currentList.style.listStyleType = listStyle === 'disc' ? '' : listStyle;
                         }
 
                     } else {
                         // 2. Nicht in einer UL (oder OL): UL erstellen und Stil setzen
                         
-                        // Erst die Liste erstellen (execCommand entfernt OL, falls vorhanden)
+                        // Zuerst OL entfernen, falls aktiv
+                         if (currentList && currentList.tagName === 'OL') {
+                             applyFormat('insertOrderedList');
+                         }
+                        
+                        // Dann UL erstellen/togglen
                         applyFormat('insertUnorderedList');
                         
                         // Warten, bis die Liste im DOM existiert
@@ -883,10 +910,13 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors">
                                 }
                             }
                             noteEditor.focus();
-                            e.currentTarget.blur(); 
-                            updateToolbarState(); 
+                            // Fokus lösen und Zustand aktualisieren
+                            setTimeout(() => {
+                                e.currentTarget.blur();
+                                updateToolbarState(); 
+                            }, 1);
                         });
-                        return; // Beende hier
+                        return; // Beende hier, da ASYNC-Update stattfindet
                     }
                 }
             
@@ -894,7 +924,7 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors">
                 
                 // FIX: Fokus sofort lösen, um den aktiven Status sichtbar zu machen
                 setTimeout(() => {
-                    e.currentTarget.blur(); // FIX: Fokus vom Dropdown-Item nehmen
+                    e.currentTarget.blur(); 
                     updateToolbarState(); 
                 }, 1);
             });
@@ -913,7 +943,7 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors">
                 
                 // FIX: Fokus sofort lösen, um den aktiven Status sichtbar zu machen
                 setTimeout(() => {
-                    e.currentTarget.blur(); // FIX: Fokus vom Dropdown-Item nehmen
+                    e.currentTarget.blur(); 
                     updateToolbarState(); 
                 }, 1);
             });
@@ -935,7 +965,7 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors">
                 
                 // FIX: Fokus sofort lösen, um den aktiven Status sichtbar zu machen
                 setTimeout(() => {
-                    e.currentTarget.blur(); // FIX: Fokus vom Dropdown-Item nehmen
+                    e.currentTarget.blur(); 
                     updateToolbarState(); 
                 }, 1);
             });
