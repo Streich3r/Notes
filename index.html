@@ -422,8 +422,50 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors">
         };
         
         // --- IMPORT/EXPORT FUNKTIONEN ---
-        const exportNotes = async () => { /* ... unverändert ... */ };
-        const importNotes = (event) => { /* ... unverändert ... */ };
+        const exportNotes = async () => { 
+            const notesJson = localStorage.getItem(NOTES_STORAGE_KEY);
+            if (!notesJson || notesJson === '[]') {
+                await showModal('Keine Notizen zum Exportieren vorhanden.', false);
+                return;
+            }
+
+            const blob = new Blob([notesJson], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+
+            a.href = url;
+            a.download = `Meine_Offline_Notizen_${new Date().toISOString().slice(0, 10)}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            await showModal('Notizen erfolgreich exportiert!', false);
+        };
+        const importNotes = (event) => {
+             const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                try {
+                    const importedNotes = JSON.parse(e.target.result);
+                    if (Array.isArray(importedNotes)) {
+                        localStorage.setItem(NOTES_STORAGE_KEY, JSON.stringify(importedNotes));
+                        loadNotesFromLocal(); 
+                        await showModal('Notizen erfolgreich importiert und geladen!', false);
+                    } else {
+                        await showModal('Fehler: Die importierte Datei hat kein gültiges Notizformat.', false);
+                    }
+                } catch (error) {
+                    await showModal('Fehler beim Lesen oder Parsen der Datei.', false);
+                    console.error('Import error:', error);
+                }
+            };
+            reader.onerror = () => {
+                showModal('Fehler beim Lesen der Datei.', false);
+            };
+            reader.readAsText(file);
+        };
         // --- ENDE IMPORT/EXPORT FUNKTIONEN ---
 
 
@@ -432,6 +474,23 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors">
          */
         const applyFormat = (command, value = null) => {
             document.execCommand(command, false, value);
+        };
+
+        /**
+         * Helferfunktion zum Konvertieren von RGB-Strings (wie von Style.color) in Hex-Codes.
+         */
+         const rgbToHex = (rgb) => {
+            if (!rgb || !rgb.startsWith('rgb')) return rgb;
+            if(rgb.trim() === '') return '';
+            
+            const parts = rgb.match(/^rgb\((\d+),\s*(\d+),\s*(\d+)\)$/);
+            if (!parts) return rgb;
+
+            const hex = (x) => {
+                const h = parseInt(x).toString(16);
+                return h.length === 1 ? '0' + h : h;
+            };
+            return '#' + hex(parts[1]) + hex(parts[2]) + hex(parts[3]);
         };
 
         /**
@@ -470,13 +529,13 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors">
             if (sizeButton) sizeButton.classList.add('active');
 
 
-            // Status für Schriftfarbe (FIX: berücksichtigt auch kollabierte Auswahl)
+            // Status für Schriftfarbe
             let colorFound = false;
             let currentNode = selection.anchorNode.nodeType === Node.TEXT_NODE ? selection.anchorNode.parentNode : selection.anchorNode;
             
             // 1. Prüfe, ob das Format als aktive Farbe im document.execCommand bekannt ist (für sofortige Klicks)
             const queryColor = document.queryCommandValue('foreColor');
-            if (queryColor && queryColor !== 'rgb(0, 0, 0)') { // "rgb(0, 0, 0)" ist oft der Standardwert, wenn nichts gesetzt ist
+            if (queryColor && queryColor !== 'rgb(0, 0, 0)' && queryColor.toLowerCase() !== '#000000') { 
                 const hexColor = rgbToHex(queryColor);
                 const colorKey = Object.keys(colorMap).find(key => colorMap[key].toLowerCase() === hexColor);
                 if (colorKey) {
@@ -524,40 +583,92 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors">
             } else if (document.queryCommandState('insertUnorderedList')) {
                 const parentList = selection.anchorNode.closest('ul');
                 if (parentList) {
-                    // FIX: Liest den spezifischen list-style-type, der im Handler gesetzt wird.
                     const style = parentList.style.listStyleType || 'disc'; 
                     const styleButton = document.querySelector(`.dropdown-item[data-value="${style}"]`);
                     if (styleButton) styleButton.classList.add('active');
                 }
             }
         };
-
-        /**
-         * Helferfunktion zum Konvertieren von RGB-Strings (wie von Style.color) in Hex-Codes.
-         */
-         const rgbToHex = (rgb) => {
-            if (!rgb || !rgb.startsWith('rgb')) return rgb;
-            // Wenn der Wert ein Leerstring ist, ist er nicht gesetzt
-            if(rgb.trim() === '') return '';
-            
-            const parts = rgb.match(/^rgb\((\d+),\s*(\d+),\s*(\d+)\)$/);
-            if (!parts) return rgb;
-
-            const hex = (x) => {
-                const h = parseInt(x).toString(16);
-                return h.length === 1 ? '0' + h : h;
-            };
-            return '#' + hex(parts[1]) + hex(parts[2]) + hex(parts[3]);
-        };
         
-        function renderNotes() { /* ... unverändert ... */ }
-        function handleDragStart(e) { /* ... unverändert ... */ }
-        function handleDragOver(e) { /* ... unverändert ... */ }
-        function handleDrop(e) { /* ... unverändert ... */ }
-        function handleDragEnd(e) { /* ... unverändert ... */ }
-        const editNote = (noteId, title, content) => { /* ... unverändert ... */ };
-        const saveNote = async () => { /* ... unverändert ... */ };
-        const deleteNote = async (noteId) => { /* ... unverändert ... */ };
+        function renderNotes() { 
+            notesList.innerHTML = '';
+            const searchTerm = searchInput.value.toLowerCase();
+            const filteredNotes = notesData.filter(note => {
+                return note.title.toLowerCase().includes(searchTerm) || note.content.toLowerCase().includes(searchTerm);
+            });
+            if (filteredNotes.length === 0 && notesData.length > 0) {
+                 noNotesMessage.innerHTML = `<p>Keine Notizen gefunden für "${searchInput.value}".</p>`;
+                 noNotesMessage.classList.remove('hidden');
+            } else if (notesData.length === 0) {
+                 noNotesMessage.innerHTML = `<p>Sie haben noch keine Notizen. Fügen Sie eine neue hinzu, um zu beginnen!</p>`;
+                 noNotesMessage.classList.remove('hidden');
+            } else {
+                 noNotesMessage.classList.add('hidden');
+            }
+
+            filteredNotes.forEach(note => {
+                notesList.appendChild(createNoteElement(note));
+            });
+        }
+        function handleDragStart(e) {
+            draggedItem = e.target;
+            setTimeout(() => e.target.classList.add('dragging'), 0);
+        }
+        function handleDragOver(e) { e.preventDefault(); }
+        function handleDrop(e) { e.preventDefault(); if (e.target.closest('.note-card') !== draggedItem) { const target = e.target.closest('.note-card'); if (!target) return; const targetId = target.dataset.id; const draggedId = draggedItem.dataset.id; const targetIndex = notesData.findIndex(n => n.id == targetId); const draggedIndex = notesData.findIndex(n => n.id == draggedId); if (draggedIndex !== -1 && targetIndex !== -1) { const [removed] = notesData.splice(draggedIndex, 1); notesData.splice(targetIndex, 0, removed); saveNotesToLocal(); renderNotes(); } } }
+        function handleDragEnd(e) { e.target.classList.remove('dragging'); draggedItem = null; }
+        const editNote = (noteId, title, content) => {
+            editingNoteId = noteId;
+            noteTitleInput.value = title;
+            noteEditor.innerHTML = content;
+            saveNoteBtn.textContent = 'Änderungen speichern';
+            noteEditor.focus();
+            updateToolbarState(); 
+        };
+        const saveNote = async () => {
+            const title = noteTitleInput.value.trim();
+            const content = noteEditor.innerHTML.trim();
+
+            if (!content) {
+                await showModal('Die Notiz kann nicht leer sein.', false);
+                return;
+            }
+
+            if (editingNoteId) {
+                const noteIndex = notesData.findIndex(n => n.id === editingNoteId);
+                if (noteIndex !== -1) {
+                    notesData[noteIndex].title = title;
+                    notesData[noteIndex].content = content;
+                    notesData[noteIndex].dateModified = new Date().toISOString();
+                }
+                editingNoteId = null;
+                saveNoteBtn.textContent = 'Notiz speichern';
+            } else {
+                const newNote = {
+                    id: Date.now(), 
+                    title: title,
+                    content: content,
+                    dateCreated: new Date().toISOString(),
+                    dateModified: new Date().toISOString()
+                };
+                notesData.unshift(newNote); 
+            }
+
+            noteTitleInput.value = '';
+            noteEditor.innerHTML = '';
+            noteEditor.focus();
+            updateToolbarState(); 
+            saveNotesToLocal();
+            renderNotes();
+        };
+        const deleteNote = async (noteId) => {
+            const confirmed = await showModal('Sind Sie sicher, dass Sie diese Notiz löschen möchten?', true);
+            if (confirmed) {
+                notesData = notesData.filter(note => note.id !== noteId);
+                saveNotesToLocal();
+                renderNotes();
+            }
+        };
 
         // *************** KORRIGIERTER CODE-ABSCHNITT (Button-Setup) *******************
         const setupToolbarButton = (button, command, value = null) => {
@@ -598,25 +709,43 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors">
         });
         // *************** ENDE KORRIGIERTER CODE-ABSCHNITT (Button-Setup) *******************
 
-        // Dropdown-Funktionalität (unverändert)
-        const toggleDropdown = (menu) => { /* ... unverändert ... */ };
+        // --- FIX: Vollständige Dropdown-Funktionalität hinzugefügt ---
+        const toggleDropdown = (menu) => {
+            document.querySelectorAll('.dropdown-menu').forEach(m => {
+                // Schließe alle anderen Dropdowns
+                if (m !== menu) m.classList.remove('active');
+            });
+            // Öffne/Schließe das aktuelle Dropdown
+            menu.classList.toggle('active');
+        };
         
+        // Allgemeine Dropdown-Logik für die Haupt-Buttons (Aufzählung, Größe, Farbe)
         document.querySelectorAll('.relative').forEach(container => {
             const btn = container.querySelector('button');
             const menu = container.querySelector('.dropdown-menu');
             if (btn && menu) {
+                // Verhindert Fokusverlust beim Klicken auf den Dropdown-Button
                 btn.addEventListener('mousedown', (e) => { e.preventDefault(); });
+
                 btn.addEventListener('click', (e) => {
                     e.stopPropagation();
                     toggleDropdown(menu);
-                    noteEditor.focus(); 
-                    updateToolbarState(); 
+                    
+                    // Aktualisiere den Zustand, damit die Markierung im Dropdown erscheint, wenn es geöffnet wird
+                    if (menu.classList.contains('active')) {
+                       updateToolbarState();
+                    }
+                    noteEditor.focus(); // Fokus im Editor lassen
                 });
             }
         });
+        
+        // Listener, um Dropdowns zu schließen, wenn man irgendwo anders klickt
         document.body.addEventListener('click', () => {
             document.querySelectorAll('.dropdown-menu').forEach(m => m.classList.remove('active'));
         });
+        // --- ENDE FIX: Dropdown-Funktionalität ---
+
         // Sortier-Logik (Platzhalter)
         sortDropdownItems.forEach(item => { /* ... unverändert ... */ });
 
@@ -633,26 +762,26 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors">
 
                 if (listStyle === 'decimal') {
                     applyFormat('insertOrderedList');
+                    window.requestAnimationFrame(() => {
+                        updateToolbarState(); 
+                    });
                 } else {
                     applyFormat('insertUnorderedList');
                     
-                    // FIX 1: Warten, bis die Liste im DOM ist, um den Style anzuwenden
+                    // Warten, bis die Liste im DOM ist, um den Style anzuwenden
                     window.requestAnimationFrame(() => {
                         const listEl = selection.anchorNode.closest('ul');
                         if (listEl) {
-                             // Setzt den Style, der dann auch in der Notiz-Vorschau funktioniert
+                             // Setzt den Style (disc, circle, square)
                             listEl.style.listStyleType = listStyle;
                         }
                         noteEditor.focus();
                         updateToolbarState(); 
                     });
-                    return; // Beende hier, damit updateToolbarState nicht sofort ausgeführt wird.
+                    return; 
                 }
             
                 noteEditor.focus();
-                window.requestAnimationFrame(() => {
-                    updateToolbarState(); 
-                });
             });
         });
         
@@ -682,7 +811,7 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors">
                 
                 noteEditor.focus();
                 
-                // FIX 2: updateToolbarState() wird sofort nach der Formatierung aufgerufen
+                // FIX: updateToolbarState() wird sofort nach der Formatierung aufgerufen
                 window.requestAnimationFrame(() => {
                     updateToolbarState(); 
                 });
@@ -704,7 +833,7 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors">
         noteEditor.addEventListener('blur', updateToolbarState);
 
         /**
-         * Erstellt ein HTML-Element für eine einzelne Notiz. (Platzhalter)
+         * Erstellt ein HTML-Element für eine einzelne Notiz.
          */
         const createNoteElement = (note) => {
              const div = document.createElement('div');
