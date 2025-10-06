@@ -32,13 +32,18 @@
             background-color: #1a202c;
             /* Textfarbe auf reines Weiß setzen */
             color: #ffffff; 
-            outline: none;
+            outline: none; /* WICHTIG: Entfernt den Browser-Standard-Fokus-Ring */
             transition: all 0.3s;
         }
-        /* Entferne den standardmäßigen Fokus-Ring explizit */
-        #note-editor:focus {
-            border-color: #4299e1;
-            box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.5);
+        /* FIX: Entfernt jegliche visuelle Änderung beim Fokus (außerhalb der aktiven Markierung) */
+        #note-editor:focus,
+        .toolbar-btn:focus, 
+        .dropdown-item:focus, 
+        #sort-dropdown-btn:focus, 
+        .focus:outline-none {
+            border-color: #4a5568 !important; /* Kein blauer Rand */
+            box-shadow: none !important; /* Keine Box-Shadow */
+            outline: none !important;
         }
         #note-editor:empty:before {
             content: attr(placeholder);
@@ -82,8 +87,6 @@
         #note-editor ul[style*="list-style-type: disc"], .note-card ul[style*="list-style-type: disc"] {
             list-style-type: disc !important;
         }
-        
-        /* Die Square-Styles wurden entfernt. */
         
         #note-editor h2 {
             font-size: 1.5rem;
@@ -131,12 +134,12 @@
 
         <div class="mb-6 flex 
 flex-col sm:flex-row gap-4">
-            <input type="text" id="search-input" placeholder="Notizen durchsuchen..." class="w-full sm:w-1/3 p-3 rounded-xl border border-gray-600 bg-gray-800 text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300">
+            <input type="text" id="search-input" placeholder="Notizen durchsuchen..." class="w-full sm:w-1/3 p-3 rounded-xl border border-gray-600 bg-gray-800 text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300 focus:outline-none">
             
             <div class="flex gap-4 w-full sm:w-2/3">
                 <div class="relative w-full sm:w-1/2">
                     <button id="sort-dropdown-btn" 
-class="w-full p-3 rounded-xl border border-gray-600 bg-gray-800 text-gray-100 text-left hover:bg-gray-700 transition-colors">
+class="w-full p-3 rounded-xl border border-gray-600 bg-gray-800 text-gray-100 text-left hover:bg-gray-700 transition-colors focus:outline-none">
                         Sortieren nach: Unsortiert
                     </button>
                     <div id="sort-dropdown-menu" class="dropdown-menu mt-2 w-full">
@@ -152,11 +155,11 @@ class="w-full p-3 rounded-xl border border-gray-600 bg-gray-800 text-gray-100 te
 
                 <div class="flex 
 gap-2 w-full sm:w-1/2">
-                    <button id="export-btn" class="w-1/2 p-3 rounded-xl border border-gray-600 bg-green-600 text-white font-medium hover:bg-green-700 transition-colors">
+                    <button id="export-btn" class="w-1/2 p-3 rounded-xl border border-gray-600 bg-green-600 text-white font-medium hover:bg-green-700 transition-colors focus:outline-none">
                         Export 💾
                     </button>
                     <label for="import-file-input" 
-class="w-1/2 p-3 rounded-xl border border-gray-600 bg-yellow-600 text-white font-medium hover:bg-yellow-700 transition-colors cursor-pointer text-center flex items-center justify-center">
+class="w-1/2 p-3 rounded-xl border border-gray-600 bg-yellow-600 text-white font-medium hover:bg-yellow-700 transition-colors cursor-pointer text-center flex items-center justify-center focus:outline-none">
                         Import 📥
                     </label>
                     <input type="file" id="import-file-input" accept="application/json" style="display: none;">
@@ -168,17 +171,17 @@ class="w-1/2 p-3 rounded-xl border border-gray-600 bg-yellow-600 text-white font
         <div class="mb-6 p-4 bg-gray-800 rounded-2xl shadow-inner">
             <h2 class="text-2xl font-bold text-gray-200 mb-4">Neue Notiz erstellen</h2>
             
-            <input type="text" id="note-title-input" placeholder="Titel der Notiz (optional)" class="w-full p-3 mb-4 rounded-xl border border-gray-600 bg-gray-800 text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300">
+            <input type="text" id="note-title-input" placeholder="Titel der Notiz (optional)" class="w-full p-3 mb-4 rounded-xl border border-gray-600 bg-gray-800 text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300 focus:outline-none">
   
           
             <div class="flex flex-wrap gap-2 mb-4 p-2 bg-gray-700 rounded-xl">
-                <button id="bold-btn" class="toolbar-btn p-2 rounded-lg bg-gray-600 text-gray-200 hover:bg-gray-500 transition-colors font-bold">B</button>
-                <button id="italic-btn" class="toolbar-btn p-2 rounded-lg bg-gray-600 text-gray-200 hover:bg-gray-500 transition-colors italic">I</button>
+                <button id="bold-btn" class="toolbar-btn p-2 rounded-lg bg-gray-600 text-gray-200 hover:bg-gray-500 transition-colors font-bold focus:outline-none">B</button>
+                <button id="italic-btn" class="toolbar-btn p-2 rounded-lg bg-gray-600 text-gray-200 hover:bg-gray-500 transition-colors italic focus:outline-none">I</button>
                 <button id="underline-btn" class="toolbar-btn p-2 rounded-lg 
-bg-gray-600 text-gray-200 hover:bg-gray-500 transition-colors underline">U</button>
+bg-gray-600 text-gray-200 hover:bg-gray-500 transition-colors underline focus:outline-none">U</button>
                 
                 <div class="relative inline-block">
-                    <button id="list-dropdown-btn" class="toolbar-btn p-2 rounded-lg bg-gray-600 text-gray-200 hover:bg-gray-500 transition-colors">
+                    <button id="list-dropdown-btn" class="toolbar-btn p-2 rounded-lg bg-gray-600 text-gray-200 hover:bg-gray-500 transition-colors focus:outline-none">
                         Aufzählung
           
           </button>
@@ -192,7 +195,7 @@ bg-gray-600 text-gray-200 hover:bg-gray-500 transition-colors underline">U</butt
 
     
                 <div class="relative inline-block">
-                    <button id="size-dropdown-btn" class="toolbar-btn p-2 rounded-lg bg-gray-600 text-gray-200 hover:bg-gray-500 transition-colors">
+                    <button id="size-dropdown-btn" class="toolbar-btn p-2 rounded-lg bg-gray-600 text-gray-200 hover:bg-gray-500 transition-colors focus:outline-none">
                         Schriftgröße
                     </button>
               
@@ -205,7 +208,7 @@ px-4 py-2 hover:bg-gray-600 rounded-lg" data-value="5">Groß</button>
                 </div>
 
                 <div class="relative inline-block">
-                    <button id="color-dropdown-btn" class="toolbar-btn p-2 rounded-lg bg-gray-600 text-gray-200 hover:bg-gray-500 transition-colors">
+                    <button id="color-dropdown-btn" class="toolbar-btn p-2 rounded-lg bg-gray-600 text-gray-200 hover:bg-gray-500 transition-colors focus:outline-none">
               
                       Schriftfarbe
                     </button>
@@ -222,15 +225,15 @@ px-4 py-2 hover:bg-gray-600 rounded-lg" data-value="5">Groß</button>
                 </div>
 
               
-                <button id="link-btn" class="toolbar-btn p-2 rounded-lg bg-gray-600 text-gray-200 hover:bg-gray-500 transition-colors">
+                <button id="link-btn" class="toolbar-btn p-2 rounded-lg bg-gray-600 text-gray-200 hover:bg-gray-500 transition-colors focus:outline-none">
                     Link
                 </button>
 
-                <button id="indent-btn" class="toolbar-btn p-2 rounded-lg bg-gray-600 text-gray-200 hover:bg-gray-500 transition-colors">
+                <button id="indent-btn" class="toolbar-btn p-2 rounded-lg bg-gray-600 text-gray-200 hover:bg-gray-500 transition-colors focus:outline-none">
                     Einrücken
           
                 </button>
-                <button id="outdent-btn" class="toolbar-btn p-2 rounded-lg bg-gray-600 text-gray-200 hover:bg-gray-500 transition-colors">
+                <button id="outdent-btn" class="toolbar-btn p-2 rounded-lg bg-gray-600 text-gray-200 hover:bg-gray-500 transition-colors focus:outline-none">
                     Ausrücken
                 </button>
             </div>
@@ -266,10 +269,10 @@ Fügen Sie eine neue hinzu, um zu beginnen!</p>
             <p id="modal-text" class="text-lg font-semibold text-gray-200 text-center mb-4"></p>
             <div class="flex justify-center space-x-4">
                 <button id="modal-confirm-btn" class="bg-blue-600 text-white 
-font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors">
+font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors focus:outline-none">
                     OK
                 </button>
-                <button id="modal-cancel-btn" class="bg-gray-600 text-gray-200 font-medium py-2 px-5 rounded-full hover:bg-gray-500 transition-colors hidden">
+                <button id="modal-cancel-btn" class="bg-gray-600 text-gray-200 font-medium py-2 px-5 rounded-full hover:bg-gray-500 transition-colors hidden focus:outline-none">
                     Abbrechen
              
                 </button>
@@ -282,13 +285,13 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors">
             <h3 class="text-xl font-bold text-gray-200 mb-4 text-center">Link einfügen</h3>
             <p class="text-gray-300 mb-4 text-center">Geben Sie die URL für den Link ein.</p>
      
-               <input type="text" id="link-url-input" placeholder="https://beispiel.de" class="w-full p-3 rounded-xl border border-gray-600 bg-gray-900 text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300">
+               <input type="text" id="link-url-input" placeholder="https://beispiel.de" class="w-full p-3 rounded-xl border border-gray-600 bg-gray-900 text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300 focus:outline-none">
             <div class="mt-6 flex justify-end space-x-4">
-                <button id="link-cancel-btn" class="bg-gray-600 text-gray-200 font-medium py-2 px-5 rounded-full hover:bg-gray-500 transition-colors">
+                <button id="link-cancel-btn" class="bg-gray-600 text-gray-200 font-medium py-2 px-5 rounded-full hover:bg-gray-500 transition-colors focus:outline-none">
                     Abbrechen
                 </button>
  
-                <button id="link-insert-btn" class="bg-blue-600 text-white font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors">
+                <button id="link-insert-btn" class="bg-blue-600 text-white font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors focus:outline-none">
                     Einfügen
                 </button>
             </div>
@@ -520,16 +523,12 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors">
             
             // Wenn keine Auswahl im Editor ist ODER der Fokus verloren ging
             if (!selection || selection.rangeCount === 0 || !noteEditor.contains(selection.anchorNode)) {
-                // Setze Standardzustände
+                // Setze Standardzustände für Farbe/Größe, aber NICHT für Listen
                 const defaultColorBtn = document.querySelector(`.dropdown-item[data-value="white"]`);
                 if (defaultColorBtn) defaultColorBtn.classList.add('active');
                 
                 const defaultSizeBtn = document.querySelector(`.dropdown-item[data-value="3"]`);
                 if (defaultSizeBtn) defaultSizeBtn.classList.add('active');
-                
-                // Setze Standard-Listenstil
-                const defaultListBtn = document.querySelector(`.dropdown-item[data-value="disc"]`);
-                if (defaultListBtn) defaultListBtn.classList.add('active');
                 
                 return;
             }
@@ -595,11 +594,15 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors">
                  if (defaultColorBtn) defaultColorBtn.classList.add('active');
             }
 
-            // Status für Listen
+            // ******************************************************
+            // ** KORRIGIERTE LOGIK FÜR LISTEN: NUR AKTIV, WENN VORHANDEN **
+            // ******************************************************
             if (document.queryCommandState('insertOrderedList')) {
+                // Nummerierte Liste ist aktiv
                 const decimalBtn = document.querySelector(`.dropdown-item[data-value="decimal"]`);
                 if (decimalBtn) decimalBtn.classList.add('active');
             } else if (document.queryCommandState('insertUnorderedList')) {
+                // Ungeordnete Liste ist aktiv
                 const parentList = selection.anchorNode.closest('ul');
                 if (parentList) {
                     // Verwenden des Inline-Styles für aktive State-Prüfung
@@ -608,15 +611,12 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors">
                     const styleButton = document.querySelector(`.dropdown-item[data-value="${style === '' ? 'disc' : style}"]`);
                     if (styleButton) styleButton.classList.add('active');
                 } else {
-                     // Wenn insertUnorderedList aktiv ist, aber kein ul gefunden (sollte nicht passieren)
+                     // Fallback: Wenn UL aktiv, aber kein Parent gefunden, wähle disc als aktiv
                     const defaultListBtn = document.querySelector(`.dropdown-item[data-value="disc"]`);
                     if (defaultListBtn) defaultListBtn.classList.add('active');
                 }
-            } else {
-                 // Wenn keine Liste aktiv ist, den Standard 'disc' als aktiv anzeigen
-                const defaultListBtn = document.querySelector(`.dropdown-item[data-value="disc"]`);
-                if (defaultListBtn) defaultListBtn.classList.add('active');
-            }
+            } 
+            // WICHTIG: KEIN ELSE-Block hier, damit kein Listen-Button aktiv ist, wenn keine Liste aktiv ist.
         };
         
         function renderNotes() { 
@@ -789,14 +789,19 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors">
             }
         });
         
-        document.body.addEventListener('click', () => {
-            // Beim Klicken außerhalb des Dropdowns alle Menüs schließen
+        document.body.addEventListener('click', (e) => {
+             // Beim Klicken außerhalb des Dropdowns alle Menüs schließen
             document.querySelectorAll('.dropdown-menu').forEach(m => m.classList.remove('active'));
-            // Beim Klicken außerhalb des Editors/Toolbars den Fokus von allen Toolbar-Buttons entfernen
-            // (Wird im normalen Flow durch noteEditor.focus() beim Klicken auf Toolbar ersetzt)
-            // Dies dient nur zur Sicherheit, wenn außerhalb von allem geklickt wird
-            if (!noteEditor.contains(document.activeElement) && !document.querySelector('.dropdown-menu.active')) {
-                document.querySelectorAll('.toolbar-btn').forEach(btn => btn.blur());
+             
+            // Wenn der Klick NICHT auf einem der Toolbar-Buttons oder dem Editor stattfand, 
+            // den Fokus sicherheitshalber entfernen (für Input-Felder, etc.)
+            if (!e.target.closest('.toolbar-btn') && e.target !== noteEditor) {
+                 document.querySelectorAll('.toolbar-btn').forEach(btn => btn.blur());
+            }
+
+            // Wenn der Klick auf dem Editor war, Toolbar-Zustand aktualisieren (auch wenn Fokus verloren geht)
+            if (e.target === noteEditor || noteEditor.contains(e.target)) {
+                 updateToolbarState();
             }
         });
         // --- ENDE Dropdown-Funktionalität ---
@@ -998,10 +1003,10 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors">
              div.innerHTML = `
                  ${noteContentHtml}
                  <div class="mt-4 flex justify-end space-x-2">
-                     <button class="edit-btn bg-yellow-500 text-white text-xs font-medium py-1 px-3 rounded-full hover:bg-yellow-600 transition-colors">
+                     <button class="edit-btn bg-yellow-500 text-white text-xs font-medium py-1 px-3 rounded-full hover:bg-yellow-600 transition-colors focus:outline-none">
                          Bearbeiten
                      </button>
-                     <button class="delete-btn bg-red-500 text-white text-xs font-medium py-1 px-3 rounded-full hover:bg-red-600 transition-colors">
+                     <button class="delete-btn bg-red-500 text-white text-xs font-medium py-1 px-3 rounded-full hover:bg-red-600 transition-colors focus:outline-none">
                          Löschen
                      </button>
                  </div>
