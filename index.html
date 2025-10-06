@@ -57,8 +57,7 @@
             color: #ffffff !important; /* Textfarbe auf weiß setzen */
         }
 
-        /* --- FINAL FIX FÜR QUADRATFARBE --- */
-        /* Setzt die Textfarbe für die Listenelemente auf Weiß (wichtig für gefüllte Symbole wie Quadrate) */
+        /* --- FINAL FIX FÜR QUADRATFARBE: Muss auf li gesetzt werden, da Square die Textfarbe erbt. --- */
         #note-editor li, .note-card li {
             color: #ffffff !important;
         }
@@ -69,8 +68,6 @@
         }
         /* Stellt sicher, dass die Liste in der Vorschau sichtbar ist */
         #note-editor ul, #note-editor ol, .note-card ul, .note-card ol {
-            /* Wir entfernen diese redundante Farbangabe, da sie nun auf li gesetzt ist. */
-            /* color: #e2e8f0; */ 
             margin-left: 1.5rem;
         }
 
@@ -706,11 +703,13 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors">
             button.addEventListener('mousedown', (e) => { 
                 e.preventDefault(); 
                 applyFormat(command, value); 
-                e.currentTarget.blur(); // FIX: Fokus vom Button nehmen
-                noteEditor.focus(); 
-                window.requestAnimationFrame(() => {
+                
+                // FIX: Fokus sofort lösen, um den aktiven Status sichtbar zu machen
+                setTimeout(() => {
+                    e.currentTarget.blur(); 
+                    noteEditor.focus(); 
                     updateToolbarState(); 
-                });
+                }, 1);
             });
         };
 
@@ -743,11 +742,12 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors">
                 }
                 
                 applyFormat('createLink', url);
-                e.currentTarget.blur(); // FIX: Fokus vom Button nehmen
-
-                window.requestAnimationFrame(() => {
+                
+                // FIX: Fokus sofort lösen, um den aktiven Status sichtbar zu machen
+                setTimeout(() => {
+                    e.currentTarget.blur(); 
                     updateToolbarState(); 
-                });
+                }, 1);
             }
         });
 
@@ -772,8 +772,7 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors">
                     if (menu.classList.contains('active')) {
                        updateToolbarState();
                     }
-                    // Wir behalten den Fokus hier, da wir ihn nach Auswahl eines Dropdown-Items setzen
-                    // noteEditor.focus(); 
+                    // Fokus bleibt auf dem Editor, der Button behält nur den :hover/:active Zustand
                 });
             }
         });
@@ -884,7 +883,7 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors">
                                 }
                             }
                             noteEditor.focus();
-                            e.currentTarget.blur(); // FIX: Fokus vom Dropdown-Item nehmen
+                            e.currentTarget.blur(); 
                             updateToolbarState(); 
                         });
                         return; // Beende hier
@@ -892,10 +891,12 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors">
                 }
             
                 noteEditor.focus();
-                e.currentTarget.blur(); // FIX: Fokus vom Dropdown-Item nehmen
-                window.requestAnimationFrame(() => { 
+                
+                // FIX: Fokus sofort lösen, um den aktiven Status sichtbar zu machen
+                setTimeout(() => {
+                    e.currentTarget.blur(); // FIX: Fokus vom Dropdown-Item nehmen
                     updateToolbarState(); 
-                });
+                }, 1);
             });
         });
 
@@ -909,11 +910,12 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors">
                 const sizeValue = e.target.getAttribute('data-value');
                 applyFormat('fontSize', sizeValue);
                 noteEditor.focus();
-                e.currentTarget.blur(); // FIX: Fokus vom Dropdown-Item nehmen
                 
-                window.requestAnimationFrame(() => {
+                // FIX: Fokus sofort lösen, um den aktiven Status sichtbar zu machen
+                setTimeout(() => {
+                    e.currentTarget.blur(); // FIX: Fokus vom Dropdown-Item nehmen
                     updateToolbarState(); 
-                });
+                }, 1);
             });
         });
 
@@ -930,11 +932,12 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors">
                 document.execCommand('styleWithCSS', false, false);
                 
                 noteEditor.focus();
-                e.currentTarget.blur(); // FIX: Fokus vom Dropdown-Item nehmen
                 
-                window.requestAnimationFrame(() => {
+                // FIX: Fokus sofort lösen, um den aktiven Status sichtbar zu machen
+                setTimeout(() => {
+                    e.currentTarget.blur(); // FIX: Fokus vom Dropdown-Item nehmen
                     updateToolbarState(); 
-                });
+                }, 1);
             });
           });
 
