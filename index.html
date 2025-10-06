@@ -69,16 +69,16 @@
 
         /* Kreise (Hohle Kreise) */
         #note-editor ul[style*="list-style-type: circle"], .note-card ul[style*="list-style-type: circle"] {
-            list-style-type: circle;
+            list-style-type: circle !important; /* WICHTIGER FIX */
         }
         /* Quadrate (Gefüllte Quadrate) */
         #note-editor ul[style*="list-style-type: square"], .note-card ul[style*="list-style-type: square"] {
-            list-style-type: square;
+            list-style-type: square !important; /* WICHTIGER FIX */
         }
         /* Punkte (Gefüllte Scheiben/Discs - der Standard) */
         #note-editor ul:not([style]), .note-card ul:not([style]),
         #note-editor ul[style*="list-style-type: disc"], .note-card ul[style*="list-style-type: disc"] {
-            list-style-type: disc;
+            list-style-type: disc !important;
         }
         /* Ende Liste-Styles */
         
@@ -892,7 +892,7 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors">
 
         /**
          * Erstellt ein HTML-Element für eine einzelne Notiz.
-         * HINWEIS: Hier wurde die Logik zur Vorschau-Anzeige korrigiert.
+         * FIX: Die Logik zur Vorschau-Anzeige wurde korrigiert, um bei Titel 0 Inhalt zu zeigen.
          */
         const createNoteElement = (note) => {
              const div = document.createElement('div');
@@ -904,18 +904,10 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors">
              let noteContentHtml = '';
              
              if (note.title.trim() !== '') {
-                 // **FIX:** Wenn ein Titel vorhanden ist, zeige den Titel + eine gekürzte Textvorschau
-                 // HTML-Tags aus dem Snippet entfernen, um Darstellungsprobleme zu vermeiden
-                 const snippet = note.content.substring(0, 100).replace(/<[^>]*>?/gm, '');
-                 
-                 noteContentHtml = `
-                     <h3 class="text-xl font-bold mb-2 text-gray-200">${note.title}</h3>
-                     <div class="text-gray-400 mt-2 text-sm" style="max-height: 50px; overflow: hidden;">
-                         ${snippet}${note.content.length > 100 ? '...' : ''}
-                     </div>
-                 `;
+                 // **KORRIGIERTER FIX:** Wenn ein Titel vorhanden ist, zeige NUR den Titel (0 Zeichen Inhalt)
+                 noteContentHtml = `<h3 class="text-xl font-bold mb-2 text-gray-200">${note.title}</h3>`;
              } else {
-                 // Wenn KEIN Titel vorhanden ist, zeige den formatierten Notizinhalt in einer größeren Vorschau
+                 // Wenn KEIN Titel vorhanden ist, zeige den formatierten Notizinhalt in voller Länge (mit max-height: 100px)
                  noteContentHtml = `<div class="text-gray-300" style="max-height: 100px; overflow: hidden;">${note.content}</div>`;
              }
              
