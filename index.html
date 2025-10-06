@@ -751,12 +751,12 @@
         };
 
         // Event-Listener für Editor-Toolbar
-        // FIX: updateToolbarState wird NACH dem applyFormat aufgerufen, um sofort den neuen Zustand anzuzeigen.
-        boldBtn.addEventListener('click', () => { applyFormat('bold'); updateToolbarState(); });
-        italicBtn.addEventListener('click', () => { applyFormat('italic'); updateToolbarState(); });
-        underlineBtn.addEventListener('click', () => { applyFormat('underline'); updateToolbarState(); });
-        indentBtn.addEventListener('click', () => { applyFormat('indent'); updateToolbarState(); });
-        outdentBtn.addEventListener('click', () => { applyFormat('outdent'); updateToolbarState(); });
+        // FIX: updateToolbarState wird in setTimeout(..., 0) aufgerufen, um Verzögerungen im DOM-Update zu umgehen.
+        boldBtn.addEventListener('click', () => { applyFormat('bold'); setTimeout(updateToolbarState, 0); });
+        italicBtn.addEventListener('click', () => { applyFormat('italic'); setTimeout(updateToolbarState, 0); });
+        underlineBtn.addEventListener('click', () => { applyFormat('underline'); setTimeout(updateToolbarState, 0); });
+        indentBtn.addEventListener('click', () => { applyFormat('indent'); setTimeout(updateToolbarState, 0); });
+        outdentBtn.addEventListener('click', () => { applyFormat('outdent'); setTimeout(updateToolbarState, 0); });
         
         // Link-Funktion
         linkBtn.addEventListener('click', async () => {
@@ -772,7 +772,7 @@
                 selection.removeAllRanges();
                 selection.addRange(savedRange);
                 applyFormat('createLink', url);
-                updateToolbarState(); // Sofortige Aktualisierung nach Link-Einfügung
+                setTimeout(updateToolbarState, 0); // Sofortige Aktualisierung nach Link-Einfügung
             }
         });
         // Dropdown-Funktionalität
@@ -833,7 +833,7 @@
                     }
                 }
                 noteEditor.focus();
-                updateToolbarState(); // Sofortige Aktualisierung
+                setTimeout(updateToolbarState, 0); // Sofortige Aktualisierung
             });
         });
 
@@ -841,7 +841,7 @@
             item.addEventListener('click', (e) => {
                 const sizeValue = e.target.getAttribute('data-value');
                 applyFormat('fontSize', sizeValue);
-                updateToolbarState(); // Sofortige Aktualisierung
+                setTimeout(updateToolbarState, 0); // Sofortige Aktualisierung
             });
         });
 
@@ -854,7 +854,7 @@
                 document.execCommand('styleWithCSS', false, true);
                 applyFormat('foreColor', colorMap[colorValue]);
                 document.execCommand('styleWithCSS', false, false);
-                updateToolbarState(); // Sofortige Aktualisierung
+                setTimeout(updateToolbarState, 0); // Sofortige Aktualisierung
             });
         });
 
@@ -868,8 +868,9 @@
 
         // Event listener zur Aktualisierung des Toolbar-Zustands
         // FIX: 'keyup' und 'blur' ENTFERNT, um das "Springen" zu verhindern.
-        noteEditor.addEventListener('mouseup', updateToolbarState); // Beim Auswählen/Klicken
-        noteEditor.addEventListener('focus', updateToolbarState); // Beim Betreten des Editors
+        // updateToolbarState wird nur beim Auswählen/Klicken (mouseup) und beim Betreten (focus) aufgerufen.
+        noteEditor.addEventListener('mouseup', updateToolbarState); 
+        noteEditor.addEventListener('focus', updateToolbarState); 
 
         // Initial loading of notes
         window.addEventListener('load', loadNotesFromLocal);
