@@ -326,11 +326,14 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors">
         const outdentBtn = document.getElementById('outdent-btn');
         const linkBtn = document.getElementById('link-btn');
         const listDropdownMenu = document.getElementById('list-dropdown-menu');
+        const listDropdownBtn = document.getElementById('list-dropdown-btn');
         const listDropdownItems = listDropdownMenu.querySelectorAll('.dropdown-item');
         const sizeDropdownMenu = document.getElementById('size-dropdown-menu');
+        const sizeDropdownBtn = document.getElementById('size-dropdown-btn');
         const sizeDropdownItems = sizeDropdownMenu.querySelectorAll('.dropdown-item');
 
         const colorDropdownMenu = document.getElementById('color-dropdown-menu');
+        const colorDropdownBtn = document.getElementById('color-dropdown-btn');
         const colorDropdownItems = colorDropdownMenu.querySelectorAll('.dropdown-item');
 
         // Sortier-Elemente
@@ -715,9 +718,11 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors">
         const setupToolbarButton = (button, command, value = null) => {
             button.addEventListener('mousedown', (e) => { 
                 e.preventDefault(); 
+                
+                // WICHTIG: Die Ausführung des Formats muss zuerst erfolgen
                 applyFormat(command, value); 
                 
-                // FIX: Fokus sofort lösen, um den aktiven Status sichtbar zu machen
+                // FIX: Fokus sofort lösen (in einem setTimeout, um den Browser zu überstimmen)
                 setTimeout(() => {
                     e.currentTarget.blur(); 
                     updateToolbarState();   
@@ -757,7 +762,7 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors">
                 applyFormat('createLink', url);
             }
             
-            // FIX: Fokus sofort lösen, um den aktiven Status sichtbar zu machen (Auch für Link)
+            // FIX: Fokus sofort lösen (Auch für Link)
             setTimeout(() => {
                 e.currentTarget.blur(); 
                 updateToolbarState(); 
@@ -787,7 +792,7 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors">
                     const wasActive = menu.classList.contains('active');
                     toggleDropdown(menu);
                     
-                    if (wasActive) { // FIX: Wenn das Menü ZU ist, Fokus entfernen
+                    if (wasActive) { // FIX: Wenn das Menü ZU ist, Fokus vom Button entfernen
                         setTimeout(() => {
                            btn.blur();
                         }, 1);
@@ -846,6 +851,11 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors">
                 const method = e.target.getAttribute('data-value');
                 sortNotes(method);
                 document.getElementById('sort-dropdown-menu').classList.remove('active');
+                
+                // Expliziter Blur für Sortier-Dropdown-Button
+                setTimeout(() => {
+                   sortDropdownBtn.blur();
+                }, 1);
             });
         });
 
@@ -857,41 +867,55 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors">
         listDropdownItems.forEach(item => {
             item.addEventListener('click', (e) => {
                 e.preventDefault();
+                e.stopPropagation();
                 const listStyle = e.target.getAttribute('data-value');
                 const selection = window.getSelection();
                 
                 if (!selection.rangeCount) return;
                 
+                // *** FIX: Schließe Dropdown und entferne Fokus von Button ***
+                listDropdownMenu.classList.remove('active');
+                listDropdownBtn.blur();
+                // *** ENDE FIX ***
+                
                 if (listStyle === 'decimal') {
                     applyFormat('insertOrderedList');
                 } else { // disc, circle, square
                     
-                    let currentUl = selection.anchorNode.closest('ul');
-                    const currentStyle = currentUl ? (currentUl.style.listStyleType || 'disc') : '';
+                    const currentUl = selection.anchorNode.closest('ul');
+                    // 'disc' ist der Standard, wenn kein Inline-Style gesetzt ist
+                    const currentStyle = currentUl ? (currentUl.style.listStyleType || 'disc') : 'none'; 
 
-                    // 1. Fall: Toggling des gleichen Stils
+                    // 1. Fall: Toggling des gleichen Stils (Liste ausschalten)
                     if (currentUl && currentStyle === listStyle) {
-                        applyFormat('insertUnorderedList'); // Schaltet die Liste AUS
+                        applyFormat('insertUnorderedList'); 
                     } else {
                         // 2. Fall: Stil ändern oder neue Liste erstellen
                         
-                        // Zuerst OL entfernen, falls aktiv (wird zu normalem Text)
+                        // Zuerst OL entfernen
                         if (selection.anchorNode.closest('ol')) {
                             applyFormat('insertOrderedList'); 
                         }
-
-                        // UL sicherstellen/einschalten (Toggling-Befehl)
+                        
+                        // UL sicherstellen/einschalten
                         applyFormat('insertUnorderedList'); 
 
-                        // Stil unmittelbar setzen
-                        currentUl = selection.anchorNode.closest('ul');
-                        if (currentUl) {
-                            currentUl.style.listStyleType = listStyle === 'disc' ? '' : listStyle;
-                        }
+                        // Warten auf DOM-Aktualisierung und dann Stil setzen
+                        setTimeout(() => {
+                             const newUl = selection.anchorNode.closest('ul');
+                             if (newUl) {
+                                newUl.style.listStyleType = listStyle === 'disc' ? '' : listStyle;
+                            }
+                            
+                            // Letzter Schritt: Fokus und Update
+                            updateToolbarState(); 
+                            noteEditor.focus();
+                        }, 1);
+                        return; // Beende die Funktion frühzeitig
                     }
                 }
             
-                // FIX: Fokus sofort lösen, um den aktiven Status sichtbar zu machen
+                // Für Decimal und Toggle-Off: Fokus und Update
                 setTimeout(() => {
                     e.currentTarget.blur(); 
                     updateToolbarState(); 
@@ -907,8 +931,15 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors">
         // Event-Listener für Dropdown-Items (Größe)
         sizeDropdownItems.forEach(item => {
             item.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                
                 const sizeValue = e.target.getAttribute('data-value');
                 applyFormat('fontSize', sizeValue);
+                
+                // FIX: Schließe Dropdown und entferne Fokus von Button
+                sizeDropdownMenu.classList.remove('active');
+                sizeDropdownBtn.blur();
                 
                 // FIX: Fokus sofort lösen
                 setTimeout(() => {
@@ -922,6 +953,9 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors">
         // Event-Listener für Dropdown-Items (Farbe)
         colorDropdownItems.forEach(item => {
             item.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                
                 const colorValue = e.target.getAttribute('data-value');
                 const selection = window.getSelection();
                 if (!selection.rangeCount) return;
@@ -929,6 +963,10 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors">
                 document.execCommand('styleWithCSS', false, true);
                 applyFormat('foreColor', colorMap[colorValue]);
                 document.execCommand('styleWithCSS', false, false);
+                
+                // FIX: Schließe Dropdown und entferne Fokus von Button
+                colorDropdownMenu.classList.remove('active');
+                colorDropdownBtn.blur();
                 
                 // FIX: Fokus sofort lösen
                 setTimeout(() => {
