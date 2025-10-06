@@ -35,7 +35,7 @@
             outline: none;
             transition: all 0.3s;
         }
-        /* Der :focus-Ring bleibt standardmäßig erhalten, wird aber durch JS sofort entfernt */
+        /* Entferne den standardmäßigen Fokus-Ring explizit */
         #note-editor:focus {
             border-color: #4299e1;
             box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.5);
@@ -718,15 +718,14 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors">
         const setupToolbarButton = (button, command, value = null) => {
             button.addEventListener('mousedown', (e) => { 
                 e.preventDefault(); 
-                
-                // WICHTIG: Die Ausführung des Formats muss zuerst erfolgen
+                e.currentTarget.blur(); // WICHTIG: Fokus sofort entfernen, um Ring zu verhindern
+            });
+            button.addEventListener('click', (e) => {
                 applyFormat(command, value); 
-                
-                // FIX: Fokus sofort lösen (in einem setTimeout, um den Browser zu überstimmen)
+                // Editor Fokus und Update nach der Aktion
                 setTimeout(() => {
-                    e.currentTarget.blur(); 
+                    noteEditor.focus(); // Fokus zurück auf Editor
                     updateToolbarState();   
-                    noteEditor.focus(); // Fokus auf Editor zurück
                 }, 1);
             });
         };
@@ -862,62 +861,66 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors">
         // *************** ENDE SORTIERFUNKTION *******************
         
         // ******************************************************
-        // ** NEUE, STABILE LOGIK FÜR AUFZÄHLUNGSZEICHEN **
+        // ** KORRIGIERTE, STABILE LOGIK FÜR AUFZÄHLUNGSZEICHEN **
         // ******************************************************
         listDropdownItems.forEach(item => {
             item.addEventListener('click', (e) => {
                 e.preventDefault();
                 e.stopPropagation();
+                
                 const listStyle = e.target.getAttribute('data-value');
                 const selection = window.getSelection();
                 
                 if (!selection.rangeCount) return;
                 
-                // *** FIX: Schließe Dropdown und entferne Fokus von Button ***
+                // 1. Dropdown schließen und Fokus entfernen (Fix 1)
                 listDropdownMenu.classList.remove('active');
-                listDropdownBtn.blur();
-                // *** ENDE FIX ***
+                listDropdownBtn.blur(); 
                 
                 if (listStyle === 'decimal') {
+                    // Nummerierte Liste
                     applyFormat('insertOrderedList');
                 } else { // disc, circle, square
                     
                     const currentUl = selection.anchorNode.closest('ul');
-                    // 'disc' ist der Standard, wenn kein Inline-Style gesetzt ist
+                    // Standard-Disc wird im DOM oft als leere style-Eigenschaft dargestellt
                     const currentStyle = currentUl ? (currentUl.style.listStyleType || 'disc') : 'none'; 
 
-                    // 1. Fall: Toggling des gleichen Stils (Liste ausschalten)
+                    // 2. Fall: Toggling OFF (Liste ausschalten)
                     if (currentUl && currentStyle === listStyle) {
-                        applyFormat('insertUnorderedList'); 
+                        applyFormat('insertUnorderedList'); // Schaltet die Liste AUS
                     } else {
-                        // 2. Fall: Stil ändern oder neue Liste erstellen
+                        // 3. Fall: Stil ändern oder neue Liste erstellen
                         
-                        // Zuerst OL entfernen
-                        if (selection.anchorNode.closest('ol')) {
-                            applyFormat('insertOrderedList'); 
+                        // Zuerst OL entfernen, falls aktiv
+                        if (document.queryCommandState('insertOrderedList')) {
+                             applyFormat('insertOrderedList'); 
                         }
                         
-                        // UL sicherstellen/einschalten
-                        applyFormat('insertUnorderedList'); 
-
-                        // Warten auf DOM-Aktualisierung und dann Stil setzen
+                        // Stelle sicher, dass UL aktiv ist (Erstellt oder toggelt an)
+                        // Wichtig: Dies wird nur aufgerufen, wenn wir die Liste nicht gerade ausschalten wollen.
+                        if (!document.queryCommandState('insertUnorderedList')) {
+                            applyFormat('insertUnorderedList'); 
+                        } 
+                        
+                        // Da execCommand asynchron ist, warten wir kurz, um das UL-Element zu finden und zu stylen
                         setTimeout(() => {
-                             const newUl = selection.anchorNode.closest('ul');
-                             if (newUl) {
-                                newUl.style.listStyleType = listStyle === 'disc' ? '' : listStyle;
+                             const ulToStyle = selection.anchorNode.closest('ul');
+                             if (ulToStyle) {
+                                // Setze den Stil aggressiv und zwingend
+                                ulToStyle.style.listStyleType = listStyle === 'disc' ? '' : listStyle;
                             }
                             
                             // Letzter Schritt: Fokus und Update
                             updateToolbarState(); 
                             noteEditor.focus();
                         }, 1);
-                        return; // Beende die Funktion frühzeitig
+                        return; // End of style change/creation path
                     }
                 }
-            
-                // Für Decimal und Toggle-Off: Fokus und Update
+                
+                // Final focus/update für Decimal und erfolgreiches Toggle-Off
                 setTimeout(() => {
-                    e.currentTarget.blur(); 
                     updateToolbarState(); 
                     noteEditor.focus();
                 }, 1);
@@ -941,9 +944,8 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors">
                 sizeDropdownMenu.classList.remove('active');
                 sizeDropdownBtn.blur();
                 
-                // FIX: Fokus sofort lösen
+                // FIX: Fokus auf Editor
                 setTimeout(() => {
-                    e.currentTarget.blur(); 
                     updateToolbarState(); 
                     noteEditor.focus();
                 }, 1);
@@ -968,9 +970,8 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors">
                 colorDropdownMenu.classList.remove('active');
                 colorDropdownBtn.blur();
                 
-                // FIX: Fokus sofort lösen
+                // FIX: Fokus auf Editor
                 setTimeout(() => {
-                    e.currentTarget.blur(); 
                     updateToolbarState(); 
                     noteEditor.focus();
                 }, 1);
