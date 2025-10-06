@@ -221,8 +221,7 @@ px-4 py-2 hover:bg-gray-600 rounded-lg" data-value="5">Groß</button>
                         <button class="dropdown-item w-full text-left px-4 py-2 hover:bg-gray-600 rounded-lg text-blue-500" data-value="blue">Blau</button>
                 
                         <button class="dropdown-item w-full text-left px-4 py-2 hover:bg-gray-600 rounded-lg text-yellow-500" data-value="yellow">Gelb</button>
-                        <button class="dropdown-item w-full text-left px-4 py-2 hover:bg-gray-600 rounded-lg text-black" data-value="black">Schwarz</button>
-                    </div>
+                        </div>
                 </div>
 
               
@@ -353,13 +352,14 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors focus:out
         let currentSortMethod = 'unsorted';
         // Speicherschlüssel als Konstante definieren
         const NOTES_STORAGE_KEY = 'notes';
+        
+        // ** GEÄNDERT: 'black' ENTFERNT **
         const colorMap = {
             'red': '#ff0000',
             'green': '#008000',
             'blue': '#3b82f6', 
             'yellow': '#ffff00',
-            'white': '#ffffff',
-            'black': '#000000'
+            'white': '#ffffff'
         };
         const sizeMap = {
             '1': '12px',
@@ -408,6 +408,15 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors focus:out
                 linkInsertBtn.onclick = insertHandler;
                 linkCancelBtn.onclick = cancelHandler;
             });
+        };
+        
+        // ** NEU: Auswahl aufheben (simuliert Touch-Klick) **
+        const collapseSelection = () => {
+            const selection = window.getSelection();
+            if (selection.rangeCount > 0) {
+                // Hebt die aktive Textmarkierung auf und lässt nur den Cursor stehen
+                selection.collapseToEnd(); 
+            }
         };
 
         /**
@@ -471,7 +480,6 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors focus:out
                     if (Array.isArray(importedNotes)) {
                         
                         // NEUE LOGIK: Kombiniert die bestehenden Notizen mit den importierten Notizen.
-                        // notesData ist die globale Variable mit den aktuell geladenen Notizen.
                         notesData = notesData.concat(importedNotes);
                         
                         // Speichere die kombinierte Liste in Local Storage
@@ -563,6 +571,7 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors focus:out
             
             // 1. Prüfe commandValue
             const queryColor = document.queryCommandValue('foreColor');
+            // Hinweis: Farbe Schwarz wird ignoriert, da der Hintergrund dunkel ist.
             if (queryColor && queryColor !== 'rgb(0, 0, 0)' && queryColor.toLowerCase() !== '#000000') { 
                 const hexColor = rgbToHex(queryColor);
                 const colorKey = Object.keys(colorMap).find(key => colorMap[key].toLowerCase() === hexColor);
@@ -1054,7 +1063,13 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors focus:out
         
         // Event listener zur Aktualisierung des Toolbar-Zustands
         noteEditor.addEventListener('mouseup', updateToolbarState); 
-        noteEditor.addEventListener('keyup', updateToolbarState); 
+        
+        // ** GEÄNDERT: Implementiert Touch-Click-Verhalten **
+        noteEditor.addEventListener('keyup', () => {
+            collapseSelection();
+            updateToolbarState();
+        }); 
+        
         noteEditor.addEventListener('focus', updateToolbarState);
         noteEditor.addEventListener('blur', updateToolbarState);
 
