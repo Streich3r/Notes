@@ -707,7 +707,7 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors focus:out
             button.addEventListener('click', (e) => {
                 applyFormat(command, value); 
                 // Aggressive blur + Editor Focus
-                e.currentTarget.blur(); // <-- WICHTIG: Entfernt sofort den Fokusring
+                e.currentTarget.blur(); 
                 setTimeout(() => {
                     noteEditor.focus(); 
                     updateToolbarState();   
@@ -724,7 +724,7 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors focus:out
         // Link-Pop-up
         linkBtn.addEventListener('click', async (e) => {
             e.preventDefault(); 
-            e.currentTarget.blur(); // Aggressiver Blur vor dem Modal
+            e.currentTarget.blur(); 
             const selection = window.getSelection();
             let rangeToUse = null;
 
@@ -747,7 +747,7 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors focus:out
                 applyFormat('createLink', url);
             }
             
-            // FIX: Fokus sofort lösen (Auch für Link)
+            // Fokus sofort lösen (Auch für Link)
             setTimeout(() => {
                 updateToolbarState(); 
                 noteEditor.focus();
@@ -778,11 +778,17 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors focus:out
                     const wasActive = menu.classList.contains('active');
                     toggleDropdown(menu);
                     
+                    if (!wasActive && btn.id === 'sort-dropdown-btn') {
+                        // FIX: Wenn das Sortier-Menü geöffnet wird, Editor-Fokus verlieren, 
+                        // damit er nicht während der Menü-Interaktion zurückspringt.
+                        noteEditor.blur();
+                    }
+                    
                     if (wasActive) { 
                         setTimeout(() => {
                            btn.blur();
                            
-                           // NEU: Nur Fokus zum Editor, wenn es KEIN Sortier-Button ist.
+                           // Nur Fokus zum Editor, wenn es KEIN Sortier-Button ist.
                            if (btn.id !== 'sort-dropdown-btn') {
                                noteEditor.focus(); 
                            }
@@ -847,7 +853,7 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors focus:out
                 sortNotes(method);
                 document.getElementById('sort-dropdown-menu').classList.remove('active');
                 
-                // FIX: Expliziter Blur für Sortier-Dropdown-Button (kein Fokus auf Editor hier!)
+                // Expliziter Blur für Sortier-Dropdown-Button (kein Fokus auf Editor hier!)
                 setTimeout(() => {
                    sortDropdownBtn.blur();
                 }, 1);
@@ -945,11 +951,11 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors focus:out
                 
                 const sizeValue = e.target.getAttribute('data-value');
                 
-                // FIX: Schließe Dropdown und entferne Fokus von Button
+                // Schließe Dropdown und entferne Fokus von Button
                 sizeDropdownMenu.classList.remove('active');
                 sizeDropdownBtn.blur();
                 
-                // FIX: Fokus auf Editor und dann Formatierung
+                // Fokus auf Editor und dann Formatierung
                 noteEditor.focus();
                 applyFormat('fontSize', sizeValue);
                 
@@ -969,11 +975,11 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors focus:out
                 const selection = window.getSelection();
                 if (!selection.rangeCount) return;
                 
-                // FIX: Schließe Dropdown und entferne Fokus von Button
+                // Schließe Dropdown und entferne Fokus von Button
                 colorDropdownMenu.classList.remove('active');
                 colorDropdownBtn.blur();
                 
-                // FIX: Fokus auf Editor und dann Formatierung
+                // Fokus auf Editor und dann Formatierung
                 noteEditor.focus();
                 
                 document.execCommand('styleWithCSS', false, true);
