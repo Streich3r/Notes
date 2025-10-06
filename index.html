@@ -56,20 +56,17 @@
             color: #ffffff !important; /* Textfarbe auf weiß setzen */
         }
 
-        /* --- FIX: Aufzählungssymbole sichtbar machen und korrekt stylen --- */
-        /* Setzt die Marker-Farbe explizit auf Weiß für alle Listentypen (Editor und Vorschau) */
+        /* --- FINAL FIX: Aufzählungssymbole sichtbar machen und korrekt stylen --- */
+        /* Setzt die Marker-Farbe AGGRESSIV auf Weiß für ALLE Listentypen (Editor und Vorschau) */
         #note-editor li::marker, .note-card li::marker {
-            color: #ffffff; 
+            color: #ffffff !important; 
         }
         /* Stellt sicher, dass die Liste in der Vorschau sichtbar ist */
-        .note-card ul, .note-card ol {
+        #note-editor ul, #note-editor ol, .note-card ul, .note-card ol {
             color: #e2e8f0; 
+            margin-left: 1.5rem;
         }
 
-        /* Liste-Styles für die Notizen-Vorschau und den Editor */
-        #note-editor ul, .note-card ul {
-             margin-left: 1.5rem;
-        }
         /* Kreise (Hohle Kreise) */
         #note-editor ul[style*="list-style-type: circle"], .note-card ul[style*="list-style-type: circle"] {
             list-style-type: circle;
@@ -99,7 +96,6 @@
         }
         
         #note-editor ol, .note-card ol {
-            margin-left: 1.5rem;
             list-style-type: decimal;
         }
 
@@ -847,7 +843,6 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors">
                         if (listEl) {
                              // Setzt den Style (disc, circle, square) und erzwingt ihn
                             listEl.style.listStyleType = listStyle;
-                            // Entferne überflüssigen li.style.color Workaround
                         }
                         noteEditor.focus();
                         updateToolbarState(); 
@@ -909,16 +904,11 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors">
              if (note.title.trim() !== '') {
                  noteContentHtml = `<h3 class="text-xl font-bold mb-2 text-gray-200">${note.title}</h3>`;
                  // Füge den Inhalt in einem versteckten Element hinzu, damit er für die Suche verfügbar ist.
-                 // NOTE: Die Vorschau ist nur bei fehlendem Titel aktiv
-             } 
-             
-             // Nur wenn kein Titel, zeige den Notizinhalt an
-             if (note.title.trim() === '') {
-                 noteContentHtml = `<div class="text-gray-300" style="max-height: 100px; overflow: hidden;">${note.content}</div>`;
-             } else {
-                 // Füge den Inhalt in einem versteckten Element hinzu, damit er für die Suche verfügbar ist.
                  // Und zeige eine gekürzte Version, falls der Titel gesetzt ist.
                   noteContentHtml += `<div class="text-gray-400 mt-2 text-sm" style="max-height: 50px; overflow: hidden;">${note.content.substring(0, 100).replace(/<[^>]*>?/gm, '')}...</div>`;
+             } else {
+                 // Wenn kein Titel vorhanden ist, zeige den Notizinhalt an
+                 noteContentHtml = `<div class="text-gray-300" style="max-height: 100px; overflow: hidden;">${note.content}</div>`;
              }
              
 
