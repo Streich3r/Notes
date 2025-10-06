@@ -62,6 +62,7 @@
             color: #ffffff !important;
         }
 
+        /* Setzt die Marker (Punkte/Kreise/Zahlen) auf Weiß */
         #note-editor li::marker, .note-card li::marker {
             color: #ffffff !important; 
         }
@@ -82,21 +83,7 @@
             list-style-type: disc !important;
         }
         
-        /* Quadrate (Hohle Quadrate mit Unicode-Charakter) */
-        #note-editor ul[style*="list-style-type: square"], .note-card ul[style*="list-style-type: square"] {
-            list-style-type: none !important; 
-        }
-        #note-editor ul[style*="list-style-type: square"] li::before, 
-        .note-card ul[style*="list-style-type: square"] li::before {
-            content: "□"; /* Unicode Hollow Square U+25A1 */
-            color: #ffffff !important;
-            font-weight: bold;
-            display: inline-block;
-            width: 1.5rem; 
-            margin-left: -1.5rem; 
-            text-align: right; 
-        }
-        /* Ende Liste-Styles */
+        /* Die Square-Styles wurden entfernt. */
         
         #note-editor h2 {
             font-size: 1.5rem;
@@ -200,7 +187,6 @@ bg-gray-600 text-gray-200 hover:bg-gray-500 transition-colors underline">U</butt
                         <button class="dropdown-item w-full text-left px-4 py-2 hover:bg-gray-600 rounded-lg" data-value="disc">Punkte</button>
     
                         <button class="dropdown-item w-full text-left px-4 py-2 hover:bg-gray-600 rounded-lg" data-value="circle">Kreise</button>
-                        <button class="dropdown-item w-full text-left px-4 py-2 hover:bg-gray-600 rounded-lg" data-value="square">Hohle Quadrate</button>
                     </div>
                 </div>
 
@@ -618,6 +604,7 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors">
                 if (parentList) {
                     // Verwenden des Inline-Styles für aktive State-Prüfung
                     const style = parentList.style.listStyleType || 'disc'; 
+                    // Setze den aktiven Status basierend auf dem erzwungenen Style (oder disc, wenn leer)
                     const styleButton = document.querySelector(`.dropdown-item[data-value="${style === '' ? 'disc' : style}"]`);
                     if (styleButton) styleButton.classList.add('active');
                 } else {
@@ -715,9 +702,11 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors">
         };
 
         // *************** FIX: FOKUS-LÖSUNG FÜR EINFACHE BUTTONS *******************
+        // Die "simpler, aber funktional"-Logik: e.preventDefault() auf mousedown verhindert den Fokus
+        // noteEditor.focus() auf click stellt den Fokus sofort wieder her.
         const setupToolbarButton = (button, command, value = null) => {
             button.addEventListener('mousedown', (e) => { 
-                e.preventDefault(); // Verhindert, dass der Button den Fokus erhält
+                e.preventDefault(); // WICHTIG: Verhindert, dass der Button den Fokus erhält (kein Fokusring)
             });
             button.addEventListener('click', (e) => {
                 applyFormat(command, value); 
@@ -725,7 +714,6 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors">
                 setTimeout(() => {
                     noteEditor.focus(); // Fokus zurück auf Editor
                     updateToolbarState();   
-                    e.currentTarget.blur(); // Zusätzlicher Sicherheits-Blur, falls der Browser den Fokusring doch setzt
                 }, 1);
             });
         };
@@ -763,11 +751,12 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors">
             
             // FIX: Fokus sofort lösen (Auch für Link)
             setTimeout(() => {
-                e.currentTarget.blur(); 
                 updateToolbarState(); 
                 noteEditor.focus();
             }, 1);
         });
+        linkBtn.addEventListener('mousedown', (e) => { e.preventDefault(); });
+
         // *************** ENDE FIX: FOKUS-LÖSUNG FÜR EINFACHE BUTTONS *******************
 
 
@@ -783,7 +772,7 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors">
             const btn = container.querySelector('button');
             const menu = container.querySelector('.dropdown-menu');
             if (btn && menu) {
-                // Mousedown verhindert, dass der Button sofort den Fokus verliert, bevor er das Dropdown öffnet
+                // Mousedown verhindert, dass der Button den Fokus erhält (kein Fokusring)
                 btn.addEventListener('mousedown', (e) => { e.preventDefault(); });
 
                 btn.addEventListener('click', (e) => {
@@ -801,9 +790,14 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors">
         });
         
         document.body.addEventListener('click', () => {
+            // Beim Klicken außerhalb des Dropdowns alle Menüs schließen
             document.querySelectorAll('.dropdown-menu').forEach(m => m.classList.remove('active'));
-            // Beim Klicken außerhalb des Dropdowns den Fokus von allen Toolbar-Buttons entfernen
-            document.querySelectorAll('.toolbar-btn').forEach(btn => btn.blur());
+            // Beim Klicken außerhalb des Editors/Toolbars den Fokus von allen Toolbar-Buttons entfernen
+            // (Wird im normalen Flow durch noteEditor.focus() beim Klicken auf Toolbar ersetzt)
+            // Dies dient nur zur Sicherheit, wenn außerhalb von allem geklickt wird
+            if (!noteEditor.contains(document.activeElement) && !document.querySelector('.dropdown-menu.active')) {
+                document.querySelectorAll('.toolbar-btn').forEach(btn => btn.blur());
+            }
         });
         // --- ENDE Dropdown-Funktionalität ---
 
@@ -851,7 +845,7 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors">
                 sortNotes(method);
                 document.getElementById('sort-dropdown-menu').classList.remove('active');
                 
-                // Expliziter Blur für Sortier-Dropdown-Button
+                // FIX: Expliziter Blur für Sortier-Dropdown-Button
                 setTimeout(() => {
                    sortDropdownBtn.blur();
                 }, 1);
@@ -861,7 +855,7 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors">
         // *************** ENDE SORTIERFUNKTION *******************
         
         // ******************************************************
-        // ** KORRIGIERTE, STABILE LOGIK FÜR AUFZÄHLUNGSZEICHEN **
+        // ** KORRIGIERTE LOGIK FÜR AUFZÄHLUNGSZEICHEN (3 TYPEN) **
         // ******************************************************
         listDropdownItems.forEach(item => {
             item.addEventListener('click', (e) => {
@@ -873,40 +867,43 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors">
                 
                 if (!selection.rangeCount) return;
                 
-                // 1. Dropdown schließen und Fokus entfernen (Fix 1)
+                // 1. Dropdown schließen und Fokus entfernen
                 listDropdownMenu.classList.remove('active');
                 listDropdownBtn.blur(); 
                 
                 if (listStyle === 'decimal') {
                     // Nummerierte Liste
                     applyFormat('insertOrderedList');
-                } else { // disc, circle, square
+                } else { // disc, circle
                     
                     const currentUl = selection.anchorNode.closest('ul');
-                    // Standard-Disc wird im DOM oft als leere style-Eigenschaft dargestellt
+                    // currentStyle: '' oder 'disc' für Punkte, 'circle' für Kreise
                     const currentStyle = currentUl ? (currentUl.style.listStyleType || 'disc') : 'none'; 
 
                     // 2. Fall: Toggling OFF (Liste ausschalten)
-                    // Beachte: '' entspricht disc im UI-State, aber wir vergleichen mit dem Wert aus data-value
-                    if (currentUl && (currentStyle === listStyle || (currentStyle === '' && listStyle === 'disc'))) {
+                    const isDiscOrEmpty = currentStyle === 'disc' || currentStyle === '';
+                    const matchFound = (listStyle === 'disc' && isDiscOrEmpty) || (currentStyle === listStyle);
+
+                    if (currentUl && matchFound) {
                         applyFormat('insertUnorderedList'); // Schaltet die Liste AUS
                     } else {
                         // 3. Fall: Stil ändern oder neue Liste erstellen
                         
-                        // Zuerst OL entfernen, falls aktiv
+                        // Zuerst OL entfernen
                         if (document.queryCommandState('insertOrderedList')) {
                              applyFormat('insertOrderedList'); 
                         }
                         
-                        // Stelle sicher, dass UL aktiv ist (Erstellt oder toggelt an)
-                        // Wenn es bereits eine UL gibt, toggelt es den Stil, was wir gleich überschreiben
-                        applyFormat('insertUnorderedList'); 
+                        // Stelle sicher, dass UL aktiv ist
+                        if (!document.queryCommandState('insertUnorderedList')) {
+                            applyFormat('insertUnorderedList'); 
+                        } 
                         
-                        // Da execCommand asynchron ist, warten wir kurz, um das UL-Element zu finden und zu stylen
+                        // Warten, um das UL-Element zu finden und den Style zu erzwingen
                         setTimeout(() => {
                              const ulToStyle = selection.anchorNode.closest('ul');
                              if (ulToStyle) {
-                                // Setze den Stil aggressiv und zwingend
+                                // disc (Punkte) wird am besten als leerer String gesetzt, da es der Standard ist.
                                 ulToStyle.style.listStyleType = listStyle === 'disc' ? '' : listStyle;
                             }
                             
@@ -914,7 +911,7 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors">
                             updateToolbarState(); 
                             noteEditor.focus();
                         }, 1);
-                        return; // Ende des Stil-Änderungs-/Erstellungspfads
+                        return; 
                     }
                 }
                 
@@ -927,7 +924,7 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors">
         });
 
         // ******************************************************
-        // ** ENDE FIX FÜR AUFZÄHLUNGSZEICHEN **
+        // ** ENDE KORRIGIERTE LOGIK FÜR AUFZÄHLUNGSZEICHEN **
         // ******************************************************
         
         // Event-Listener für Dropdown-Items (Größe)
