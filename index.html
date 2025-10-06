@@ -48,13 +48,12 @@
         /* Stil für den aktiven Zustand (sofort blau) */
         .toolbar-btn.active {
             background-color: #2563eb;
-            /* Blau */
             color: #ffffff;
         }
         .dropdown-item.active {
             /* Hintergrundfarbe auf Blau setzen */
             background-color: #2563eb !important;
-            color: inherit; /* Stellt sicher, dass die Textfarbe erhalten bleibt */
+            color: #ffffff !important; /* Textfarbe auf weiß setzen */
         }
 
         /* --- FIX: Aufzählungssymbole sichtbar machen und korrekt stylen --- */
@@ -407,6 +406,8 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors">
          */
         const saveNotesToLocal = () => {
             try {
+                // Nur speichern, wenn die Sortierung "unsortiert" ist, um die manuelle Reihenfolge zu erhalten, 
+                // ODER wenn die Datenstruktur aktualisiert wurde.
                 localStorage.setItem(NOTES_STORAGE_KEY, JSON.stringify(notesData));
             } catch (e) {
                 console.error("Fehler beim Speichern der Notizen im lokalen Speicher:", e);
@@ -421,6 +422,8 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors">
             try {
                 const storedNotes = localStorage.getItem(NOTES_STORAGE_KEY);
                 notesData = storedNotes ? JSON.parse(storedNotes) : [];
+                // Beim Laden auf die gespeicherte Sortierung prüfen (optional, hier einfach 'unsorted' als Standard)
+                // sortNotes(currentSortMethod); // Starte mit der Standard-Sortierung
                 renderNotes();
             } catch (e) {
                 console.error("Fehler beim Laden der Notizen aus dem lokalen Speicher:", e);
@@ -660,6 +663,7 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors">
                     dateCreated: new Date().toISOString(),
                     dateModified: new Date().toISOString()
                 };
+                // Stelle sicher, dass neue Notizen vorne eingefügt werden, um der "unsortierten" Standardreihenfolge zu entsprechen
                 notesData.unshift(newNote); 
             }
 
@@ -667,245 +671,9 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors">
             noteEditor.innerHTML = '';
             noteEditor.focus();
             updateToolbarState(); 
-            saveNotesToLocal();
-            renderNotes();
+            // Nach dem Speichern sofort die aktuelle Sortierung anwenden
+            sortNotes(currentSortMethod);
+            // saveNotesToLocal() wird in sortNotes aufgerufen
         };
         const deleteNote = async (noteId) => {
-            const confirmed = await showModal('Sind Sie sicher, dass Sie diese Notiz löschen möchten?', true);
-            if (confirmed) {
-                notesData = notesData.filter(note => note.id !== noteId);
-                saveNotesToLocal();
-                renderNotes();
-            }
-        };
-
-        // *************** KORRIGIERTER CODE-ABSCHNITT (Button-Setup) *******************
-        const setupToolbarButton = (button, command, value = null) => {
-            button.addEventListener('mousedown', (e) => { 
-                e.preventDefault(); 
-                applyFormat(command, value); 
-                noteEditor.focus(); 
-                window.requestAnimationFrame(() => {
-                    updateToolbarState(); 
-                });
-            });
-        };
-
-        setupToolbarButton(boldBtn, 'bold');
-        setupToolbarButton(italicBtn, 'italic');
-        setupToolbarButton(underlineBtn, 'underline');
-        setupToolbarButton(indentBtn, 'indent');
-        setupToolbarButton(outdentBtn, 'outdent');
-
-        // FIX: Entferne die Bedingung, dass Text markiert sein muss. Pop-up öffnet immer.
-        linkBtn.addEventListener('click', async () => {
-            const selection = window.getSelection();
-            let rangeToUse = null;
-
-            if (selection.rangeCount > 0) {
-                // Speichere die aktuelle Auswahl/Cursorposition, falls vorhanden
-                rangeToUse = selection.getRangeAt(0);
-            }
-            
-            // Das Modal öffnet sich immer, wie gewünscht
-            const url = await showLinkModal();
-            
-            if (url) {
-                noteEditor.focus(); 
-                
-                if (rangeToUse) {
-                    // Auswahl/Position wiederherstellen, um Link korrekt anzuwenden
-                    selection.removeAllRanges();
-                    selection.addRange(rangeToUse); 
-                } else if (selection.rangeCount === 0) {
-                    // Stellen Sie den Fokus im Editor sicher, wenn die Auswahl verloren ging
-                    noteEditor.focus();
-                }
-                
-                // document.execCommand erstellt den Link entweder in der Auswahl 
-                // oder fügt den Link-Text an der Cursorposition ein.
-                applyFormat('createLink', url);
-
-                window.requestAnimationFrame(() => {
-                    updateToolbarState(); 
-                });
-            }
-        });
-        // *************** ENDE KORRIGIERTER CODE-ABSCHNITT (Button-Setup) *******************
-
-        // --- Dropdown-Funktionalität ---
-        const toggleDropdown = (menu) => {
-            document.querySelectorAll('.dropdown-menu').forEach(m => {
-                // Schließe alle anderen Dropdowns
-                if (m !== menu) m.classList.remove('active');
-            });
-            // Öffne/Schließe das aktuelle Dropdown
-            menu.classList.toggle('active');
-        };
-        
-        // Allgemeine Dropdown-Logik für die Haupt-Buttons (Aufzählung, Größe, Farbe)
-        document.querySelectorAll('.relative').forEach(container => {
-            const btn = container.querySelector('button');
-            const menu = container.querySelector('.dropdown-menu');
-            if (btn && menu) {
-                // Verhindert Fokusverlust beim Klicken auf den Dropdown-Button
-                btn.addEventListener('mousedown', (e) => { e.preventDefault(); });
-
-                btn.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    toggleDropdown(menu);
-                    
-                    if (menu.classList.contains('active')) {
-                       updateToolbarState();
-                    }
-                    noteEditor.focus(); 
-                });
-            }
-        });
-        
-        // Listener, um Dropdowns zu schließen, wenn man irgendwo anders klickt
-        document.body.addEventListener('click', () => {
-            document.querySelectorAll('.dropdown-menu').forEach(m => m.classList.remove('active'));
-        });
-        // --- ENDE Dropdown-Funktionalität ---
-
-        // Sortier-Logik (Platzhalter)
-        sortDropdownItems.forEach(item => { /* ... unverändert ... */ });
-
-        // *************** KORRIGIERTER CODE-ABSCHNITT (Dropdown-Items) *******************
-        
-        // Event-Listener für Dropdown-Items (Liste)
-        listDropdownItems.forEach(item => {
-            item.addEventListener('click', (e) => {
-                e.preventDefault();
-                const listStyle = e.target.getAttribute('data-value');
-                const selection = window.getSelection();
-               
-                if (!selection.rangeCount) return;
-
-                if (listStyle === 'decimal') {
-                    applyFormat('insertOrderedList');
-                } else {
-                    applyFormat('insertUnorderedList');
-                    
-                    window.requestAnimationFrame(() => {
-                        let listEl = selection.anchorNode.closest('ul');
-                        
-                        if (!listEl) {
-                           const parentLi = selection.anchorNode.closest('li');
-                           if (parentLi) {
-                               listEl = parentLi.parentElement;
-                           }
-                        }
-                        
-                        if (listEl) {
-                             // Setzt den Style (disc, circle, square)
-                            listEl.style.listStyleType = listStyle;
-                        }
-                        noteEditor.focus();
-                        updateToolbarState(); 
-                    });
-                    return; 
-                }
-            
-                noteEditor.focus();
-                window.requestAnimationFrame(() => { // Auch für geordnete Listen
-                    updateToolbarState(); 
-                });
-            });
-        });
-        
-        // Event-Listener für Dropdown-Items (Größe)
-        sizeDropdownItems.forEach(item => {
-            item.addEventListener('click', (e) => {
-                const sizeValue = e.target.getAttribute('data-value');
-                applyFormat('fontSize', sizeValue);
-                noteEditor.focus();
-                
-                window.requestAnimationFrame(() => {
-                    updateToolbarState(); 
-                });
-            });
-        });
-
-        // Event-Listener für Dropdown-Items (Farbe)
-        colorDropdownItems.forEach(item => {
-            item.addEventListener('click', (e) => {
-                const colorValue = e.target.getAttribute('data-value');
-                const selection = window.getSelection();
-                if (!selection.rangeCount) return;
-                
-                document.execCommand('styleWithCSS', false, true);
-                applyFormat('foreColor', colorMap[colorValue]);
-                document.execCommand('styleWithCSS', false, false);
-                
-                noteEditor.focus();
-                
-                window.requestAnimationFrame(() => {
-                    updateToolbarState(); 
-                });
-            });
-          });
-
-        // *************** ENDE KORRIGIERTER CODE-ABSCHNITT (Dropdown-Items) *******************
-        
-        saveNoteBtn.addEventListener('click', saveNote);
-        searchInput.addEventListener('input', (e) => renderNotes(e.target.value));
-        
-        exportBtn.addEventListener('click', exportNotes);
-        importFileInput.addEventListener('change', importNotes);
-        
-        // Event listener zur Aktualisierung des Toolbar-Zustands
-        noteEditor.addEventListener('mouseup', updateToolbarState); 
-        noteEditor.addEventListener('keyup', updateToolbarState); 
-        noteEditor.addEventListener('focus', updateToolbarState);
-        noteEditor.addEventListener('blur', updateToolbarState);
-
-        /**
-         * Erstellt ein HTML-Element für eine einzelne Notiz.
-         */
-        const createNoteElement = (note) => {
-             const div = document.createElement('div');
-             div.className = 'note-card bg-gray-700 p-5 rounded-2xl shadow-md border border-gray-700 transition-all duration-300 hover:shadow-xl'; 
-             div.setAttribute('draggable', currentSortMethod === 'unsorted' ? 'true' : 'false');
-             div.dataset.id = note.id;
-
-             let noteContentHtml = '';
-             // Wenn ein Titel vorhanden ist, zeige nur den Titel an
-             if (note.title.trim() !== '') {
-                 noteContentHtml = `<h3 class="text-xl font-bold mb-2 text-gray-200">${note.title}</h3>`;
-                 // Füge den Inhalt in einem versteckten Element hinzu, damit er für die Suche verfügbar ist.
-                 noteContentHtml += `<div class="hidden">${note.content}</div>`;
-             } else {
-                 // Wenn kein Titel vorhanden ist, zeige den Notizinhalt an
-                 noteContentHtml = `<div class="text-gray-300" style="max-height: 100px; overflow: hidden;">${note.content}</div>`;
-             }
-
-             div.innerHTML = `
-                 ${noteContentHtml}
-                 <div class="mt-4 flex justify-end space-x-2">
-                     <button class="edit-btn bg-yellow-500 text-white text-xs font-medium py-1 px-3 rounded-full hover:bg-yellow-600 transition-colors">
-                         Bearbeiten
-                     </button>
-                     <button class="delete-btn bg-red-500 text-white text-xs font-medium py-1 px-3 rounded-full hover:bg-red-600 transition-colors">
-                         Löschen
-                     </button>
-                 </div>
-             `;
-             div.querySelector('.edit-btn').addEventListener('click', () => editNote(note.id, note.title, note.content));
-             div.querySelector('.delete-btn').addEventListener('click', () => deleteNote(note.id));
-             if (currentSortMethod === 'unsorted') {
-                 div.addEventListener('dragstart', handleDragStart);
-                 div.addEventListener('dragover', handleDragOver);
-                 div.addEventListener('drop', handleDrop);
-                 div.addEventListener('dragend', handleDragEnd);
-             }
-             return div;
-         };
-
-
-        // Initial loading of notes
-        window.addEventListener('load', loadNotesFromLocal);
-    </script>
-</body>
-</html>
+            const confirmed = await show
