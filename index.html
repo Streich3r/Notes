@@ -56,7 +56,7 @@
             color: #ffffff !important; /* Textfarbe auf weiß setzen */
         }
 
-        /* --- FINAL FIX: Aufzählungssymbole sichtbar machen und korrekt stylen --- */
+        /* --- FIX: Aufzählungssymbole sichtbar machen und korrekt stylen --- */
         /* Setzt die Marker-Farbe AGGRESSIV auf Weiß für ALLE Listentypen (Editor und Vorschau) */
         #note-editor li::marker, .note-card li::marker {
             color: #ffffff !important; 
@@ -69,11 +69,11 @@
 
         /* Kreise (Hohle Kreise) */
         #note-editor ul[style*="list-style-type: circle"], .note-card ul[style*="list-style-type: circle"] {
-            list-style-type: circle !important; /* WICHTIGER FIX */
+            list-style-type: circle !important; 
         }
         /* Quadrate (Gefüllte Quadrate) */
         #note-editor ul[style*="list-style-type: square"], .note-card ul[style*="list-style-type: square"] {
-            list-style-type: square !important; /* WICHTIGER FIX */
+            list-style-type: square !important; 
         }
         /* Punkte (Gefüllte Scheiben/Discs - der Standard) */
         #note-editor ul:not([style]), .note-card ul:not([style]),
@@ -597,14 +597,19 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors">
             } else if (document.queryCommandState('insertUnorderedList')) {
                 const parentList = selection.anchorNode.closest('ul');
                 if (parentList) {
+                    // Verwenden des Inline-Styles für aktive State-Prüfung
                     const style = parentList.style.listStyleType || 'disc'; 
                     const styleButton = document.querySelector(`.dropdown-item[data-value="${style}"]`);
                     if (styleButton) styleButton.classList.add('active');
                 } else {
-                     // Wenn insertUnorderedList aktiv ist, aber kein ul gefunden, Standard auf Disc
+                     // Wenn insertUnorderedList aktiv ist, aber kein ul gefunden (sollte nicht passieren)
                     const defaultListBtn = document.querySelector(`.dropdown-item[data-value="disc"]`);
                     if (defaultListBtn) defaultListBtn.classList.add('active');
                 }
+            } else {
+                 // Wenn keine Liste aktiv ist, den Standard 'disc' als aktiv anzeigen
+                const defaultListBtn = document.querySelector(`.dropdown-item[data-value="disc"]`);
+                if (defaultListBtn) defaultListBtn.classList.add('active');
             }
         };
         
@@ -816,7 +821,9 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors">
 
         // *************** ENDE SORTIERFUNKTION *******************
         
-        // Event-Listener für Dropdown-Items (Liste)
+        // ******************************************************
+        // ** FIX FÜR AUFZÄHLUNGSZEICHEN: ROBUSTE JS LOGIK **
+        // ******************************************************
         listDropdownItems.forEach(item => {
             item.addEventListener('click', (e) => {
                 e.preventDefault();
@@ -824,30 +831,53 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors">
                 const selection = window.getSelection();
                
                 if (!selection.rangeCount) return;
-
+                
+                // Finden des direkten Listen-Containers (UL oder OL)
+                let currentList = selection.anchorNode.closest('ul') || selection.anchorNode.closest('ol');
+                
                 if (listStyle === 'decimal') {
+                    // Nummerierung: Immer execCommand nutzen
                     applyFormat('insertOrderedList');
-                } else {
-                    applyFormat('insertUnorderedList');
+                } else { // disc, circle, square
                     
-                    window.requestAnimationFrame(() => {
-                        let listEl = selection.anchorNode.closest('ul');
+                    if (currentList && currentList.tagName === 'UL') {
+                        // 1. Bereits in einer UL: Stil nur ändern (oder ausschalten)
                         
-                        if (!listEl) {
-                           const parentLi = selection.anchorNode.closest('li');
-                           if (parentLi) {
-                               listEl = parentLi.parentElement;
-                           }
+                        // Prüfen, ob der Stil bereits aktiv ist (leerer Style zählt als 'disc')
+                        const isActiveStyle = currentList.style.listStyleType === listStyle || (listStyle === 'disc' && currentList.style.listStyleType === '');
+
+                        if (isActiveStyle) {
+                            // Stil ist bereits aktiv -> Liste ausschalten (Toggle)
+                            applyFormat('insertUnorderedList'); 
+                        } else {
+                            // Stil ändern (circle/square/disc)
+                            // HINWEIS: Wegen der CSS-Regeln muss 'disc' mit '' gesetzt werden
+                            currentList.style.listStyleType = listStyle === 'disc' ? '' : listStyle;
                         }
+
+                    } else {
+                        // 2. Nicht in einer UL (oder OL): UL erstellen und Stil setzen
                         
-                        if (listEl) {
-                             // Setzt den Style (disc, circle, square) und erzwingt ihn
-                            listEl.style.listStyleType = listStyle;
-                        }
-                        noteEditor.focus();
-                        updateToolbarState(); 
-                    });
-                    return; 
+                        // Erst die Liste erstellen (execCommand entfernt OL, falls vorhanden)
+                        applyFormat('insertUnorderedList');
+                        
+                        // Warten, bis die Liste im DOM existiert
+                        window.requestAnimationFrame(() => {
+                            let newUl = selection.anchorNode.closest('ul');
+                            if (newUl) {
+                                // Nur Stil setzen, wenn es nicht der Standard 'disc' ist
+                                if (listStyle !== 'disc') {
+                                    newUl.style.listStyleType = listStyle;
+                                } else {
+                                    // Für 'disc' den Inline-Style entfernen (sauber)
+                                    newUl.style.listStyleType = '';
+                                }
+                            }
+                            noteEditor.focus();
+                            updateToolbarState(); 
+                        });
+                        return; // Beende hier
+                    }
                 }
             
                 noteEditor.focus();
@@ -856,6 +886,10 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors">
                 });
             });
         });
+
+        // ******************************************************
+        // ** ENDE FIX FÜR AUFZÄHLUNGSZEICHEN **
+        // ******************************************************
         
         // Event-Listener für Dropdown-Items (Größe)
         sizeDropdownItems.forEach(item => {
@@ -904,7 +938,7 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors">
              let noteContentHtml = '';
              
              if (note.title.trim() !== '') {
-                 // **KORRIGIERTER FIX:** Wenn ein Titel vorhanden ist, zeige NUR den Titel (0 Zeichen Inhalt)
+                 // **FIX:** Wenn ein Titel vorhanden ist, zeige NUR den Titel (0 Zeichen Inhalt)
                  noteContentHtml = `<h3 class="text-xl font-bold mb-2 text-gray-200">${note.title}</h3>`;
              } else {
                  // Wenn KEIN Titel vorhanden ist, zeige den formatierten Notizinhalt in voller Länge (mit max-height: 100px)
