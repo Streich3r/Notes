@@ -65,6 +65,18 @@
             margin-left: 1.5rem;
             list-style-type: decimal;
         }
+        
+        /* NEU: CSS für Aufzählungen in den Notizkarten */
+        .note-card ul {
+            margin-left: 1.5rem;
+            list-style-type: disc;
+        }
+        .note-card ol {
+            margin-left: 1.5rem;
+            list-style-type: decimal;
+        }
+        /* ENDE NEU */
+
         #note-editor blockquote {
             margin-left: 2rem;
         }
@@ -85,7 +97,6 @@
 </head>
 <body class="bg-black min-h-screen p-4 flex items-center justify-center">
 
-    <!-- Hauptcontainer für die Notiz-App -->
     <div class="bg-gray-900 p-6 rounded-3xl shadow-2xl w-full max-w-4xl transition-all duration-300 transform scale-100">
         <header class="mb-6 border-b pb-4 border-gray-700">
             <h1 class="text-4xl font-extrabold text-gray-100 text-center">
@@ -93,39 +104,45 @@
             </h1>
         </header>
 
-        <!-- Such- und Sortierleiste -->
         <div class="mb-6 flex flex-col sm:flex-row gap-4">
-            <input type="text" id="search-input" placeholder="Notizen durchsuchen..." class="w-full sm:w-2/3 p-3 rounded-xl border border-gray-600 bg-gray-800 text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300">
+            <input type="text" id="search-input" placeholder="Notizen durchsuchen..." class="w-full sm:w-1/3 p-3 rounded-xl border border-gray-600 bg-gray-800 text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300">
             
-            <!-- Sortier-Dropdown -->
-            <div class="relative w-full sm:w-1/3">
-                <button id="sort-dropdown-btn" class="w-full p-3 rounded-xl border border-gray-600 bg-gray-800 text-gray-100 text-left hover:bg-gray-700 transition-colors">
-                    Sortieren nach: Unsortiert
-                </button>
-                <div id="sort-dropdown-menu" class="dropdown-menu mt-2 w-full">
-                    <button class="dropdown-item w-full text-left px-4 py-2 hover:bg-gray-600 rounded-lg active" data-value="unsorted">Unsortiert</button>
-                    <button class="dropdown-item w-full text-left px-4 py-2 hover:bg-gray-600 rounded-lg" data-value="newest">Datum (neueste zuerst)</button>
-                    <button class="dropdown-item w-full text-left px-4 py-2 hover:bg-gray-600 rounded-lg" data-value="oldest">Datum (älteste zuerst)</button>
-                    <button class="dropdown-item w-full text-left px-4 py-2 hover:bg-gray-600 rounded-lg" data-value="title-asc">Titel (A-Z)</button>
-                    <button class="dropdown-item w-full text-left px-4 py-2 hover:bg-gray-600 rounded-lg" data-value="title-desc">Titel (Z-A)</button>
+            <div class="flex gap-4 w-full sm:w-2/3">
+                <div class="relative w-full sm:w-1/2">
+                    <button id="sort-dropdown-btn" class="w-full p-3 rounded-xl border border-gray-600 bg-gray-800 text-gray-100 text-left hover:bg-gray-700 transition-colors">
+                        Sortieren nach: Unsortiert
+                    </button>
+                    <div id="sort-dropdown-menu" class="dropdown-menu mt-2 w-full">
+                        <button class="dropdown-item w-full text-left px-4 py-2 hover:bg-gray-600 rounded-lg active" data-value="unsorted">Unsortiert</button>
+                        <button class="dropdown-item w-full text-left px-4 py-2 hover:bg-gray-600 rounded-lg" data-value="newest">Datum (neueste zuerst)</button>
+                        <button class="dropdown-item w-full text-left px-4 py-2 hover:bg-gray-600 rounded-lg" data-value="oldest">Datum (älteste zuerst)</button>
+                        <button class="dropdown-item w-full text-left px-4 py-2 hover:bg-gray-600 rounded-lg" data-value="title-asc">Titel (A-Z)</button>
+                        <button class="dropdown-item w-full text-left px-4 py-2 hover:bg-gray-600 rounded-lg" data-value="title-desc">Titel (Z-A)</button>
+                    </div>
                 </div>
-            </div>
+
+                <div class="flex gap-2 w-full sm:w-1/2">
+                    <button id="export-btn" class="w-1/2 p-3 rounded-xl border border-gray-600 bg-green-600 text-white font-medium hover:bg-green-700 transition-colors">
+                        Export 💾
+                    </button>
+                    <label for="import-file-input" class="w-1/2 p-3 rounded-xl border border-gray-600 bg-yellow-600 text-white font-medium hover:bg-yellow-700 transition-colors cursor-pointer text-center flex items-center justify-center">
+                        Import 📥
+                    </label>
+                    <input type="file" id="import-file-input" accept="application/json" style="display: none;">
+                </div>
+                </div>
         </div>
 
-        <!-- Notiz-Formular und Editor -->
         <div class="mb-6 p-4 bg-gray-800 rounded-2xl shadow-inner">
             <h2 class="text-2xl font-bold text-gray-200 mb-4">Neue Notiz erstellen</h2>
             
-            <!-- Titel-Eingabe -->
             <input type="text" id="note-title-input" placeholder="Titel der Notiz (optional)" class="w-full p-3 mb-4 rounded-xl border border-gray-600 bg-gray-800 text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300">
             
-            <!-- Editor-Toolbar -->
             <div class="flex flex-wrap gap-2 mb-4 p-2 bg-gray-700 rounded-xl">
                 <button id="bold-btn" class="toolbar-btn p-2 rounded-lg bg-gray-600 text-gray-200 hover:bg-gray-500 transition-colors font-bold">B</button>
                 <button id="italic-btn" class="toolbar-btn p-2 rounded-lg bg-gray-600 text-gray-200 hover:bg-gray-500 transition-colors italic">I</button>
                 <button id="underline-btn" class="toolbar-btn p-2 rounded-lg bg-gray-600 text-gray-200 hover:bg-gray-500 transition-colors underline">U</button>
                 
-                <!-- Dropdown für Aufzählungen -->
                 <div class="relative inline-block">
                     <button id="list-dropdown-btn" class="toolbar-btn p-2 rounded-lg bg-gray-600 text-gray-200 hover:bg-gray-500 transition-colors">
                         Aufzählung
@@ -138,7 +155,6 @@
                     </div>
                 </div>
 
-                <!-- Dropdown für Schriftgröße -->
                 <div class="relative inline-block">
                     <button id="size-dropdown-btn" class="toolbar-btn p-2 rounded-lg bg-gray-600 text-gray-200 hover:bg-gray-500 transition-colors">
                         Schriftgröße
@@ -150,7 +166,6 @@
                     </div>
                 </div>
 
-                <!-- Dropdown für Schriftfarbe -->
                 <div class="relative inline-block">
                     <button id="color-dropdown-btn" class="toolbar-btn p-2 rounded-lg bg-gray-600 text-gray-200 hover:bg-gray-500 transition-colors">
                         Schriftfarbe
@@ -165,7 +180,6 @@
                     </div>
                 </div>
 
-                <!-- Link-Schaltfläche -->
                 <button id="link-btn" class="toolbar-btn p-2 rounded-lg bg-gray-600 text-gray-200 hover:bg-gray-500 transition-colors">
                     Link
                 </button>
@@ -187,24 +201,19 @@
             </div>
         </div>
 
-        <!-- Notiz-Liste -->
         <div id="notes-list" class="space-y-4">
-            <!-- Dynamisch generierte Notiz-Elemente werden hier eingefügt -->
-        </div>
+            </div>
 
-        <!-- Lade-Indikator -->
         <div id="loading-indicator" class="text-center text-gray-400 mt-8 hidden">
             <div class="animate-spin inline-block w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full"></div>
             <p class="mt-2">Notizen werden geladen...</p>
         </div>
 
-        <!-- Keine Notizen Nachricht -->
         <div id="no-notes-message" class="text-center text-gray-400 mt-8 hidden">
             <p>Sie haben noch keine Notizen. Fügen Sie eine neue hinzu, um zu beginnen!</p>
         </div>
     </div>
 
-    <!-- Modale für Bestätigungen (ersetzt alert()) -->
     <div id="modal-backdrop" class="fixed inset-0 bg-gray-950 bg-opacity-75 hidden z-50 flex items-center justify-center">
         <div class="bg-gray-800 p-6 rounded-2xl shadow-xl max-w-sm w-full">
             <p id="modal-text" class="text-lg font-semibold text-gray-200 text-center mb-4"></p>
@@ -219,7 +228,6 @@
         </div>
     </div>
 
-    <!-- Modal für Link-Erstellung -->
     <div id="link-modal-backdrop" class="fixed inset-0 bg-gray-950 bg-opacity-75 hidden z-50 flex items-center justify-center">
         <div class="bg-gray-800 p-6 rounded-2xl shadow-xl max-w-lg w-full">
             <h3 class="text-xl font-bold text-gray-200 mb-4 text-center">Link einfügen</h3>
@@ -256,7 +264,6 @@
         const listDropdownBtn = document.getElementById('list-dropdown-btn');
         const listDropdownMenu = document.getElementById('list-dropdown-menu');
         const listDropdownItems = listDropdownMenu.querySelectorAll('.dropdown-item');
-
         const sizeDropdownBtn = document.getElementById('size-dropdown-btn');
         const sizeDropdownMenu = document.getElementById('size-dropdown-menu');
         const sizeDropdownItems = sizeDropdownMenu.querySelectorAll('.dropdown-item');
@@ -269,13 +276,17 @@
         const sortDropdownBtn = document.getElementById('sort-dropdown-btn');
         const sortDropdownMenu = document.getElementById('sort-dropdown-menu');
         const sortDropdownItems = sortDropdownMenu.querySelectorAll('.dropdown-item');
+        
+        // NEUE KONSTANTEN FÜR IMPORT/EXPORT
+        const exportBtn = document.getElementById('export-btn');
+        const importFileInput = document.getElementById('import-file-input');
+        // ENDE NEU
 
         // Modal-Elemente
         const modalBackdrop = document.getElementById('modal-backdrop');
         const modalText = document.getElementById('modal-text');
         const modalConfirmBtn = document.getElementById('modal-confirm-btn');
         const modalCancelBtn = document.getElementById('modal-cancel-btn');
-
         // Link-Modal-Elemente
         const linkModalBackdrop = document.getElementById('link-modal-backdrop');
         const linkUrlInput = document.getElementById('link-url-input');
@@ -284,9 +295,13 @@
 
         let notesData = [];
         let editingNoteId = null;
-        let savedRange; // Zum Speichern der Auswahl
+        let savedRange;
+        // Zum Speichern der Auswahl
         let currentSortMethod = 'unsorted';
-
+        
+        // NEU: Speicherschlüssel als Konstante definieren
+        const NOTES_STORAGE_KEY = 'notes';
+        
         const colorMap = {
             'red': '#ff0000',
             'green': '#008000',
@@ -295,16 +310,14 @@
             'white': '#ffffff',
             'black': '#000000'
         };
-
         const sizeMap = {
             '1': '12px',
             '3': '16px',
             '5': '24px'
         };
-
         // Drag-and-Drop-Variablen
         let draggedItem = null;
-
+        
         /**
          * Zeigt ein benutzerdefiniertes Modal anstelle von alert().
          * @param {string} message Die anzuzeigende Nachricht.
@@ -359,7 +372,8 @@
          */
         const saveNotesToLocal = () => {
             try {
-                localStorage.setItem('notes', JSON.stringify(notesData));
+                // NEU: Verwendung der Konstante NOTES_STORAGE_KEY
+                localStorage.setItem(NOTES_STORAGE_KEY, JSON.stringify(notesData));
             } catch (e) {
                 console.error("Fehler beim Speichern der Notizen im lokalen Speicher:", e);
                 showModal("Ihre Notizen konnten nicht gespeichert werden. Der lokale Speicher ist möglicherweise voll.");
@@ -371,7 +385,8 @@
          */
         const loadNotesFromLocal = () => {
             try {
-                const storedNotes = localStorage.getItem('notes');
+                // NEU: Verwendung der Konstante NOTES_STORAGE_KEY
+                const storedNotes = localStorage.getItem(NOTES_STORAGE_KEY);
                 notesData = storedNotes ? JSON.parse(storedNotes) : [];
                 renderNotes();
             } catch (e) {
@@ -381,6 +396,64 @@
                 renderNotes();
             }
         };
+        
+        // --- IMPORT/EXPORT FUNKTIONEN ---
+
+        /**
+         * Exportiert Notizen als JSON-Datei.
+         */
+        const exportNotes = async () => {
+            const notesJson = localStorage.getItem(NOTES_STORAGE_KEY);
+            if (!notesJson || notesJson === '[]') {
+                await showModal('Keine Notizen zum Exportieren vorhanden.', false);
+                return;
+            }
+
+            const blob = new Blob([notesJson], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+
+            a.href = url;
+            a.download = `Meine_Offline_Notizen_${new Date().toISOString().slice(0, 10)}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            await showModal('Notizen erfolgreich exportiert!', false);
+        };
+
+        /**
+         * Importiert Notizen aus einer JSON-Datei.
+         */
+        const importNotes = (event) => {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                try {
+                    const importedNotes = JSON.parse(e.target.result);
+                    if (Array.isArray(importedNotes)) {
+                        // Überschreibt den gesamten lokalen Speicher
+                        localStorage.setItem(NOTES_STORAGE_KEY, JSON.stringify(importedNotes));
+                        loadNotesFromLocal(); // Notizen neu laden und anzeigen
+                        await showModal('Notizen erfolgreich importiert und geladen!', false);
+                    } else {
+                        await showModal('Fehler: Die importierte Datei hat kein gültiges Notizformat.', false);
+                    }
+                } catch (error) {
+                    await showModal('Fehler beim Lesen oder Parsen der Datei.', false);
+                    console.error('Import error:', error);
+                }
+            };
+            reader.onerror = () => {
+                showModal('Fehler beim Lesen der Datei.', false);
+            };
+            reader.readAsText(file);
+        };
+
+        // --- ENDE IMPORT/EXPORT FUNKTIONEN ---
+
 
         /**
          * Wendet Formatierung auf den ausgewählten Text im Editor an.
@@ -408,7 +481,7 @@
                 return;
             }
 
-            // Status für Bold, Italic, Underline
+            // Status für Bold, Italic, Underline (Mehrere gleichzeitig möglich)
             if (document.queryCommandState('bold')) boldBtn.classList.add('active');
             if (document.queryCommandState('italic')) italicBtn.classList.add('active');
             if (document.queryCommandState('underline')) underlineBtn.classList.add('active');
@@ -429,11 +502,13 @@
             }
 
             // Status für Schriftfarbe
-            const ancestor = selection.anchorNode.nodeType === Node.TEXT_NODE ? selection.anchorNode.parentNode : selection.anchorNode;
+            const ancestor = selection.anchorNode.nodeType === Node.TEXT_NODE ?
+            selection.anchorNode.parentNode : selection.anchorNode;
             let colorFound = false;
             let currentNode = ancestor;
             while (currentNode && currentNode !== noteEditor) {
-                const currentColor = currentNode.style.color || currentNode.getAttribute('color');
+                const currentColor = currentNode.style.color ||
+                currentNode.getAttribute('color');
                 if (currentColor) {
                     const colorButton = document.querySelector(`.dropdown-item[data-value="${Object.keys(colorMap).find(key => colorMap[key] === currentColor)}"]`);
                     if (colorButton) {
@@ -464,14 +539,12 @@
                 }
             }
         };
-
         /**
          * Rendert die Liste der Notizen basierend auf den aktuellen Daten und dem Suchfilter.
          * @param {string} filter Der zu filternde String.
          */
         const renderNotes = (filter = '') => {
             notesList.innerHTML = '';
-            
             // Notizen sortieren
             let sortedNotes = [...notesData];
             if (currentSortMethod !== 'unsorted') {
@@ -545,10 +618,8 @@
                     </button>
                 </div>
             `;
-            
             div.querySelector('.edit-btn').addEventListener('click', () => editNote(note.id, note.title, note.content));
             div.querySelector('.delete-btn').addEventListener('click', () => deleteNote(note.id));
-
             // Drag-and-Drop-Event-Listener hinzufügen
             if (currentSortMethod === 'unsorted') {
                 div.addEventListener('dragstart', handleDragStart);
@@ -611,7 +682,6 @@
             noteEditor.focus();
             updateToolbarState();
         };
-
         /**
          * Speichert eine neue Notiz oder aktualisiert eine bestehende.
          */
@@ -625,7 +695,6 @@
             loadingIndicator.classList.remove('hidden');
             
             const userTitle = noteTitleInput.value.trim();
-
             try {
                 if (editingNoteId) {
                     const noteIndex = notesData.findIndex(note => note.id === editingNoteId);
@@ -657,7 +726,6 @@
                 loadingIndicator.classList.add('hidden');
             }
         };
-
         /**
          * Löscht eine Notiz nach Bestätigung.
          * @param {string} noteId Die ID der zu löschenden Notiz.
@@ -687,7 +755,6 @@
         underlineBtn.addEventListener('click', () => applyFormat('underline'));
         indentBtn.addEventListener('click', () => applyFormat('indent'));
         outdentBtn.addEventListener('click', () => applyFormat('outdent'));
-
         // Link-Funktion
         linkBtn.addEventListener('click', async () => {
             const selection = window.getSelection();
@@ -695,15 +762,16 @@
                 await showModal("Bitte wählen Sie zuerst den Text aus, den Sie verlinken möchten.");
                 return;
             }
+ 
             savedRange = selection.getRangeAt(0);
             const url = await showLinkModal();
             if (url) {
                 selection.removeAllRanges();
                 selection.addRange(savedRange);
                 applyFormat('createLink', url);
+        
             }
         });
-
         // Dropdown-Funktionalität
         const toggleDropdown = (menu) => {
             document.querySelectorAll('.dropdown-menu').forEach(m => {
@@ -726,7 +794,6 @@
                 });
             }
         });
-
         // Sortier-Logik
         sortDropdownItems.forEach(item => {
             item.addEventListener('click', (e) => {
@@ -744,7 +811,6 @@
                 renderNotes(searchInput.value);
             });
         });
-
         listDropdownItems.forEach(item => {
             item.addEventListener('click', (e) => {
                 e.preventDefault();
@@ -766,15 +832,12 @@
                 updateToolbarState();
             });
         });
-
-
         sizeDropdownItems.forEach(item => {
             item.addEventListener('click', (e) => {
                 const sizeValue = e.target.getAttribute('data-value');
                 applyFormat('fontSize', sizeValue);
             });
         });
-
         colorDropdownItems.forEach(item => {
             item.addEventListener('click', (e) => {
                 const colorValue = e.target.getAttribute('data-value');
@@ -791,6 +854,11 @@
 
         saveNoteBtn.addEventListener('click', saveNote);
         searchInput.addEventListener('input', (e) => renderNotes(e.target.value));
+        
+        // NEUE EVENT-LISTENER FÜR IMPORT/EXPORT
+        exportBtn.addEventListener('click', exportNotes);
+        importFileInput.addEventListener('change', importNotes);
+        // ENDE NEU
 
         // Event listener to update toolbar state on any interaction
         noteEditor.addEventListener('mouseup', updateToolbarState);
