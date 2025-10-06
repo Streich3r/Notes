@@ -618,7 +618,7 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors">
                 if (parentList) {
                     // Verwenden des Inline-Styles für aktive State-Prüfung
                     const style = parentList.style.listStyleType || 'disc'; 
-                    const styleButton = document.querySelector(`.dropdown-item[data-value="${style}"]`);
+                    const styleButton = document.querySelector(`.dropdown-item[data-value="${style === '' ? 'disc' : style}"]`);
                     if (styleButton) styleButton.classList.add('active');
                 } else {
                      // Wenn insertUnorderedList aktiv ist, aber kein ul gefunden (sollte nicht passieren)
@@ -717,8 +717,7 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors">
         // *************** FIX: FOKUS-LÖSUNG FÜR EINFACHE BUTTONS *******************
         const setupToolbarButton = (button, command, value = null) => {
             button.addEventListener('mousedown', (e) => { 
-                e.preventDefault(); 
-                e.currentTarget.blur(); // WICHTIG: Fokus sofort entfernen, um Ring zu verhindern
+                e.preventDefault(); // Verhindert, dass der Button den Fokus erhält
             });
             button.addEventListener('click', (e) => {
                 applyFormat(command, value); 
@@ -726,6 +725,7 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors">
                 setTimeout(() => {
                     noteEditor.focus(); // Fokus zurück auf Editor
                     updateToolbarState();   
+                    e.currentTarget.blur(); // Zusätzlicher Sicherheits-Blur, falls der Browser den Fokusring doch setzt
                 }, 1);
             });
         };
@@ -887,7 +887,8 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors">
                     const currentStyle = currentUl ? (currentUl.style.listStyleType || 'disc') : 'none'; 
 
                     // 2. Fall: Toggling OFF (Liste ausschalten)
-                    if (currentUl && currentStyle === listStyle) {
+                    // Beachte: '' entspricht disc im UI-State, aber wir vergleichen mit dem Wert aus data-value
+                    if (currentUl && (currentStyle === listStyle || (currentStyle === '' && listStyle === 'disc'))) {
                         applyFormat('insertUnorderedList'); // Schaltet die Liste AUS
                     } else {
                         // 3. Fall: Stil ändern oder neue Liste erstellen
@@ -898,10 +899,8 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors">
                         }
                         
                         // Stelle sicher, dass UL aktiv ist (Erstellt oder toggelt an)
-                        // Wichtig: Dies wird nur aufgerufen, wenn wir die Liste nicht gerade ausschalten wollen.
-                        if (!document.queryCommandState('insertUnorderedList')) {
-                            applyFormat('insertUnorderedList'); 
-                        } 
+                        // Wenn es bereits eine UL gibt, toggelt es den Stil, was wir gleich überschreiben
+                        applyFormat('insertUnorderedList'); 
                         
                         // Da execCommand asynchron ist, warten wir kurz, um das UL-Element zu finden und zu stylen
                         setTimeout(() => {
@@ -915,7 +914,7 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors">
                             updateToolbarState(); 
                             noteEditor.focus();
                         }, 1);
-                        return; // End of style change/creation path
+                        return; // Ende des Stil-Änderungs-/Erstellungspfads
                     }
                 }
                 
