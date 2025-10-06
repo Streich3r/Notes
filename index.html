@@ -469,8 +469,17 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors focus:out
                 try {
                     const importedNotes = JSON.parse(e.target.result);
                     if (Array.isArray(importedNotes)) {
-                        localStorage.setItem(NOTES_STORAGE_KEY, JSON.stringify(importedNotes));
+                        
+                        // NEUE LOGIK: Kombiniert die bestehenden Notizen mit den importierten Notizen.
+                        // notesData ist die globale Variable mit den aktuell geladenen Notizen.
+                        notesData = notesData.concat(importedNotes);
+                        
+                        // Speichere die kombinierte Liste in Local Storage
+                        saveNotesToLocal();
+                        
+                        // Lade die Notizen neu und rendere sie (wendet auch die Sortierung an)
                         loadNotesFromLocal(); 
+                        
                         await showModal('Notizen erfolgreich importiert und geladen!', false);
                     } else {
                         await showModal('Fehler: Die importierte Datei hat kein gültiges Notizformat.', false);
@@ -779,8 +788,7 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors focus:out
                     toggleDropdown(menu);
                     
                     if (!wasActive && btn.id === 'sort-dropdown-btn') {
-                        // FIX: Wenn das Sortier-Menü geöffnet wird, Editor-Fokus verlieren, 
-                        // damit er nicht während der Menü-Interaktion zurückspringt.
+                        // FIX: Wenn das Sortier-Menü geöffnet wird, Editor-Fokus verlieren
                         noteEditor.blur();
                     }
                     
