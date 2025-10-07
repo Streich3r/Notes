@@ -38,61 +38,94 @@
             outline: none !important;
         }
 
-        /* --- DEBUG: Basis-Styles und Grauer-Flash-Entfernung für Mobile --- */
-        .toolbar-btn, .dropdown-item, #sort-dropdown-btn, #save-note-btn {
-            background-color: #4b5563; /* bg-gray-600 */
-            -webkit-tap-highlight-color: transparent; /* Entfernt den grauen Flash auf mobilen Geräten */
-            transition: background-color 0.15s;
+        /* *************************************************************** */
+        /* ** NEUE BASIS DEFINITION FÜR ALLE BUTTONS (Transition & Flash-Entfernung) ** */
+        /* *************************************************************** */
+        .toolbar-btn, .dropdown-item, #sort-dropdown-btn, #save-note-btn, #export-btn, 
+        label[for="import-file-input"], .edit-btn, .delete-btn, 
+        #modal-confirm-btn, #modal-cancel-btn, #link-insert-btn, #link-cancel-btn {
+            /* Entfernt den grauen Flash auf mobilen Geräten */
+            -webkit-tap-highlight-color: transparent; 
+            /* Wichtig: Transition für Farbe UND Transformation hinzufügen */
+            transition: background-color 0.15s, transform 0.1s, box-shadow 0.1s;
+        }
+        
+        /* Toolbar-Buttons benötigen einen Standardhintergrund */
+        .toolbar-btn, .dropdown-item, #sort-dropdown-btn {
+             background-color: #4b5563; /* bg-gray-600 */
         }
 
-        /* *************************************************************** */
-        /* ** NEUER UND KORRIGIERTER FOKUS-FIX (ENTFERNT GRAUEN RING) ** */
-        /* *************************************************************** */
 
-        /* FIX 1: Entfernt den Focus-Ring/Schatten bei Mausklick auf ALLEN Buttons (verhindert den grauen Ring) */
+        /* *************************************************************** */
+        /* ** FIX 1: ENTFERNUNG DES GRAUEN FOKUSRINGS BEIM MAUSKLICK ** */
+        /* *************************************************************** */
         .toolbar-btn:focus, 
         .dropdown-item:focus, 
         #sort-dropdown-btn:focus, 
-        #save-note-btn:focus {
+        #save-note-btn:focus,
+        #export-btn:focus, 
+        label[for="import-file-input"]:focus,
+        .edit-btn:focus, .delete-btn:focus, 
+        #modal-confirm-btn:focus, #modal-cancel-btn:focus, #link-insert-btn:focus, #link-cancel-btn:focus {
             outline: none !important;
             box-shadow: none !important;
-            /* Stellt sicher, dass die Hintergrundfarbe nicht auf eine Browser-Standardfarbe zurückfällt */
-            background-color: inherit;
+        }
+        
+        /* *************************************************************** */
+        /* ** FIX 2: PRESSEFFEKT (KURZ KLEINER WERDEN) WIE GEWÜNSCHT ** */
+        /* *************************************************************** */
+        .toolbar-btn:active, .dropdown-item:active, #sort-dropdown-btn:active, 
+        #save-note-btn:active, #export-btn:active, label[for="import-file-input"]:active,
+        .edit-btn:active, .delete-btn:active, 
+        #modal-confirm-btn:active, #modal-cancel-btn:active, #link-insert-btn:active, #link-cancel-btn:active {
+            transform: scale(0.95); /* Der Button wird kurz 5% kleiner beim Drücken */
         }
 
-        /* FIX 2: Definiert den sichtbaren Fokus NUR für TASTUR-Barrierefreiheit (Tab-Taste) */
+
+        /* FIX 3: Definiert den sichtbaren Fokus NUR für TASTUR-Barrierefreiheit (Tab-Taste) */
         .toolbar-btn:focus-visible, 
         .dropdown-item:focus-visible, 
         #sort-dropdown-btn:focus-visible, 
-        #save-note-btn:focus-visible {
+        #save-note-btn:focus-visible,
+        #export-btn:focus-visible, 
+        label[for="import-file-input"]:focus-visible {
             outline: 2px solid #3b82f6 !important; /* Blauer Ring für Tab-Fokus (Tailwind blue-500) */
             outline-offset: 1px;
             box-shadow: none !important; 
         }
 
-        /* Active-Zustand (Blaue Markierung) muss über allen anderen stehen */
+        /* Active-Zustand (Blaue Markierung für Toggle-Buttons) */
         .toolbar-btn.active, .dropdown-item.active {
             background-color: #2563eb !important;
             color: #ffffff !important;
         }
 
-        /* Hover-Zustand (muss über Focus stehen) */
+        /* Hover-Zustand */
         .toolbar-btn:hover:not(.active), .dropdown-item:hover:not(.active), #sort-dropdown-btn:hover {
             background-color: #6b7280 !important;
         }
 
         /* Spezial-Override für den Save-Button (blau) */
-        #save-note-btn { background-color: #2563eb; }
+        #save-note-btn { 
+             background-color: #2563eb; 
+             /* Muss die transform-transition hier behalten */
+             transition: all 0.3s, transform 0.1s; 
+        }
+        
         /* Sicherstellen, dass der blaue Hintergrund auch im Tab-Fokus erhalten bleibt */
         #save-note-btn:focus-visible { 
             background-color: #2563eb !important;
         }
+        
         #save-note-btn:hover { background-color: #1d4ed8; }
-        #save-note-btn:active { background-color: #1e40af !important; }
+        
+        /* Der :active Hintergrund muss stärker sein als :hover */
+        #save-note-btn:active { background-color: #1e40af !important; } 
         
         /* *************************************************************** */
-        /* ** ENDE FOKUS-FIX ** */
+        /* ** ENDE FOKUS-FIX UND PRESSEFFEKT ** */
         /* *************************************************************** */
+
 
         #note-editor:empty:before {
             content: attr(placeholder);
@@ -194,12 +227,12 @@
             <input type="text" id="note-title-input" placeholder="Titel der Notiz (optional)" class="w-full p-3 mb-4 rounded-xl border border-gray-600 bg-gray-800 text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300 focus:outline-none">
   
             <div class="flex flex-wrap gap-2 mb-4 p-2 bg-gray-700 rounded-xl">
-                <button id="bold-btn" class="toolbar-btn p-2 rounded-lg bg-gray-600 text-gray-200 hover:bg-gray-500 transition-colors font-bold focus:outline-none">B</button>
-                <button id="italic-btn" class="toolbar-btn p-2 rounded-lg bg-gray-600 text-gray-200 hover:bg-gray-500 transition-colors italic focus:outline-none">I</button>
-                <button id="underline-btn" class="toolbar-btn p-2 rounded-lg bg-gray-600 text-gray-200 hover:bg-gray-500 transition-colors underline focus:outline-none">U</button>
+                <button id="bold-btn" class="toolbar-btn p-2 rounded-lg text-gray-200 hover:bg-gray-500 transition-colors font-bold focus:outline-none">B</button>
+                <button id="italic-btn" class="toolbar-btn p-2 rounded-lg text-gray-200 hover:bg-gray-500 transition-colors italic focus:outline-none">I</button>
+                <button id="underline-btn" class="toolbar-btn p-2 rounded-lg text-gray-200 hover:bg-gray-500 transition-colors underline focus:outline-none">U</button>
                 
                 <div class="relative inline-block">
-                    <button id="list-dropdown-btn" class="toolbar-btn p-2 rounded-lg bg-gray-600 text-gray-200 hover:bg-gray-500 transition-colors focus:outline-none">
+                    <button id="list-dropdown-btn" class="toolbar-btn p-2 rounded-lg text-gray-200 hover:bg-gray-500 transition-colors focus:outline-none">
                         Aufzählung
                     </button>
                     <div id="list-dropdown-menu" class="dropdown-menu">
@@ -210,7 +243,7 @@
                 </div>
 
                 <div class="relative inline-block">
-                    <button id="size-dropdown-btn" class="toolbar-btn p-2 rounded-lg bg-gray-600 text-gray-200 hover:bg-gray-500 transition-colors focus:outline-none">
+                    <button id="size-dropdown-btn" class="toolbar-btn p-2 rounded-lg text-gray-200 hover:bg-gray-500 transition-colors focus:outline-none">
                         Schriftgröße
                     </button>
                     <div id="size-dropdown-menu" class="dropdown-menu">
@@ -221,7 +254,7 @@
                 </div>
 
                 <div class="relative inline-block">
-                    <button id="color-dropdown-btn" class="toolbar-btn p-2 rounded-lg bg-gray-600 text-gray-200 hover:bg-gray-500 transition-colors focus:outline-none">
+                    <button id="color-dropdown-btn" class="toolbar-btn p-2 rounded-lg text-gray-200 hover:bg-gray-500 transition-colors focus:outline-none">
                         Schriftfarbe
                     </button>
                     <div id="color-dropdown-menu" class="dropdown-menu">
@@ -233,14 +266,14 @@
                     </div>
                 </div>
 
-                <button id="link-btn" class="toolbar-btn p-2 rounded-lg bg-gray-600 text-gray-200 hover:bg-gray-500 transition-colors focus:outline-none">
+                <button id="link-btn" class="toolbar-btn p-2 rounded-lg text-gray-200 hover:bg-gray-500 transition-colors focus:outline-none">
                     Link
                 </button>
 
-                <button id="indent-btn" class="toolbar-btn p-2 rounded-lg bg-gray-600 text-gray-200 hover:bg-gray-500 transition-colors focus:outline-none">
+                <button id="indent-btn" class="toolbar-btn p-2 rounded-lg text-gray-200 hover:bg-gray-500 transition-colors focus:outline-none">
                     Einrücken
                 </button>
-                <button id="outdent-btn" class="toolbar-btn p-2 rounded-lg bg-gray-600 text-gray-200 hover:bg-gray-500 transition-colors focus:outline-none">
+                <button id="outdent-btn" class="toolbar-btn p-2 rounded-lg text-gray-200 hover:bg-gray-500 transition-colors focus:outline-none">
                     Ausrücken
                 </button>
             </div>
@@ -705,11 +738,9 @@
 
         const isFormatActive = (command, value = null) => {
             // Hilfsfunktion zur Überprüfung des aktiven Zustands von Befehlen.
-            // Beachte, dass queryCommandState bei Inline-Styling (z.B. color, size) unzuverlässig ist.
             if (command === 'bold' || command === 'italic' || command === 'underline' || command === 'outdent' || command === 'indent') {
                 return document.queryCommandState(command);
             }
-            // Für Listen und Farben/Größen ist eine komplexere DOM-Prüfung oder State-Verwaltung nötig.
             return false;
         };
 
@@ -717,19 +748,13 @@
             // Wenn die Auswahl außerhalb des Editors liegt, beenden.
             const selection = window.getSelection();
             if (!selection.rangeCount || !noteEditor.contains(selection.getRangeAt(0).commonAncestorContainer)) {
-                // Hier könnten alle Buttons auf inaktiv gesetzt werden, aber das würde 
-                // die UI bei Blur zu stark verändern. Wir konzentrieren uns auf die Aktivierung.
                 return;
             }
             
             // 1. Einfache Befehle (B, I, U)
-            // Die `active` Klasse wird automatisch durch queryCommandState gesetzt/entfernt.
             boldBtn.classList.toggle('active', isFormatActive('bold'));
             italicBtn.classList.toggle('active', isFormatActive('italic'));
             underlineBtn.classList.toggle('active', isFormatActive('underline'));
-            
-            // 2. Listen und andere Dropdown-Zustände (Hier wäre eine erweiterte DOM-Analyse nötig)
-            // ... (Bleibt aktuell unberührt, da der Fokus auf dem eigentlichen Fix lag)
         };
         
         const executeDropdownCommand = (btn, menu, command, value) => {
