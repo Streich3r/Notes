@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Minimaler Fokus-Test</title>
+    <title>Minimaler Fokus-Test V2</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body {
@@ -15,7 +15,8 @@
         }
 
         .test-button {
-            background-color: #4b5563; /* bg-gray-600 */
+            /* Basis-Farbe: bg-gray-600 */
+            background-color: #4b5563; 
             color: #ffffff;
             padding: 15px 30px;
             border-radius: 12px;
@@ -26,29 +27,36 @@
         }
 
         /* ----------------------------------------------------- */
-        /* --- AGGRESSIVER FOKUS-FIX: Entfernt hellgraue Markierung --- */
+        /* --- EXTREM AGGRESSIVER FIX: Unterdrückt Fokus und Klick-Highlight --- */
         /* ----------------------------------------------------- */
         
-        /* WICHTIG: Unterdrückt den Standard-Highlight-Effekt auf Touch-Geräten */
+        /* 1. Verhindert den Highlight-Effekt auf Touch-Geräten */
         .test-button {
             -webkit-tap-highlight-color: transparent !important; 
         }
 
-        /* Überschreibt alle :focus und :focus-visible Styles extrem aggressiv */
+        /* 2. ZWINGT den Hintergrund auf die Basis-Farbe bei Fokus (Tab-Navigation) */
         .test-button:focus, 
         .test-button:focus-visible {
-            /* 1. Entfernt Browser-Outline und Schatten */
             outline: none !important;
             box-shadow: none !important;
-            
-            /* 2. Zwingt den Hintergrund auf die Standard-Farbe zurück */
+            /* Zwingt die Farbe auf die Basis-Farbe, um Aufhellen zu verhindern */
             background-color: #4b5563 !important; 
             border-color: #6b7280 !important;
         }
 
-        /* Hover muss immer noch funktionieren */
-        .test-button:hover {
-            background-color: #6b7280 !important;
+        /* 3. ZWINGT den Hintergrund auf die Basis-Farbe beim MOUSE DOWN/KLICKEN (:active) */
+        .test-button:active {
+            outline: none !important;
+            box-shadow: none !important;
+            /* Wichtig: Nutze die BASIS-Farbe, um die Aufhellung zu eliminieren! */
+            background-color: #4b5563 !important; 
+            border-color: #6b7280 !important;
+        }
+
+        /* Hover-Effekt: Nur wenn man NICHT klickt oder den Fokus hat (optional) */
+        .test-button:hover:not(:active):not(:focus) {
+            background-color: #6b7280 !important; /* Sollte nur bei Maus-Hover heller werden */
         }
     </style>
 </head>
@@ -62,16 +70,15 @@
         const testButton = document.getElementById('single-test-button');
         let counter = 0;
 
-        // ** DER WICHTIGSTE FIX: Verhindert, dass der Button bei Mausklick den Fokus erhält **
+        // ** Der JavaScript-Fix ist IMMER noch wichtig, um den Fokus-Wechsel bei MOUSE-KLICK zu vermeiden **
         testButton.addEventListener('mousedown', (e) => {
             e.preventDefault(); 
         });
 
-        // Test-Funktion: Zählt bei Klick hoch, um zu sehen, ob der Button funktioniert
+        // Test-Funktion
         testButton.addEventListener('click', () => {
             counter++;
-            testButton.textContent = `Geklickt: ${counter} Mal (Sollte KEINEN grauen Rahmen zeigen)`;
-            console.log('Button geklickt, kein Fokus erwartet.');
+            testButton.textContent = `Geklickt: ${counter} Mal (Sollte KEINE Farbänderung zeigen)`;
         });
     </script>
 </body>
