@@ -38,45 +38,69 @@
             outline: none !important;
         }
 
-        /* --- FOKUS-KORREKTUREN: Verhindert die graue Markierung --- */
-        .toolbar-btn, .dropdown-item, #sort-dropdown-btn, #save-note-btn, #export-btn, .import-label {
-            background-color: #4b5563; /* bg-gray-600 */
+        /* --- FOKUS-KORREKTUREN: Verhindert die graue Markierung (Focus und Active) --- */
+        
+        /* 1. Basis-Styling und Tap-Highlight-Unterdrückung für alle Buttons */
+        .toolbar-btn, .dropdown-item, #sort-dropdown-btn, #save-note-btn, #export-btn, .import-label, 
+        .note-card .edit-btn, .note-card .delete-btn { 
+            /* Setzt die Standardfarbe für graue Buttons */
+            background-color: #4b5563; 
             /* Wichtig: Entfernt den grauen Tap-Highlight auf Touch-Geräten (mobile) */
             -webkit-tap-highlight-color: transparent; 
             transition: background-color 0.15s;
         }
         
-        /* WICHTIG: Überschreibt alle potenziellen Browser-Fokus- und Active-Styles mit dem Standard-Hintergrund, um die graue Markierung zu eliminieren. */
+        /* 2. Unterdrückt alle systemeigenen Focus-/Active-Styles (outline, box-shadow) */
         .toolbar-btn:focus, .dropdown-item:focus, #sort-dropdown-btn:focus, #save-note-btn:focus, #export-btn:focus, .import-label:focus,
         .toolbar-btn:focus-visible, .dropdown-item:focus-visible, #sort-dropdown-btn:focus-visible, #save-note-btn:focus-visible, #export-btn:focus-visible, .import-label:focus-visible,
-        .toolbar-btn:active, .dropdown-item:active, #sort-dropdown-btn:active, #save-note-btn:active, #export-btn:active, .import-label:active {
+        .toolbar-btn:active, .dropdown-item:active, #sort-dropdown-btn:active, #save-note-btn:active, #export-btn:active, .import-label:active,
+        .note-card .edit-btn:focus, .note-card .edit-btn:focus-visible, .note-card .delete-btn:focus, .note-card .delete-btn:focus-visible,
+        .note-card .edit-btn:active, .note-card .delete-btn:active {
             outline: none !important;
             box-shadow: none !important;
-            /* Stellt den normalen Hintergrund wieder her, verhindert grauen Flash */
-            background-color: #4b5563 !important; 
+            /* WICHTIG: KEINE aggressive Hintergrundüberschreibung mehr, um Farbkonflikte zu vermeiden. */
         }
 
-        /* Active-Zustand (Blaue Markierung), muss über allen anderen stehen */
+        /* 3. Definierte Active/Hover-Zustände (visuelles Feedback) */
+        
+        /* Active-Zustand (Blaue Markierung für Toolbar-Elemente) */
         .toolbar-btn.active, .dropdown-item.active {
             background-color: #2563eb !important; 
             color: #ffffff !important;
         }
 
-        /* Hover-Zustand */
+        /* Hover-Zustand für graue Buttons */
         .toolbar-btn:hover:not(.active), .dropdown-item:hover:not(.active), #sort-dropdown-btn:hover, #export-btn:hover {
             background-color: #6b7280 !important; 
         }
 
-        /* Spezial-Override für den Save-Button (blau) */
+        /* Spezial-Overrides für farbige Buttons */
+        
+        /* Speichern Button (Blau) */
         #save-note-btn { background-color: #2563eb; }
         #save-note-btn:hover { background-color: #1d4ed8; }
-        /* Active-Zustand des Save-Buttons muss manuell überschrieben werden */
         #save-note-btn:active { background-color: #1e40af !important; }
-        /* Import-Button Spezial-Override (gelb) */
+
+        /* Export Button (Grün) */
+        #export-btn { background-color: #059669; }
+        #export-btn:hover { background-color: #047857; }
+        #export-btn:active { background-color: #065f46 !important; }
+        
+        /* Import Label (Gelb) */
         .import-label { background-color: #d97706; } /* bg-yellow-600 */
         .import-label:hover { background-color: #b45309; } /* hover:bg-yellow-700 */
         .import-label:active { background-color: #92400e !important; }
 
+        /* Edit/Delete Buttons in Note Card (Gelb/Rot) */
+        .note-card .edit-btn { background-color: #f59e0b; }
+        .note-card .edit-btn:hover { background-color: #d97706; }
+        .note-card .edit-btn:active { background-color: #b45309 !important; }
+
+        .note-card .delete-btn { background-color: #ef4444; }
+        .note-card .delete-btn:hover { background-color: #dc2626; }
+        .note-card .delete-btn:active { background-color: #b91c1c !important; }
+
+        /* --- Editor Styles --- */
         #note-editor:empty:before {
             content: attr(placeholder);
             color: #718096;
@@ -95,7 +119,6 @@
         }
         
         /* Punkte (Gefüllte Scheiben/Discs) */
-        /* FIX: explizit disc, da leere style-Zeichenkette ignoriert wird */
         #note-editor ul[style*="list-style-type: disc"], .note-card ul[style*="list-style-type: disc"] {
             list-style-type: disc !important;
         }
