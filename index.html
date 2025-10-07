@@ -6,7 +6,7 @@
     <title>Meine Offline-Notizen</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap');
+        @import url('https://fonts.fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap');
         body {
             font-family: 'Inter', sans-serif;
             background-color: #000000;
@@ -36,6 +36,13 @@
             transition: all 0.3s;
         }
         
+        /* FIX 4.0: ERLAUBT DEN BLAUEN FOKUSRAND IM EDITOR (Tailwind-Klassen werden jetzt angewendet) */
+        /* Entfernt nur den nativen Browser-Outline, erlaubt aber die Tailwind-Focus-Klassen (focus:ring-2) */
+        #note-editor:focus {
+            outline: none !important;
+            box-shadow: none !important;
+        }
+
         /* --- FIX 3.0: Löst ALLE Fokus-/Klick-Probleme (Grauer Flash und Permanenz) --- */
         /* Setzt allgemeine Button-Stile */
         .toolbar-btn, .dropdown-item, #sort-dropdown-btn {
@@ -70,13 +77,6 @@
         }
         #save-note-btn:hover { background-color: #1d4ed8; }
         #save-note-btn:active { background-color: #1e40af !important; }
-
-        /* Muss beibehalten werden, um den Editor-Fokusring zu entfernen */
-        #note-editor:focus {
-            border-color: #4a5568 !important;
-            box-shadow: none !important;
-            outline: none !important;
-        }
         /* --- ENDE FIX 3.0 --- */
 
 
@@ -666,24 +666,27 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors focus:out
             }
 
             // Status für Listen: Nur aktiv, wenn vorhanden
-            if (document.queryCommandState('insertOrderedList')) {
+            const isOlActive = document.queryCommandState('insertOrderedList');
+            const isUlActive = document.queryCommandState('insertUnorderedList');
+            const currentList = selection.anchorNode.closest('ul') || selection.anchorNode.closest('ol');
+
+            if (isOlActive) {
                 // Nummerierte Liste ist aktiv
                 const decimalBtn = document.querySelector(`.dropdown-item[data-value="decimal"]`);
-        if (decimalBtn) decimalBtn.classList.add('active');
-            } else if (document.queryCommandState('insertUnorderedList')) {
+                if (decimalBtn) decimalBtn.classList.add('active');
+            } else if (isUlActive) {
                 // Ungeordnete Liste ist aktiv
-                const parentList = selection.anchorNode.closest('ul');
-        if (parentList) {
-                    // Verwenden des Inline-Styles für aktive State-Prüfung
-                    const style = parentList.style.listStyleType ||
-        'disc'; 
-                    // Setze den aktiven Status basierend auf dem erzwungenen Style (oder disc, wenn leer)
-                    const styleButton = document.querySelector(`.dropdown-item[data-value="${style === '' ? 'disc' : style}"]`);
-        if (styleButton) styleButton.classList.add('active');
+                if (currentList && currentList.tagName === 'UL') {
+                    // Hole den expliziten Style-Typ oder nimm 'disc' als Standard
+                    let style = currentList.style.listStyleType || 'disc'; 
+                    style = style === '' ? 'disc' : style;
+                    
+                    const styleButton = document.querySelector(`.dropdown-item[data-value="${style}"]`);
+                    if (styleButton) styleButton.classList.add('active');
                 } else {
                      // Fallback: Wenn UL aktiv, aber kein Parent gefunden, wähle disc als aktiv
                     const defaultListBtn = document.querySelector(`.dropdown-item[data-value="disc"]`);
-        if (defaultListBtn) defaultListBtn.classList.add('active');
+                    if (defaultListBtn) defaultListBtn.classList.add('active');
                 }
             } 
         };
@@ -953,80 +956,85 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors focus:out
                 e.preventDefault();
                 e.stopPropagation();
                 
-                const listStyle = e.target.getAttribute('data-value');
+                const listStyle = e.target.getAttribute('data-value'); // 'decimal', 'disc', 'circle'
                 const selection = window.getSelection();
                 
                 if (!selection.rangeCount) return;
          
-                // 1. Dropdown schließen und Fokus vom Button entfernen
                 listDropdownMenu.classList.remove('active');
                 listDropdownBtn.blur(); 
-
-                // Funktion zum Anwenden des Styles und Abschließen
-                const applyStyleAndFinalize = (ul, style) => {
-                    if (ul) {
-                        // disc (Punkte) wird als leerer String gesetzt, da es der Standard ist.
-                        ul.style.listStyleType = style === 'disc' ? '' : style;
-                    }
-                    updateToolbarState(); 
-                    noteEditor.focus();
-                };
-
+                
+                // Timeout ist nötig, da execCommand asynchron ist
                 setTimeout(() => {
                     noteEditor.focus(); 
+                    
                     const isOlActive = document.queryCommandState('insertOrderedList');
                     const isUlActive = document.queryCommandState('insertUnorderedList');
-                    const ulElement = selection.anchorNode.closest('ul');
-                    const targetStyle = listStyle === 'disc' ? 'disc' : listStyle;
+                    const currentList = selection.anchorNode.closest('ul') || selection.anchorNode.closest('ol');
 
-                    if (listStyle === 'decimal') {
-                        // --- Nummerierung (OL) ---
-                        
-                        // Wenn OL aktiv -> ausschalten. Wenn UL aktiv -> auf OL umschalten.
-                        applyFormat('insertOrderedList');
-                        if (isUlActive) {
-                            // Wenn UL aktiv ist, schalten wir UL aus
-                            applyFormat('insertUnorderedList');
-                        }
-                        applyStyleAndFinalize(null, null); // Finales Update/Focus
-                        
-                    } else { 
-                        // --- Ungeordnete Listen (disc, circle) ---
-                        
-                        // 1. OL ausschalten, falls aktiv
-                        if (isOlActive) {
-                            applyFormat('insertOrderedList'); // Deaktiviert OL
-                            applyFormat('insertUnorderedList'); // Aktiviert UL (Timeout nötig)
-                            setTimeout(() => {
-                                const newUlElement = selection.anchorNode.closest('ul');
-                                applyStyleAndFinalize(newUlElement, targetStyle);
-                            }, 1);
-                            return;
-                        } 
-                        
-                        // 2. UL-Zustand prüfen (Umschalten oder Deaktivieren)
-                        if (isUlActive) {
-                            const currentListStyle = ulElement ? (ulElement.style.listStyleType || 'disc') : 'none';
-                            const currentEffectiveStyle = currentListStyle === '' ? 'disc' : currentListStyle;
-                            
-                            if (targetStyle === currentEffectiveStyle) {
-                                // Toggling OFF: Wenn UL aktiv und Stil übereinstimmt -> ausschalten
-                                applyFormat('insertUnorderedList');
-                                applyStyleAndFinalize(null, null);
-                            } else {
-                                // Stil ändern
-                                applyStyleAndFinalize(ulElement, targetStyle);
-                            }
+                    let currentEffectiveStyle = 'none';
+                    if (isOlActive) {
+                        currentEffectiveStyle = 'decimal';
+                    } else if (isUlActive) {
+                        // Ermittle den aktuellen Style (disc ist oft leer/Standard)
+                        let style = currentList ? (currentList.style.listStyleType || 'disc') : 'disc';
+                        currentEffectiveStyle = style === '' ? 'disc' : style;
+                    }
+                    
+                    const targetStyle = listStyle === 'disc' ? 'disc' : listStyle; 
+
+                    if (targetStyle === 'decimal') {
+                        // ZIEL: NUMMERIERUNG (OL)
+                        if (currentEffectiveStyle === 'decimal') {
+                            // Bereits aktiv -> Deaktivieren (Toggle OFF)
+                            applyFormat('insertOrderedList');
                         } else {
-                            // Neue UL erstellen
-                            applyFormat('insertUnorderedList'); 
-                            // Setze den Stil sofort danach (Timeout nötig, da execCommand async ist)
+                            // Anderer Listentyp oder keine Liste aktiv -> Aktivieren
+                            if (isUlActive) {
+                                // Zuerst UL deaktivieren
+                                applyFormat('insertUnorderedList');
+                            }
+                            // Dann OL aktivieren
+                            applyFormat('insertOrderedList');
+                        }
+                    } else { 
+                        // ZIEL: UNGEORDNETE LISTE (disc oder circle)
+                        
+                        if (currentEffectiveStyle === 'decimal') {
+                            // OL ist aktiv -> OL deaktivieren, UL aktivieren (muss warten, um Stil zu setzen)
+                            applyFormat('insertOrderedList'); // Deaktiviert OL
+                            applyFormat('insertUnorderedList'); // Aktiviert UL
+                            
                             setTimeout(() => {
-                                const newUlElement = selection.anchorNode.closest('ul');
-                                applyStyleAndFinalize(newUlElement, targetStyle);
+                                const newUl = selection.anchorNode.closest('ul');
+                                if(newUl) newUl.style.listStyleType = targetStyle === 'disc' ? '' : targetStyle;
+                                updateToolbarState(); 
                             }, 1);
+                            return; 
+                            
+                        } else if (currentEffectiveStyle === targetStyle) {
+                            // UL ist aktiv, gleicher Stil -> Deaktivieren (Toggle OFF)
+                            applyFormat('insertUnorderedList');
+                            
+                        } else {
+                            // UL ist nicht aktiv oder UL mit anderem Stil ist aktiv -> UL aktivieren/Stil ändern
+                            if (!isUlActive) {
+                                applyFormat('insertUnorderedList'); 
+                            }
+                            
+                            // Stil setzen (funktioniert auch, wenn UL bereits aktiv war und der Stil geändert werden muss)
+                            setTimeout(() => {
+                                const newUl = selection.anchorNode.closest('ul');
+                                if(newUl) newUl.style.listStyleType = targetStyle === 'disc' ? '' : targetStyle;
+                                updateToolbarState(); 
+                            }, 1);
+                            return; 
                         }
                     }
+                    
+                    // Finalize für Fälle ohne Timeout
+                    updateToolbarState(); 
+                    noteEditor.focus();
                 }, 1);
             });
         });
