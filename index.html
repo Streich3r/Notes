@@ -38,23 +38,23 @@
             outline: none !important;
         }
 
-        /* --- FIX: Globale Fokus-/Klick-Probleme (Entfernt hässliche graue Markierung) --- */
+        /* --- DEBUG: Aggressive ROTE Fokus-Markierung (Zum Testen der Selektoren) --- */
         .toolbar-btn, .dropdown-item, #sort-dropdown-btn, #save-note-btn {
             background-color: #4b5563; /* bg-gray-600 */
             -webkit-tap-highlight-color: transparent; /* Entfernt den grauen Flash auf mobilen Geräten */
             transition: background-color 0.15s;
         }
         
-        /* TEST: Aggressive Hinzufügung eines ROTTEN Fokus-Rings (zum Debuggen der :focus-Regel) */
+        /* TEST: Hinzufügung eines ROTTEN Fokus-Rings */
         .toolbar-btn:focus, .dropdown-item:focus, #sort-dropdown-btn:focus, #save-note-btn:focus,
         .toolbar-btn:focus-visible, .dropdown-item:focus-visible, #sort-dropdown-btn:focus-visible, #save-note-btn:focus-visible {
-            /* !WENN DIESER RING SICHTBAR IST, ARBEITET DIE :FOCUS-REGEL KORREKT! */
+            /* DIESE REGEL MUSS JETZT SICHTBAR SEIN, DA JS-Fokus-Unterdrückung DEAKTIVIERT WURDE! */
             outline: 2px solid red !important;        /* Zeigt eine rote Outline */
             box-shadow: 0 0 0 4px rgba(255, 0, 0, 0.7) !important; /* Fügt einen roten Schatten hinzu */
             background-color: #4b5563 !important; 
         }
         
-        /* Active-Zustand (Blaue Markierung) */
+        /* Active-Zustand (Blaue Markierung) muss über allen anderen stehen */
         .toolbar-btn.active, .dropdown-item.active {
             background-color: #2563eb !important; 
             color: #ffffff !important;
@@ -98,10 +98,14 @@
             list-style-type: circle !important;
         }
         
-        /* Quadrate (Gefüllte Scheiben/Discs - der Standard) */
-        #note-editor ul:not([style]), .note-card ul:not([style]),
+        /* Punkte (Gefüllte Scheiben/Discs) */
         #note-editor ul[style*="list-style-type: disc"], .note-card ul[style*="list-style-type: disc"] {
             list-style-type: disc !important;
+        }
+        
+        /* Fallback für ul ohne Stil */
+        #note-editor ul:not([style]), .note-card ul:not([style]) {
+             list-style-type: disc !important;
         }
         
         #note-editor ol, .note-card ol {
@@ -602,7 +606,8 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors focus:out
             // ------------------------------------
             if (isCurrentlyLi && currentListType === 'UL' && targetStyle !== 'decimal') {
                 const parentList = currentBlock.parentNode;
-                const targetMarkerStyle = targetStyle === 'disc' ? '' : targetStyle;
+                // FIX: Explizit 'disc' setzen, nicht leere Zeichenkette
+                const targetMarkerStyle = targetStyle === 'disc' ? 'disc' : targetStyle; 
                 
                 // Ändere nur den Stil der Elternliste (der für diese einzelne LI-Zeile gilt)
                 parentList.style.listStyleType = targetMarkerStyle;
@@ -658,7 +663,8 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors focus:out
 
             // 3c. Style setzen (nur für UL)
             if (listTag === 'UL') {
-                const targetMarkerStyle = targetStyle === 'disc' ? '' : targetStyle;
+                 // FIX: Explizit 'disc' setzen, nicht leere Zeichenkette
+                const targetMarkerStyle = targetStyle === 'disc' ? 'disc' : targetStyle;
                 newList.style.listStyleType = targetMarkerStyle;
             }
             
@@ -875,10 +881,10 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors focus:out
                 renderNotes();
             }
         };
-        // *************** FIX: FOKUS-LÖSUNG FÜR EINFACHE BUTTONS *******************
+        // *************** DEBUG: FOKUS-LÖSUNG FÜR EINFACHE BUTTONS *******************
         const setupToolbarButton = (button, command, value = null) => {
             button.addEventListener('mousedown', (e) => { 
-                e.preventDefault(); // Verhindert Fokus
+                // e.preventDefault(); // ZUM DEBUGGEN DEAKTIVIERT: Erlaubt dem Button, Fokus zu erhalten und den roten Rahmen zu zeigen
             });
         button.addEventListener('click', (e) => {
                 // Wichtig: Blur sofort vor der Ausführung
@@ -934,9 +940,9 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors focus:out
                 noteEditor.focus();
         }, 1);
         });
-        linkBtn.addEventListener('mousedown', (e) => { e.preventDefault(); });
+        // linkBtn.addEventListener('mousedown', (e) => { e.preventDefault(); }); // ZUM DEBUGGEN DEAKTIVIERT
 
-        // *************** ENDE FIX: FOKUS-LÖSUNG FÜR EINFACHE BUTTONS *******************
+        // *************** ENDE DEBUG: FOKUS-LÖSUNG FÜR EINFACHE BUTTONS *******************
 
 
         // --- Dropdown-Funktionalität ---
@@ -951,8 +957,8 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors focus:out
             const btn = container.querySelector('button');
             const menu = container.querySelector('.dropdown-menu');
             if (btn && menu) {
-                // Mousedown verhindert, dass der Button den Fokus erhält (kein Fokusring)
-                btn.addEventListener('mousedown', (e) => { e.preventDefault(); });
+                // ZUM DEBUGGEN DEAKTIVIERT: Erlaubt dem Button, Fokus zu erhalten und den roten Rahmen zu zeigen
+                // btn.addEventListener('mousedown', (e) => { e.preventDefault(); });
 
    
                 btn.addEventListener('click', (e) => {
