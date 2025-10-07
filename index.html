@@ -87,7 +87,7 @@
              background-color: #374151 !important; /* bg-gray-700 */
         }
 
-        /* WICHTIG: Blauer Hintergrund für aktive Toolbar-Buttons */
+        /* WICHTIG: Blauer Hintergrund für aktive Toolbar-Buttons und Dropdown-Elemente */
         .toolbar-btn.active, .dropdown-item.active {
             background-color: var(--btn-blue) !important;
             color: #ffffff !important;
@@ -146,39 +146,7 @@
         #note-editor li::marker, .note-card li::marker {
             color: #ffffff !important;
         }
-
-        /* Kreise (Hohle Kreise) */
-        #note-editor ul[style*="list-style-type: circle"], .note-card ul[style*="list-style-type: circle"] {
-            list-style-type: circle !important;
-        }
         
-        /* Punkte (Gefüllte Scheiben/Discs) */
-        #note-editor ul[style*="list-style-type: disc"], .note-card ul[style*="list-style-type: disc"] {
-            list-style-type: disc !important;
-        }
-        
-        /* Fallback für ul ohne Stil */
-        #note-editor ul:not([style]), .note-card ul:not([style]) {
-             list-style-type: disc !important;
-        }
-        
-        #note-editor ol, .note-card ol {
-            list-style-type: decimal;
-        }
-
-        .dropdown-menu {
-            display: none;
-            position: absolute;
-            z-index: 10;
-            background-color: #2d3748;
-            border-radius: 0.5rem;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        }
-
-        .dropdown-menu.active {
-            display: block;
-        }
-
         /* Spezielle Regel für Link-Färbung im Editor */
         #note-editor a {
             color: #3b82f6; /* Tailwind blue-500 */
@@ -417,18 +385,35 @@ class="text-gray-300 mb-4 text-center">Geben Sie die URL für den Link ein.</p>
         const colorMap = {
             'red': '#ff0000',
             'green': '#008000',
-            'blue': '#3b82f6', 
+            'blue': '#3b82f6', // Etwas helleres Blau, das gut auf dem dunklen Hintergrund sichtbar ist
             'yellow': '#ffff00',
             'white': '#ffffff'
         };
         const sizeMap = {
-            '1': '12px',
-            '3': '16px',
-            '5': '24px'
+            '1': 'Klein',
+            '3': 'Mittel',
+            '5': 'Groß'
         };
         // Drag-and-Drop-Variablen
         let draggedItem = null;
         
+        // ******************************************************
+        // ** HELPER FUNKTIONEN **
+        // ******************************************************
+        
+        /**
+         * Konvertiert einen RGB-Farbstring in einen Hex-String.
+         * Nötig, da document.queryCommandValue('foreColor') oft RGB zurückgibt.
+         */
+        const rgbToHex = (rgb) => {
+            const matches = rgb.match(/^rgb\((\d+),\s*(\d+),\s*(\d+)\)$/);
+            if (!matches) return rgb; // Wenn keine RGB-Daten, gib den ursprünglichen Wert zurück
+
+            const hex = (x) => ("0" + parseInt(x).toString(16)).slice(-2);
+            return "#" + hex(matches[1]) + hex(matches[2]) + hex(matches[3]);
+        };
+
+
         // ******************************************************
         // ** MODAL LOGIK **
         // ******************************************************
@@ -498,7 +483,6 @@ class="text-gray-300 mb-4 text-center">Geben Sie die URL für den Link ein.</p>
                 const selection = window.getSelection();
                 selection.removeAllRanges();
                 selection.addRange(savedRange);
-                // savedRange = null; // Range nicht sofort löschen, um Konsistenz zu gewährleisten
             }
         };
         
@@ -508,10 +492,9 @@ class="text-gray-300 mb-4 text-center">Geben Sie die URL für den Link ein.</p>
          * @param {string} value - Der Wert für den execCommand-Befehl.
          */
         const executeFormatAndRestore = (command, value = null) => {
-            // Wichtig: restoreSelection und focus MÜSSEN vor execCommand passieren,
-            // damit die Formatierung an der richtigen Stelle angewendet wird.
+            // WICHTIG: Auswahl wiederherstellen und Fokus setzen VOR execCommand
             restoreSelection();
-            noteEditor.focus(); // Fokus für execCommand
+            noteEditor.focus(); 
 
             // Führe den Formatierungsbefehl aus
             document.execCommand(command, false, value);
@@ -558,82 +541,44 @@ class="text-gray-300 mb-4 text-center">Geben Sie die URL für den Link ein.</p>
             updateToolbarState(); 
         };
         
+        // ******************************************************
+        // ** LISTE (AUFZÄHLUNG) LOGIK **
+        // ******************************************************
         
-        const saveNotesToLocal = () => {
-            try {
-                localStorage.setItem(NOTES_STORAGE_KEY, JSON.stringify(notesData));
-            } catch (e) {
-                console.error("Fehler beim Speichern der Notizen im lokalen Speicher:", e);
-                showModal("Ihre Notizen konnten nicht gespeichert werden. Der lokale Speicher ist möglicherweise voll.");
-            }
-        };
+        /**
+         * Führt die Listenaktion durch (native execCommand + manuelle Stil-Anpassung für UL).
+         */
+        const toggleList = (targetStyle) => {
+            restoreSelection();
+            noteEditor.focus();
 
+            const isOrdered = targetStyle === 'decimal';
+            const command = isOrdered ? 'insertOrderedList' : 'insertUnorderedList';
+            
+            // 1. Führe den Befehl aus (aktiviert/deaktiviert die Liste oder wechselt den Typ)
+            document.execCommand(command, false, null);
+            
+            // 2. Manuelle Anpassung für UL-Stile (disc, circle)
+            if (!isOrdered) {
+                 // Finde das übergeordnete UL-Element
+                 const selection = window.getSelection();
+                 if (selection.rangeCount > 0) {
+                     let node = selection.getRangeAt(0).startContainer;
+                     if (node.nodeType === Node.TEXT_NODE) node = node.parentNode;
+                     
+                     let ul = node.closest('ul');
+                     
+                     if (ul) {
+                         ul.style.listStyleType = targetStyle;
+                     }
+                 }
+            }
+            
+            // 3. Auswahl speichern und Toolbar aktualisieren
+            saveSelection();
+            updateToolbarState();
+        };
         
-        const loadNotesFromLocal = () => {
-            try {
-                const storedNotes = localStorage.getItem(NOTES_STORAGE_KEY);
-                notesData = storedNotes ? JSON.parse(storedNotes) : [];
-                
-                // Wende die Standard-Sortierung an, um die UI zu initialisieren und zu rendern
-                sortNotes(currentSortMethod);
-            } catch (e) {
-                console.error("Fehler beim Laden der Notizen aus dem lokalen Speicher:", e);
-                notesData = [];
-                showModal("Ihre Notizen konnten nicht geladen werden. Möglicherweise ist die Datenstruktur beschädigt.");
-                renderNotes();
-            }
-        };
-        
-        // --- IMPORT/EXPORT FUNKTIONEN ---
-        const exportNotes = async () => { 
-            const notesJson = localStorage.getItem(NOTES_STORAGE_KEY);
-            if (!notesJson || notesJson === '[]') {
-                await showModal('Keine Notizen zum Exportieren vorhanden.', false);
-                return;
-            }
-
-            const blob = new Blob([notesJson], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-
-            a.href = url;
-            a.download = `Meine_Offline_Notizen_${new Date().toISOString().slice(0, 10)}.json`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-        };
-        const importNotes = (event) => {
-             const file = event.target.files[0];
-            if (!file) return;
-
-            const reader = new FileReader();
-            reader.onload = async (e) => {
-                try {
-                    const importedNotes = JSON.parse(e.target.result);
-                    if (Array.isArray(importedNotes)) {
-                        
-                        notesData = notesData.concat(importedNotes);
-                        
-                        saveNotesToLocal();
-                        loadNotesFromLocal();
-                        await showModal('Notizen erfolgreich importiert und geladen!', false);
-                    } else {
-                        await showModal('Fehler: Die importierte Datei hat kein gültiges Notizformat.', false);
-                    }
-                } catch (error) {
-                    await showModal('Fehler beim Lesen oder Parsen der Datei.', false);
-                    console.error('Import error:', error);
-                }
-                event.target.value = null; 
-            };
-            reader.onerror = () => {
-                showModal('Fehler beim Lesen der Datei.', false);
-            };
-            reader.readAsText(file);
-        };
-        // --- ENDE IMPORT/EXPORT FUNKTIONEN ---
-
         /**
          * Helferfunktion: Findet das nächste Block-Level-Element (p, div, li, hx)
          * in Bezug auf den aktuellen Cursor innerhalb des noteEditor.
@@ -650,7 +595,7 @@ class="text-gray-300 mb-4 text-center">Geben Sie die URL für den Link ein.</p>
             while (node && node !== noteEditor) {
                 const tagName = node.tagName;
                 
-                if (['P', 'DIV', 'LI', 'H1', 'H2', 'H3'].includes(tagName)) {
+                if (['P', 'DIV', 'LI', 'H1', 'H2', 'H3', 'UL', 'OL'].includes(tagName)) {
                     return node;
                 }
                 node = node.parentNode;
@@ -658,130 +603,11 @@ class="text-gray-300 mb-4 text-center">Geben Sie die URL für den Link ein.</p>
 
             return noteEditor;
         };
-
-        /**
-         * Führt die unabhängige Listenaktion pro Zeile durch (manuelle DOM-Manipulation).
-         */
-        const toggleCustomList = (targetStyle) => {
-            saveSelection(); 
-
-            const selection = window.getSelection();
-            if (!selection.rangeCount) return;
-
-            const currentBlock = getCurrentBlockElement(selection);
-
-            if (!currentBlock || currentBlock === noteEditor) {
-                // ... (Logik, um einen neuen Block zu erstellen und erneut zu versuchen) ...
-                restoreSelection();
-                noteEditor.focus();
-                updateToolbarState();
-                return;
-            }
-
-            const isCurrentlyLi = currentBlock.tagName === 'LI';
-            let currentListType = null;
-            let currentListStyle = 'none';
-
-            if (isCurrentlyLi) {
-                const parentList = currentBlock.parentNode;
-                currentListType = parentList.tagName; 
-                currentListStyle = currentListType === 'OL' ? 
-                    'decimal' : (parentList.style.listStyleType || 'disc');
-                if (currentListStyle === '') currentListStyle = 'disc';
-            }
-
-            // ------------------------------------
-            // 1. ZIEL: DEAKTIVIERUNG (Toggle OFF)
-            // ------------------------------------
-            if (isCurrentlyLi && (
-                (targetStyle === 'decimal' && currentListStyle === 'decimal') ||
-                (targetStyle === 'disc' && (currentListStyle === 'disc' || currentListStyle === '')) ||
-                (targetStyle === 'circle' && currentListStyle === 'circle')
-            )) {
-                const content = currentBlock.innerHTML;
-                const parentList = currentBlock.parentNode;
-                const newBlock = document.createElement('p');
-                newBlock.innerHTML = content;
-                
-                parentList.parentNode.insertBefore(newBlock, currentBlock); // Füge vor dem LI ein
-                currentBlock.remove(); 
-
-                if (parentList.children.length === 0 || parentList.innerHTML.trim() === '<br>') {
-                    parentList.remove();
-                }
-
-                // Setze den Cursor an das Ende des neuen P-Tags
-                selection.removeAllRanges();
-                const newRange = document.createRange();
-                newRange.selectNodeContents(newBlock);
-                newRange.collapse(false);
-                selection.addRange(newRange);
-            } 
-            // ------------------------------------
-            // 2. ZIEL: STIL-WECHSEL INNERHALB UL/OL
-            // ------------------------------------
-            else if (isCurrentlyLi) {
-                 const parentList = currentBlock.parentNode;
-
-                 // OL zu UL und Stil-Wechsel (oder umgekehrt)
-                 if ((currentListType === 'UL' && targetStyle === 'decimal') || (currentListType === 'OL' && targetStyle !== 'decimal')) {
-                    const NewListType = targetStyle === 'decimal' ? 'OL' : 'UL';
-                    const newList = document.createElement(NewListType);
-                    
-                    // Alle LIs in die neue Liste verschieben
-                    Array.from(parentList.children).forEach(li => newList.appendChild(li));
-                    
-                    if (NewListType === 'UL') {
-                         newList.style.listStyleType = targetStyle === 'decimal' ? 'disc' : targetStyle;
-                    }
-                    parentList.parentNode.replaceChild(newList, parentList);
-                    
-                    // Setze den Cursor an das Ende des aktuellen LI
-                    selection.removeAllRanges();
-                    const newRange = document.createRange();
-                    newRange.selectNodeContents(currentBlock);
-                    newRange.collapse(false);
-                    selection.addRange(newRange);
-
-                 } else {
-                    // Nur UL-Stil ändern (z.B. disc zu circle)
-                    if (currentListType === 'UL' && targetStyle !== 'decimal') {
-                        parentList.style.listStyleType = targetStyle;
-                    }
-                 }
-            }
-            // ------------------------------------
-            // 3. ZIEL: AKTIVIERUNG (P/Div -> List)
-            // ------------------------------------
-            else {
-                let elementToReplace = currentBlock;
-                
-                const ListType = targetStyle === 'decimal' ? 'OL' : 'UL';
-                const newList = document.createElement(ListType);
-                const newLi = document.createElement('li');
-
-                newLi.innerHTML = elementToReplace.innerHTML;
-                newList.appendChild(newLi);
-
-                if (ListType === 'UL') {
-                    newList.style.listStyleType = targetStyle === 'decimal' ? 'disc' : targetStyle;
-                }
-
-                elementToReplace.parentNode.replaceChild(newList, elementToReplace);
-
-                // Setze den Cursor an das Ende des neuen LI-Elements
-                selection.removeAllRanges();
-                const newRange = document.createRange();
-                newRange.selectNodeContents(newLi);
-                newRange.collapse(false);
-                selection.addRange(newRange);
-            }
-
-            // Fokus wiederherstellen und Toolbar aktualisieren
-            noteEditor.focus(); 
-            updateToolbarState();
-        };
-
+        
+        // ******************************************************
+        // ** TOOLBAR AKTUALISIERUNG (ACTIVE MARKER) LOGIK **
+        // ******************************************************
+        
         const updateToolbarState = () => {
             const selection = window.getSelection();
             
@@ -791,108 +617,155 @@ class="text-gray-300 mb-4 text-center">Geben Sie die URL für den Link ein.</p>
             }
 
             if (selection.rangeCount === 0 || !noteEditor.contains(selection.anchorNode)) {
-                // Alle Buttons de-aktivieren, wenn der Fokus nicht im Editor ist
+                // Alle Buttons/Dropdowns de-aktivieren, wenn der Fokus nicht im Editor ist
                 document.querySelectorAll('.toolbar-btn').forEach(btn => btn.classList.remove('active'));
+                document.querySelectorAll('.dropdown-item').forEach(item => item.classList.remove('active'));
+                
+                // Reset Dropdown Button Text
+                listDropdownBtn.textContent = 'Aufzählung';
+                sizeDropdownBtn.textContent = 'Schriftgröße';
+                colorDropdownBtn.textContent = 'Schriftfarbe';
                 return;
             }
             
-            // Text-Formate (jetzt korrekt mit queryCommandState)
+            // Text-Formate (B/I/U)
             boldBtn.classList.toggle('active', document.queryCommandState('bold'));
             italicBtn.classList.toggle('active', document.queryCommandState('italic'));
             underlineBtn.classList.toggle('active', document.queryCommandState('underline'));
             linkBtn.classList.toggle('active', document.queryCommandState('createLink'));
             
-            // Listen-Formate
+            // 1. Listen-Formate (Dropdown Active Marker FIX)
             listDropdownItems.forEach(item => item.classList.remove('active'));
-
             const currentBlock = getCurrentBlockElement(selection);
             
-            if (currentBlock && currentBlock.tagName === 'LI') {
-                const parentList = currentBlock.parentNode;
-                const activeListStyle = parentList.tagName === 'OL' ? 'decimal' : (parentList.style.listStyleType || 'disc');
+            if (currentBlock) {
+                let parentList = currentBlock.closest('UL, OL'); // Finde die Liste, selbst wenn LI ausgewählt ist
                 
-                const activeItem = Array.from(listDropdownItems).find(item => item.dataset.value === activeListStyle);
-                listDropdownBtn.textContent = activeItem ? `Aufzählung: ${activeItem.textContent}` : 'Aufzählung';
-                
-                if (activeItem) {
-                    activeItem.classList.add('active');
+                if (parentList) {
+                    let activeListStyle = 'disc'; // Default for UL
+                    
+                    if (parentList.tagName === 'OL') {
+                        activeListStyle = 'decimal';
+                    } else if (parentList.tagName === 'UL') {
+                        activeListStyle = parentList.style.listStyleType || 'disc';
+                    }
+
+                    const activeItem = Array.from(listDropdownItems).find(item => item.dataset.value === activeListStyle);
+                    
+                    if (activeItem) {
+                        activeItem.classList.add('active');
+                        // Setze den Text des Hauptbuttons (nur den Formatnamen anzeigen)
+                        const formatName = activeItem.textContent.trim().split('(')[0].trim();
+                        listDropdownBtn.textContent = `Aufzählung: ${formatName}`;
+                    } else {
+                         listDropdownBtn.textContent = 'Aufzählung';
+                    }
+                } else {
+                    listDropdownBtn.textContent = 'Aufzählung';
                 }
             } else {
                  listDropdownBtn.textContent = 'Aufzählung';
             }
+            
+            // 2. Schriftgröße (Dropdown Active Marker FIX)
+            sizeDropdownItems.forEach(item => item.classList.remove('active'));
+            // queryCommandValue gibt die numerische Größe (1-7) zurück
+            let currentSize = document.queryCommandValue('fontSize');
+            if (currentSize) {
+                const activeItem = Array.from(sizeDropdownItems).find(item => item.dataset.value === currentSize);
+                if (activeItem) {
+                    activeItem.classList.add('active');
+                    sizeDropdownBtn.textContent = `Größe: ${activeItem.textContent}`;
+                } else {
+                    sizeDropdownBtn.textContent = 'Schriftgröße';
+                }
+            } else {
+                 sizeDropdownBtn.textContent = 'Schriftgröße';
+            }
+
+
+            // 3. Schriftfarbe (Dropdown Active Marker FIX)
+            colorDropdownItems.forEach(item => item.classList.remove('active'));
+            let currentColor = document.queryCommandValue('foreColor');
+            
+            if (currentColor) {
+                // Farbe in Hex konvertieren, falls RGB
+                if (currentColor.startsWith('rgb')) {
+                    currentColor = rgbToHex(currentColor);
+                }
+                
+                // Finde den passenden Key in colorMap
+                const colorKey = Object.keys(colorMap).find(key => colorMap[key].toLowerCase() === currentColor.toLowerCase());
+
+                if (colorKey) {
+                    const activeItem = Array.from(colorDropdownItems).find(item => item.dataset.value === colorKey);
+                    if (activeItem) {
+                        activeItem.classList.add('active');
+                        colorDropdownBtn.textContent = `Farbe: ${activeItem.textContent}`;
+                    } else {
+                        colorDropdownBtn.textContent = 'Schriftfarbe';
+                    }
+                } else {
+                     colorDropdownBtn.textContent = 'Schriftfarbe';
+                }
+            } else {
+                 colorDropdownBtn.textContent = 'Schriftfarbe';
+            }
         };
 
 
-        // --- NOTE RENDERING / CRUD ---
+        // ******************************************************
+        // ** STORAGE UND RENDERING LOGIK **
+        // ******************************************************
+        
+        const saveNotesToLocal = () => {
+            try {
+                // Nur die Reihenfolge in der unsortierten Ansicht speichern
+                if (currentSortMethod === 'unsorted') {
+                     const unsortedOrder = notesData.map(note => note.id);
+                     localStorage.setItem('notes-order', JSON.stringify(unsortedOrder));
+                }
+                localStorage.setItem(NOTES_STORAGE_KEY, JSON.stringify(notesData));
+            } catch (e) {
+                console.error("Fehler beim Speichern der Notizen im lokalen Speicher:", e);
+                showModal("Ihre Notizen konnten nicht gespeichert werden. Der lokale Speicher ist möglicherweise voll.");
+            }
+        };
 
-        const createNoteElement = (note) => {
-            const div = document.createElement('div');
-            div.className = 'note-card p-4 rounded-xl shadow-lg border hover:shadow-2xl transition-all duration-300 transform hover:scale-[1.01] flex flex-col cursor-grab';
-            div.draggable = currentSortMethod === 'unsorted'; 
-            div.dataset.noteId = note.id; 
-
-            const header = document.createElement('div');
-            header.className = 'flex justify-between items-start mb-2';
-            
-            const title = document.createElement('h3');
-            title.className = 'text-xl font-semibold text-gray-100 flex-grow pr-4';
-
-            // WICHTIG: Wenn der Titel leer ist, wird der Anfang des Contents als Titel verwendet.
-            if (note.title.trim() === '' && note.content.trim() !== '') {
-                 // Entferne HTML-Tags, um den Anfang des Textes zu bekommen
-                const tempDiv = document.createElement('div');
-                tempDiv.innerHTML = note.content;
-                const plainText = tempDiv.textContent || tempDiv.innerText || '';
+        
+        const loadNotesFromLocal = () => {
+            try {
+                const storedNotes = localStorage.getItem(NOTES_STORAGE_KEY);
+                notesData = storedNotes ? JSON.parse(storedNotes) : [];
                 
-                title.textContent = plainText.substring(0, 100) + (plainText.length > 100 ? '...' : '');
-                title.classList.add('italic', 'text-gray-400'); // Optional: Stil, um anzuzeigen, dass es der Inhalt ist
-            } else {
-                title.textContent = note.title || 'Ohne Titel';
-                title.classList.remove('italic', 'text-gray-400');
+                // Lade die gespeicherte Reihenfolge für 'unsorted'
+                const storedOrder = localStorage.getItem('notes-order');
+                if (storedOrder && storedOrder.length > 0) {
+                     const orderArray = JSON.parse(storedOrder);
+                     // Sortiere notesData basierend auf der gespeicherten ID-Liste
+                     notesData.sort((a, b) => {
+                         const indexA = orderArray.indexOf(a.id);
+                         const indexB = orderArray.indexOf(b.id);
+                         if (indexA === -1 || indexB === -1) {
+                             // Neue Notizen ans Ende
+                             return a.id - b.id; 
+                         }
+                         return indexA - indexB;
+                     });
+                } else {
+                     // Fallback: Neueste zuerst nach ID (dem ursprünglichen Standard)
+                     notesData.sort((a, b) => b.id - a.id);
+                }
+                
+                sortNotes(currentSortMethod, true); // Stellt die Sortierung ein und rendert
+            } catch (e) {
+                console.error("Fehler beim Laden der Notizen aus dem lokalen Speicher:", e);
+                notesData = [];
+                showModal("Ihre Notizen konnten nicht geladen werden. Möglicherweise ist die Datenstruktur beschädigt.");
+                renderNotes();
             }
+        };
 
-            header.appendChild(title);
-
-            const btnContainer = document.createElement('div');
-            btnContainer.className = 'flex-shrink-0 flex space-x-2';
-            
-            const editBtn = document.createElement('button');
-            editBtn.className = 'calculator-btn bg-blue-600 text-white p-2 rounded-full text-sm hover:bg-blue-700 transition-colors edit-btn';
-            editBtn.innerHTML = '✏️';
-            btnContainer.appendChild(editBtn);
-            
-            const deleteBtn = document.createElement('button');
-            deleteBtn.className = 'calculator-btn bg-red-600 text-white p-2 rounded-full text-sm hover:bg-red-700 transition-colors delete-btn';
-            deleteBtn.innerHTML = '🗑️';
-            btnContainer.appendChild(deleteBtn);
-
-            header.appendChild(btnContainer);
-            div.appendChild(header);
-
-            // Content (Wird nur angezeigt, wenn ein Titel vorhanden ist, ODER wenn der Content sehr lang ist)
-            // AUF WUNSCH: WIRD AUSGEBLENDET, WENN IM TITEL ANGEZEIGT (ansonsten wäre es doppelt).
-            if (note.title.trim() !== '' && note.content.trim() !== '') {
-                const contentDiv = document.createElement('div');
-                contentDiv.className = 'text-gray-300 note-content mt-2';
-                contentDiv.innerHTML = note.content;
-                div.appendChild(contentDiv);
-            }
-            
-            // Das Datum wurde entfernt, wie gewünscht.
-            
-             editBtn.addEventListener('click', () => editNote(note.id, note.title, note.content));
-             deleteBtn.addEventListener('click', () => deleteNote(note.id));
-             
-             if (currentSortMethod === 'unsorted') {
-                 div.addEventListener('dragstart', handleDragStart);
-                 div.addEventListener('dragover', handleDragOver);
-                 div.addEventListener('drop', handleDrop);
-                 div.addEventListener('dragend', handleDragEnd);
-             }
-             return div;
-         };
-        
-        
         const renderNotes = (searchQuery = '') => {
             const fragment = document.createDocumentFragment();
             notesList.innerHTML = ''; 
@@ -922,6 +795,72 @@ class="text-gray-300 mb-4 text-center">Geben Sie die URL für den Link ein.</p>
             notesList.appendChild(fragment);
         };
         
+        const createNoteElement = (note) => {
+            // ... (Funktion bleibt wie zuvor, Datum bleibt entfernt) ...
+            const div = document.createElement('div');
+            div.className = 'note-card p-4 rounded-xl shadow-lg border hover:shadow-2xl transition-all duration-300 transform hover:scale-[1.01] flex flex-col cursor-grab';
+            div.draggable = currentSortMethod === 'unsorted'; 
+            div.dataset.noteId = note.id; 
+
+            const header = document.createElement('div');
+            header.className = 'flex justify-between items-start mb-2';
+            
+            const title = document.createElement('h3');
+            title.className = 'text-xl font-semibold text-gray-100 flex-grow pr-4';
+
+            // Wenn der Titel leer ist, wird der Anfang des Contents als Titel verwendet.
+            if (note.title.trim() === '' && note.content.trim() !== '') {
+                 // Entferne HTML-Tags, um den Anfang des Textes zu bekommen
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = note.content;
+                const plainText = tempDiv.textContent || tempDiv.innerText || '';
+                
+                title.textContent = plainText.substring(0, 100) + (plainText.length > 100 ? '...' : '');
+                title.classList.add('italic', 'text-gray-400');
+            } else {
+                title.textContent = note.title || 'Ohne Titel';
+                title.classList.remove('italic', 'text-gray-400');
+            }
+
+            header.appendChild(title);
+
+            const btnContainer = document.createElement('div');
+            btnContainer.className = 'flex-shrink-0 flex space-x-2';
+            
+            const editBtn = document.createElement('button');
+            editBtn.className = 'calculator-btn bg-blue-600 text-white p-2 rounded-full text-sm hover:bg-blue-700 transition-colors edit-btn';
+            editBtn.innerHTML = '✏️';
+            btnContainer.appendChild(editBtn);
+            
+            const deleteBtn = document.createElement('button');
+            deleteBtn.className = 'calculator-btn bg-red-600 text-white p-2 rounded-full text-sm hover:bg-red-700 transition-colors delete-btn';
+            deleteBtn.innerHTML = '🗑️';
+            btnContainer.appendChild(deleteBtn);
+
+            header.appendChild(btnContainer);
+            div.appendChild(header);
+
+            // Content nur anzeigen, wenn ein Titel vorhanden ist ODER der Inhalt lang ist
+            if (note.title.trim() !== '' && note.content.trim() !== '') {
+                const contentDiv = document.createElement('div');
+                contentDiv.className = 'text-gray-300 note-content mt-2';
+                contentDiv.innerHTML = note.content;
+                div.appendChild(contentDiv);
+            }
+            
+             editBtn.addEventListener('click', () => editNote(note.id, note.title, note.content));
+             deleteBtn.addEventListener('click', () => deleteNote(note.id));
+             
+             if (currentSortMethod === 'unsorted') {
+                 div.addEventListener('dragstart', handleDragStart);
+                 div.addEventListener('dragover', handleDragOver);
+                 div.addEventListener('drop', handleDrop);
+                 div.addEventListener('dragend', handleDragEnd);
+             }
+             return div;
+         };
+
+
         const saveNote = () => {
             const title = noteTitleInput.value.trim();
             const content = noteEditor.innerHTML.trim();
@@ -961,7 +900,8 @@ class="text-gray-300 mb-4 text-center">Geben Sie die URL für den Link ein.</p>
             updateToolbarState();
 
             saveNotesToLocal();
-            sortNotes(currentSortMethod, false); 
+            // FIX: Notizen sofort neu rendern nach dem Speichern
+            sortNotes(currentSortMethod, true); 
         };
         
         const deleteNote = async (id) => {
@@ -981,15 +921,16 @@ class="text-gray-300 mb-4 text-center">Geben Sie die URL für den Link ein.</p>
             saveNoteBtn.textContent = 'Änderungen speichern';
             window.scrollTo({ top: 0, behavior: 'smooth' }); 
             noteEditor.focus();
-            // Die Auswahl muss neu gesetzt werden, damit updateToolbarState funktioniert
+            
+            // Auswahl ans Ende des Editors setzen
             const range = document.createRange();
             range.selectNodeContents(noteEditor);
             range.collapse(false);
             const selection = window.getSelection();
             selection.removeAllRanges();
             selection.addRange(range);
+            
             saveSelection(); 
-
             updateToolbarState();
         };
 
@@ -1021,18 +962,80 @@ class="text-gray-300 mb-4 text-center">Geben Sie die URL für den Link ein.</p>
                     break;
                 case 'unsorted':
                 default:
-                    notesData.sort((a, b) => b.id - a.id);
+                    // Wenn unsortiert, wird die Reihenfolge in loadNotesFromLocal oder manuell festgelegt (dank Drag&Drop)
+                    // Hier ist keine Sortierung nötig, da die Reihenfolge im Array durch Drag&Drop oder Load definiert ist
                     break;
             }
 
             if (method === 'unsorted') {
-                saveNotesToLocal();
+                saveNotesToLocal(); // Speichert die aktuelle Reihenfolge
             }
 
             if (shouldRender) {
                 renderNotes(searchInput.value);
             }
         };
+
+        // --- IMPORT/EXPORT FUNKTIONEN ---
+        const exportNotes = async () => { 
+            const notesJson = localStorage.getItem(NOTES_STORAGE_KEY);
+            if (!notesJson || notesJson === '[]') {
+                await showModal('Keine Notizen zum Exportieren vorhanden.', false);
+                return;
+            }
+
+            const blob = new Blob([notesJson], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+
+            a.href = url;
+            a.download = `Meine_Offline_Notizen_${new Date().toISOString().slice(0, 10)}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        };
+        const importNotes = (event) => {
+             const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                try {
+                    const importedNotes = JSON.parse(e.target.result);
+                    if (Array.isArray(importedNotes)) {
+                        
+                        // Stelle sicher, dass jede importierte Notiz eine eindeutige ID bekommt, um Konflikte zu vermeiden
+                        const maxId = notesData.reduce((max, note) => Math.max(max, note.id), 0);
+                        let nextId = maxId + 1;
+                        
+                        const notesToAdd = importedNotes.map(note => ({
+                            ...note,
+                            id: nextId++,
+                            createdAt: note.createdAt || new Date().toISOString(),
+                            updatedAt: new Date().toISOString()
+                        }));
+
+                        notesData = notesData.concat(notesToAdd);
+                        
+                        saveNotesToLocal();
+                        loadNotesFromLocal(); // Lädt und rendert neu
+                        await showModal('Notizen erfolgreich importiert und geladen!', false);
+                    } else {
+                        await showModal('Fehler: Die importierte Datei hat kein gültiges Notizformat.', false);
+                    }
+                } catch (error) {
+                    await showModal('Fehler beim Lesen oder Parsen der Datei.', false);
+                    console.error('Import error:', error);
+                }
+                event.target.value = null; 
+            };
+            reader.onerror = () => {
+                showModal('Fehler beim Lesen der Datei.', false);
+            };
+            reader.readAsText(file);
+        };
+        // --- ENDE IMPORT/EXPORT FUNKTIONEN ---
 
         // --- DRAG AND DROP ---
         
@@ -1067,9 +1070,11 @@ class="text-gray-300 mb-4 text-center">Geben Sie die URL für den Link ein.</p>
                 const dragIndex = listArray.indexOf(dragSrcEl);
                 const dropIndex = listArray.indexOf(targetEl);
 
+                // Datenmodell aktualisieren
                 const [draggedNote] = notesData.splice(dragIndex, 1);
                 notesData.splice(dropIndex, 0, draggedNote);
                 
+                // DOM aktualisieren
                 if (dragIndex < dropIndex) {
                     notesList.insertBefore(dragSrcEl, targetEl.nextSibling);
                 } else {
@@ -1085,11 +1090,14 @@ class="text-gray-300 mb-4 text-center">Geben Sie die URL für den Link ein.</p>
             e.currentTarget.classList.remove('dragging');
         };
 
+
         // --- EVENT LISTENERS ---
 
         // Event Listener für die Toolbar-Buttons (mit Fokus-Wiederherstellung)
+        // Wichtig: Speichern der Auswahl bei Interaktion im Editor
         noteEditor.addEventListener('mouseup', saveSelection); 
-        noteEditor.addEventListener('keyup', updateToolbarState); // keyup löst updateToolbarState aus
+        noteEditor.addEventListener('keyup', updateToolbarState); 
+        
         // Stellt sicher, dass die Auswahl gespeichert wird, bevor der Button gedrückt wird (für Touch/Click)
         document.querySelectorAll('.toolbar-btn, .dropdown-item').forEach(btn => {
             btn.addEventListener('mousedown', saveSelection);
@@ -1113,7 +1121,7 @@ class="text-gray-300 mb-4 text-center">Geben Sie die URL für den Link ein.</p>
         });
         listDropdownItems.forEach(item => item.addEventListener('click', (e) => {
             e.stopPropagation();
-            toggleCustomList(item.dataset.value); 
+            toggleList(item.dataset.value); // Neue, stabilere Listenfunktion
             listDropdownMenu.classList.remove('active');
         }));
         
@@ -1137,14 +1145,13 @@ class="text-gray-300 mb-4 text-center">Geben Sie die URL für den Link ein.</p>
             colorDropdownMenu.classList.toggle('active');
             listDropdownMenu.classList.remove('active');
             sizeDropdownMenu.classList.remove('active');
-            colorDropdownMenu.classList.remove('active');
             sortDropdownMenu.classList.remove('active');
         });
         colorDropdownItems.forEach(item => item.addEventListener('click', (e) => {
             e.stopPropagation();
             const colorName = item.dataset.value;
             const hexColor = colorMap[colorName];
-            executeFormatAndRestore('foreColor', hexColor); 
+            executeFormatAndRestore('foreColor', hexColor); // Schriftfarbe
             colorDropdownMenu.classList.remove('active');
         }));
 
