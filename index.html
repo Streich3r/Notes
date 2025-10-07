@@ -38,29 +38,29 @@
             outline: none !important;
         }
 
-        /* --- FOKUS-FIX (ENTFERNT GRAUEN RING BEIM KLICK) --- */
+        /* --- FOKUS-FIX (ENTFERNT GRAUEN RING BEIM KLICK - V9) --- */
+        /* Setzt die Standardfarbe und Touch-Optimierung */
         .toolbar-btn, .dropdown-item, #sort-dropdown-btn, #save-note-btn {
             background-color: #4b5563; /* Basis-Farbe (bg-gray-600) */
             -webkit-tap-highlight-color: transparent; 
             transition: background-color 0.15s;
         }
 
-        /* FIX 1: Entfernt jegliche visuelle Markierung nach dem Mausklick (grauer Focus) */
+        /* FIX 1: Entfernt ALLE Focus-Styles (der störende graue Ring vom Mausklick) */
         .toolbar-btn:focus, .dropdown-item:focus, #sort-dropdown-btn:focus, #save-note-btn:focus {
-            /* Setzt Outline und Shadow zurück */
             outline: none !important;
             box-shadow: none !important;
-            /* Stellt sicher, dass die Hintergrundfarbe nicht auf eine Browser-Default-Graustufe springt */
+            /* Stellt sicher, dass die Hintergrundfarbe auf der aktuellen (z.B. Hover-) Farbe bleibt */
             background-color: inherit; 
         }
 
-        /* FIX 2: Definiert einen sichtbaren Fokus NUR für TASTUR-Barrierefreiheit (Tab-Taste) */
+        /* FIX 2: Definiert den sichtbaren Fokus NUR für TASTUR-Barrierefreiheit (Tab-Taste) */
         .toolbar-btn:focus-visible, .dropdown-item:focus-visible, #sort-dropdown-btn:focus-visible, #save-note-btn:focus-visible {
             outline: 2px solid #3b82f6 !important; /* Blauer Ring für Tab-Fokus */
             outline-offset: 1px;
             box-shadow: none !important; 
         }
-
+        
         /* Active-Zustand (Blaue Markierung BLEIBT) */
         .toolbar-btn.active, .dropdown-item.active {
             background-color: #2563eb !important; 
@@ -73,11 +73,23 @@
         }
 
         /* Spezial-Override für den Save-Button (blau) */
-        #save-note-btn { background-color: #2563eb; }
-        #save-note-btn:hover { background-color: #1d4ed8; }
-        #save-note-btn:active { background-color: #1e40af !important; }
-        /* Sicherstellen, dass der Fokus-Fix auch den Save-Button erfasst */
-        #save-note-btn:focus:not(.active) { background-color: #1d4ed8 !important; }
+        #save-note-btn { 
+            background-color: #2563eb; 
+        }
+        #save-note-btn:hover { 
+            background-color: #1d4ed8; 
+        }
+        #save-note-btn:active { 
+            background-color: #1e40af !important; 
+        }
+        /* Stellt sicher, dass die blaue Farbe auch beim Fokus erhalten bleibt */
+        #save-note-btn:focus { 
+            background-color: #2563eb; 
+        }
+        /* Stellt sicher, dass Tab-Fokus blau bleibt */
+        #save-note-btn:focus-visible {
+            background-color: #2563eb !important;
+        }
         
         /* Note-Editor Platzhalter-Stile */
         #note-editor:empty:before {
@@ -328,7 +340,6 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors focus:out
             '3': '16px',
             '5': '24px'
         };
-        // Drag-and-Drop-Variablen
         let draggedItem = null;
         
         const showModal = (message, showCancelButton = false) => {
@@ -370,14 +381,6 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors focus:out
         };
         
         
-        const collapseSelection = () => {
-            const selection = window.getSelection();
-            if (selection.rangeCount > 0) {
-                selection.collapseToEnd();
-            }
-        };
-
-        
         const saveNotesToLocal = () => {
             try {
                 localStorage.setItem(NOTES_STORAGE_KEY, JSON.stringify(notesData));
@@ -410,7 +413,7 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors focus:out
             }
         };
         
-        // --- IMPORT/EXPORT FUNKTIONEN ---
+        
         const exportNotes = async () => { 
             const notesJson = localStorage.getItem(NOTES_STORAGE_KEY);
             if (!notesJson || notesJson === '[]') {
@@ -428,9 +431,6 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors focus:out
             a.click();
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
-            
-            // ⭐ ANFORDERUNG ERFÜLLT: Export-Erfolgs-Meldung entfernt
-            // await showModal('Notizen erfolgreich exportiert!', false); 
         };
         
         const importNotes = (event) => {
@@ -443,7 +443,6 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors focus:out
                     const importedNotes = JSON.parse(e.target.result);
                     if (Array.isArray(importedNotes)) {
                         
-                        // Fügt nur Notizen hinzu, die noch nicht existieren (anhand der ID).
                         const existingIds = new Set(notesData.map(n => n.id));
                         const uniqueNewNotes = importedNotes.filter(n => !existingIds.has(n.id));
                         notesData = notesData.concat(uniqueNewNotes);
@@ -464,9 +463,7 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors focus:out
             };
             reader.readAsText(file);
         };
-        // --- ENDE IMPORT/EXPORT FUNKTIONEN ---
-
-
+        
         
         const applyFormat = (command, value = null) => {
             document.execCommand(command, false, value);
@@ -706,7 +703,6 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors focus:out
             }
         };
         
-        // --- HAUPTFUNKTIONEN ZUM HINZUFÜGEN, BEARBEITEN UND LÖSCHEN ---
         const saveNote = () => {
             const title = noteTitleInput.value.trim();
             const content = noteEditor.innerHTML.trim();
@@ -739,7 +735,8 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors focus:out
             }
 
             saveNotesToLocal();
-            sortNotes('unsorted'); 
+            sortNotes(currentSortMethod); // Verwende die aktuelle Sortierung
+            
             noteTitleInput.value = '';
             noteEditor.innerHTML = '';
             
@@ -774,7 +771,6 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors focus:out
             }
         };
 
-        // --- SORTIER-LOGIK ---
         const sortNotes = (method) => {
             currentSortMethod = method;
             let sortedNotes = [...notesData];
@@ -794,9 +790,15 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors focus:out
                     break;
                 case 'unsorted':
                 default:
+                    // Wenn "unsorted", behalten wir die aktuelle Reihenfolge im notesData-Array bei
+                    notesData = notesData; 
                     break;
             }
-            notesData = sortedNotes;
+            if (method !== 'unsorted') {
+                 notesData = sortedNotes;
+                 saveNotesToLocal(); // Speichere die neue Sortierreihenfolge
+            }
+            
             renderNotes(searchInput.value);
             
             sortDropdownItems.forEach(item => item.classList.remove('active'));
@@ -806,7 +808,7 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors focus:out
             sortDropdownBtn.innerHTML = `Sortieren nach: ${activeItem ? activeItem.textContent : 'Unsortiert'}`;
         };
         
-        // --- RENDERING-LOGIK ---
+        
         const renderNotes = (searchTerm = '') => {
             notesList.innerHTML = '';
             loadingIndicator.classList.add('hidden');
@@ -828,7 +830,7 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors focus:out
             }
         };
 
-        // --- DRAG AND DROP FUNKTIONEN ---
+        
         const handleDragStart = (e) => {
             if (currentSortMethod !== 'unsorted') return;
             draggedItem = e.target.closest('.note-card');
@@ -876,22 +878,18 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors focus:out
             draggedItem.classList.remove('dragging');
             draggedItem = null;
         };
-        // --- ENDE DRAG AND DROP FUNKTIONEN ---
 
         const createNoteCard = (note) => {
             const div = document.createElement('div');
             div.dataset.id = note.id;
-            div.className = `note-card p-4 border rounded-xl shadow-lg transition-all duration-300 hover:shadow-2xl hover:border-blue-500 flex flex-col ${currentSortMethod === 'unsorted' ? 'cursor-grab' : 'cursor-default'}`;
+            div.className = `note-card p-4 rounded-xl shadow-lg border-l-4 border-blue-500 transition-all duration-300 hover:shadow-2xl hover:border-blue-500 flex flex-col ${currentSortMethod === 'unsorted' ? 'cursor-grab' : 'cursor-default'}`;
             div.draggable = currentSortMethod === 'unsorted'; 
             
-            // ⭐ ANFORDERUNG UMGESETZT: Wenn Titel leer, Haupttext als Titel, sonst Titel verwenden. KEIN "Ohne Titel"
-            const displayTitle = note.title.trim() || note.content.replace(/<[^>]*>/g, ' ').trim().substring(0, 50).trim();
-            
-            // ⭐ ANFORDERUNG UMGESETZT: Haupttext/Snippet wird ausgeblendet, wenn Titel vorhanden ist
-            // Da der Titel nun immer den besten verfügbaren Text anzeigt (Titel oder Snippet), 
-            // blenden wir das Content-Preview-Div komplett aus, wie gewünscht.
-            // Derzeit wurde die Funktion des Snippets entfernt, um die Anforderung "Haupttext ausgeblendet" zu erfüllen
-            // und nur den Titel anzuzeigen.
+            // Logik: Titel verwenden ODER erste Zeile des Inhalts. (Kein "Ohne Titel")
+            const plainContent = note.content.replace(/<[^>]*>/g, ' ').trim().replace(/\s{2,}/g, ' ');
+            const firstLine = plainContent.substring(0, 50).trim();
+            const displayTitle = note.title.trim() || firstLine || 'Ohne Titel'; // Fallback auf "Ohne Titel" nur, wenn alles leer ist.
+
             
             div.innerHTML = `
                 <div class="flex justify-between items-start mb-2">
@@ -916,6 +914,124 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors focus:out
         };
 
 
+        const toggleDropdown = (menu) => {
+            document.querySelectorAll('.dropdown-menu.active').forEach(openMenu => {
+                if (openMenu !== menu) {
+                    openMenu.classList.remove('active');
+                }
+            });
+            menu.classList.toggle('active');
+        };
+
+        const closeAllDropdowns = (e) => {
+            const isToolbarButton = e.target.closest('.toolbar-btn');
+            const isSortButton = e.target.closest('#sort-dropdown-btn');
+            
+            if (!isToolbarButton && !isSortButton && !e.target.closest('.dropdown-menu')) {
+                 document.querySelectorAll('.dropdown-menu.active').forEach(menu => {
+                    menu.classList.remove('active');
+                });
+            }
+        };
+
+        const saveAndRestoreSelection = (callback) => {
+            saveSelection();
+            if (noteEditor.contains(document.activeElement)) {
+                callback();
+            } else {
+                restoreSelection();
+                callback();
+                noteEditor.focus(); 
+            }
+        };
+
+        // --- EVENT LISTENERS ---
+
+        listDropdownBtn.addEventListener('click', () => toggleDropdown(listDropdownMenu));
+        sizeDropdownBtn.addEventListener('click', () => toggleDropdown(sizeDropdownMenu));
+        colorDropdownBtn.addEventListener('click', () => toggleDropdown(colorDropdownMenu));
+        sortDropdownBtn.addEventListener('click', (e) => {
+            e.stopPropagation(); 
+            toggleDropdown(sortDropdownMenu);
+        });
+        
+        document.addEventListener('click', closeAllDropdowns);
+
+        // Toolbar Button Aktionen
+        boldBtn.addEventListener('click', () => saveAndRestoreSelection(() => applyFormat('bold')));
+        italicBtn.addEventListener('click', () => saveAndRestoreSelection(() => applyFormat('italic')));
+        underlineBtn.addEventListener('click', () => saveAndRestoreSelection(() => applyFormat('underline')));
+        indentBtn.addEventListener('click', () => saveAndRestoreSelection(() => applyFormat('indent')));
+        outdentBtn.addEventListener('click', () => saveAndRestoreSelection(() => applyFormat('outdent')));
+        
+        listDropdownItems.forEach(item => {
+            item.addEventListener('click', (e) => {
+                e.stopPropagation(); 
+                toggleDropdown(listDropdownMenu); 
+                saveAndRestoreSelection(() => {
+                    toggleCustomList(item.dataset.value);
+                    updateToolbarState();
+                });
+            });
+        });
+
+        sizeDropdownItems.forEach(item => {
+            item.addEventListener('click', (e) => {
+                e.stopPropagation();
+                toggleDropdown(sizeDropdownMenu);
+                saveAndRestoreSelection(() => applyFormat('fontSize', item.dataset.value));
+            });
+        });
+
+        colorDropdownItems.forEach(item => {
+            item.addEventListener('click', (e) => {
+                e.stopPropagation();
+                toggleDropdown(colorDropdownMenu);
+                const colorHex = colorMap[item.dataset.value];
+                saveAndRestoreSelection(() => applyFormat('foreColor', colorHex));
+            });
+        });
+
+        linkBtn.addEventListener('click', async () => {
+            saveSelection();
+            const url = await showLinkModal();
+            if (url) {
+                restoreSelection();
+                const selection = window.getSelection();
+                const link = document.createElement('a');
+                link.href = url;
+                link.target = "_blank";
+                
+                if (selection.toString().length > 0) {
+                    applyFormat('createLink', url);
+                } else {
+                    link.textContent = url;
+                    
+                    const range = savedRange;
+                    if (range) {
+                        range.deleteContents();
+                        range.insertNode(link);
+                        range.setStartAfter(link);
+                        range.setEndAfter(link);
+                        selection.removeAllRanges();
+                        selection.addRange(range);
+                    } else {
+                        noteEditor.focus();
+                        document.execCommand('insertHTML', false, link.outerHTML + '&nbsp;');
+                    }
+                }
+            }
+        });
+        
+        sortDropdownItems.forEach(item => {
+            item.addEventListener('click', (e) => {
+                e.stopPropagation();
+                toggleDropdown(sortDropdownMenu);
+                sortNotes(item.dataset.value);
+            });
+        });
+
+
         saveNoteBtn.addEventListener('click', saveNote);
         searchInput.addEventListener('input', (e) => renderNotes(e.target.value));
         
@@ -926,9 +1042,8 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors focus:out
         noteEditor.addEventListener('mouseup', updateToolbarState); 
         noteEditor.addEventListener('keyup', updateToolbarState); 
         
-        // Fügt den Fokus-Entferner für Toolbar- und Dropdown-Buttons hinzu, um den Fokusring zu vermeiden
+        // Wichtig: Speichert die Auswahl VOR dem Klick, um den Cursor zu erhalten
         document.querySelectorAll('.toolbar-btn, .dropdown-item, #sort-dropdown-btn, #save-note-btn').forEach(btn => {
-             // Speichert die Auswahl, bevor der Fokus auf den Button wechselt
             btn.addEventListener('mousedown', saveSelection); 
         });
 
