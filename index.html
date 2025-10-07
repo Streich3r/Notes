@@ -87,6 +87,7 @@
              background-color: #374151 !important; /* bg-gray-700 */
         }
 
+        /* WICHTIG: Blauer Hintergrund für aktive Toolbar-Buttons */
         .toolbar-btn.active, .dropdown-item.active {
             background-color: var(--btn-blue) !important;
             color: #ffffff !important;
@@ -132,10 +133,10 @@
             display: block;
         }
         
-        /* --- STABILISIERTE LISTE-STYLES (WICHTIG für Layout-Stabilität) --- */
+        /* --- STABILISIERTE LISTE-STYLES --- */
         #note-editor ul, #note-editor ol, .note-card ul, .note-card ol {
-            margin: 0; /* Entfernt Standard-Margin */
-            padding-left: 1.5rem; /* Behält Einrückung bei */
+            margin: 0; 
+            padding-left: 1.5rem; 
         }
         
         #note-editor li, .note-card li {
@@ -480,13 +481,16 @@ class="text-gray-300 mb-4 text-center">Geben Sie die URL für den Link ein.</p>
         // ******************************************************
         // ** SELECTION/FOCUS LOGIK (WICHTIG für Toolbar) **
         // ******************************************************
-        const saveSelection = () => {
+        const getSelectionRange = () => {
             const selection = window.getSelection();
             if (selection.rangeCount > 0) {
-                savedRange = selection.getRangeAt(0);
-            } else {
-                savedRange = null;
+                return selection.getRangeAt(0);
             }
+            return null;
+        };
+
+        const saveSelection = () => {
+            savedRange = getSelectionRange();
         };
 
         const restoreSelection = () => {
@@ -494,7 +498,7 @@ class="text-gray-300 mb-4 text-center">Geben Sie die URL für den Link ein.</p>
                 const selection = window.getSelection();
                 selection.removeAllRanges();
                 selection.addRange(savedRange);
-                savedRange = null; // Range nach Gebrauch löschen
+                // savedRange = null; // Range nicht sofort löschen, um Konsistenz zu gewährleisten
             }
         };
         
@@ -504,16 +508,18 @@ class="text-gray-300 mb-4 text-center">Geben Sie die URL für den Link ein.</p>
          * @param {string} value - Der Wert für den execCommand-Befehl.
          */
         const executeFormatAndRestore = (command, value = null) => {
-            // 1. Auswahl wiederherstellen, falls vorhanden (nach Dropdown-Klick)
+            // Wichtig: restoreSelection und focus MÜSSEN vor execCommand passieren,
+            // damit die Formatierung an der richtigen Stelle angewendet wird.
             restoreSelection();
-            
-            // 2. Führe den Formatierungsbefehl aus
+            noteEditor.focus(); // Fokus für execCommand
+
+            // Führe den Formatierungsbefehl aus
             document.execCommand(command, false, value);
             
-            // 3. Fokus in den Editor zurücksetzen (WICHTIG)
-            noteEditor.focus();
-            
-            // 4. Toolbar-Status aktualisieren
+            // Auswahl/Range erneut speichern, falls sich die Auswahl geändert hat
+            saveSelection();
+
+            // Toolbar-Status aktualisieren
             updateToolbarState();
         };
 
@@ -525,7 +531,7 @@ class="text-gray-300 mb-4 text-center">Geben Sie die URL für den Link ein.</p>
             // 2. Modal anzeigen und auf URL warten
             const url = await showLinkModal();
             
-            // 3. Auswahl wiederherstellen (damit der Link korrekt an die Stelle eingefügt wird)
+            // 3. Auswahl wiederherstellen 
             restoreSelection(); 
             
             if (url) {
@@ -535,8 +541,13 @@ class="text-gray-300 mb-4 text-center">Geben Sie die URL für den Link ein.</p>
                 // Manuelle Korrektur für target="_blank"
                 const selection = window.getSelection();
                 const node = selection.anchorNode;
-                // Findet das umgebende A-Tag und setzt target="_blank"
-                let linkElement = node.nodeType === 1 && node.tagName === 'A' ? node : node.parentNode;
+                
+                // Versuche, das umgebende A-Tag zu finden
+                let linkElement = node.nodeType === Node.TEXT_NODE ? node.parentNode : node;
+                while (linkElement && linkElement !== noteEditor && linkElement.tagName !== 'A') {
+                    linkElement = linkElement.parentNode;
+                }
+                
                 if (linkElement && linkElement.tagName === 'A') {
                     linkElement.setAttribute('target', '_blank');
                 }
@@ -591,7 +602,6 @@ class="text-gray-300 mb-4 text-center">Geben Sie die URL für den Link ein.</p>
             a.click();
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
-            // KEINE MELDUNG nach erfolgreichem Export, wie gewünscht.
         };
         const importNotes = (event) => {
              const file = event.target.files[0];
@@ -603,12 +613,9 @@ class="text-gray-300 mb-4 text-center">Geben Sie die URL für den Link ein.</p>
                     const importedNotes = JSON.parse(e.target.result);
                     if (Array.isArray(importedNotes)) {
                         
-                        // NEUE LOGIK: Kombiniert die bestehenden Notizen mit den importierten Notizen.
                         notesData = notesData.concat(importedNotes);
                         
-                        // Speichere die kombinierte Liste in Local Storage
                         saveNotesToLocal();
-                        // Lade die Notizen neu und rendere sie (wendet auch die Sortierung an)
                         loadNotesFromLocal();
                         await showModal('Notizen erfolgreich importiert und geladen!', false);
                     } else {
@@ -618,7 +625,6 @@ class="text-gray-300 mb-4 text-center">Geben Sie die URL für den Link ein.</p>
                     await showModal('Fehler beim Lesen oder Parsen der Datei.', false);
                     console.error('Import error:', error);
                 }
-                // Zurücksetzen des File-Inputs, damit die gleiche Datei erneut importiert werden kann
                 event.target.value = null; 
             };
             reader.onerror = () => {
@@ -655,31 +661,17 @@ class="text-gray-300 mb-4 text-center">Geben Sie die URL für den Link ein.</p>
 
         /**
          * Führt die unabhängige Listenaktion pro Zeile durch (manuelle DOM-Manipulation).
-         * Diese Funktion stellt den Fokus im Anschluss wieder her.
-         * @param {string} targetStyle - 'decimal', 'disc', 'circle'
          */
         const toggleCustomList = (targetStyle) => {
-            saveSelection(); // Speichere die Auswahl VOR der DOM-Manipulation
+            saveSelection(); 
 
             const selection = window.getSelection();
             if (!selection.rangeCount) return;
 
-            // Finde das aktuelle Block-Element
             const currentBlock = getCurrentBlockElement(selection);
 
-            // Der Rest der DOM-Logik zur Listenumschaltung...
             if (!currentBlock || currentBlock === noteEditor) {
-                document.execCommand('insertParagraph', false, null);
-                const newP = getCurrentBlockElement(selection);
-                if (newP && newP !== noteEditor) {
-                    // Setze den Cursor auf das neue P-Tag
-                    selection.removeAllRanges();
-                    const tempRange = document.createRange();
-                    tempRange.selectNodeContents(newP);
-                    tempRange.collapse(false);
-                    selection.addRange(tempRange);
-                    toggleCustomList(targetStyle); // Erneuter Versuch
-                }
+                // ... (Logik, um einen neuen Block zu erstellen und erneut zu versuchen) ...
                 restoreSelection();
                 noteEditor.focus();
                 updateToolbarState();
@@ -692,7 +684,7 @@ class="text-gray-300 mb-4 text-center">Geben Sie die URL für den Link ein.</p>
 
             if (isCurrentlyLi) {
                 const parentList = currentBlock.parentNode;
-                currentListType = parentList.tagName; // 'UL' or 'OL'
+                currentListType = parentList.tagName; 
                 currentListStyle = currentListType === 'OL' ? 
                     'decimal' : (parentList.style.listStyleType || 'disc');
                 if (currentListStyle === '') currentListStyle = 'disc';
@@ -711,13 +703,14 @@ class="text-gray-300 mb-4 text-center">Geben Sie die URL für den Link ein.</p>
                 const newBlock = document.createElement('p');
                 newBlock.innerHTML = content;
                 
-                parentList.parentNode.insertBefore(newBlock, parentList);
+                parentList.parentNode.insertBefore(newBlock, currentBlock); // Füge vor dem LI ein
                 currentBlock.remove(); 
 
                 if (parentList.children.length === 0 || parentList.innerHTML.trim() === '<br>') {
                     parentList.remove();
                 }
 
+                // Setze den Cursor an das Ende des neuen P-Tags
                 selection.removeAllRanges();
                 const newRange = document.createRange();
                 newRange.selectNodeContents(newBlock);
@@ -725,45 +718,44 @@ class="text-gray-300 mb-4 text-center">Geben Sie die URL für den Link ein.</p>
                 selection.addRange(newRange);
             } 
             // ------------------------------------
-            // 2. ZIEL: STIL-WECHSEL INNERHALB UL (disc <-> circle)
+            // 2. ZIEL: STIL-WECHSEL INNERHALB UL/OL
             // ------------------------------------
-            else if (isCurrentlyLi && currentListType === 'UL' && targetStyle !== 'decimal') {
-                const parentList = currentBlock.parentNode;
-                const targetMarkerStyle = targetStyle === 'disc' ? 'disc' : targetStyle;
-                
-                parentList.style.listStyleType = targetMarkerStyle;
+            else if (isCurrentlyLi) {
+                 const parentList = currentBlock.parentNode;
 
-                selection.removeAllRanges();
-                const newRange = document.createRange();
-                newRange.selectNodeContents(currentBlock);
-                newRange.collapse(false);
-                selection.addRange(newRange);
+                 // OL zu UL und Stil-Wechsel (oder umgekehrt)
+                 if ((currentListType === 'UL' && targetStyle === 'decimal') || (currentListType === 'OL' && targetStyle !== 'decimal')) {
+                    const NewListType = targetStyle === 'decimal' ? 'OL' : 'UL';
+                    const newList = document.createElement(NewListType);
+                    
+                    // Alle LIs in die neue Liste verschieben
+                    Array.from(parentList.children).forEach(li => newList.appendChild(li));
+                    
+                    if (NewListType === 'UL') {
+                         newList.style.listStyleType = targetStyle === 'decimal' ? 'disc' : targetStyle;
+                    }
+                    parentList.parentNode.replaceChild(newList, parentList);
+                    
+                    // Setze den Cursor an das Ende des aktuellen LI
+                    selection.removeAllRanges();
+                    const newRange = document.createRange();
+                    newRange.selectNodeContents(currentBlock);
+                    newRange.collapse(false);
+                    selection.addRange(newRange);
+
+                 } else {
+                    // Nur UL-Stil ändern (z.B. disc zu circle)
+                    if (currentListType === 'UL' && targetStyle !== 'decimal') {
+                        parentList.style.listStyleType = targetStyle;
+                    }
+                 }
             }
             // ------------------------------------
-            // 3. ZIEL: AKTIVIERUNG / TYP-WECHSEL (P/Div -> List, OL -> UL, UL -> OL)
+            // 3. ZIEL: AKTIVIERUNG (P/Div -> List)
             // ------------------------------------
             else {
                 let elementToReplace = currentBlock;
                 
-                // 3a. Bei Listen-Wechsel (z.B. OL <-> UL), zuerst das LI auflösen.
-                if (isCurrentlyLi) {
-                    const parentList = currentBlock.parentNode;
-                    
-                    const tempP = document.createElement('p');
-                    tempP.innerHTML = currentBlock.innerHTML;
-                    
-                    parentList.parentNode.insertBefore(tempP, parentList);
-                    elementToReplace = tempP;
-                    
-                    currentBlock.remove(); 
-
-                    if (parentList.children.length === 0 || parentList.innerHTML.trim() === '<br>') {
-                        parentList.remove();
-                    }
-                    // Cursor wird nach Umwandlung gesetzt
-                }
-                
-                // 3b. Umwandlung in die ZIEL-Liste (P/DIV -> List)
                 const ListType = targetStyle === 'decimal' ? 'OL' : 'UL';
                 const newList = document.createElement(ListType);
                 const newLi = document.createElement('li');
@@ -799,11 +791,12 @@ class="text-gray-300 mb-4 text-center">Geben Sie die URL für den Link ein.</p>
             }
 
             if (selection.rangeCount === 0 || !noteEditor.contains(selection.anchorNode)) {
+                // Alle Buttons de-aktivieren, wenn der Fokus nicht im Editor ist
                 document.querySelectorAll('.toolbar-btn').forEach(btn => btn.classList.remove('active'));
                 return;
             }
             
-            // Text-Formate
+            // Text-Formate (jetzt korrekt mit queryCommandState)
             boldBtn.classList.toggle('active', document.queryCommandState('bold'));
             italicBtn.classList.toggle('active', document.queryCommandState('italic'));
             underlineBtn.classList.toggle('active', document.queryCommandState('underline'));
@@ -833,34 +826,41 @@ class="text-gray-300 mb-4 text-center">Geben Sie die URL für den Link ein.</p>
         // --- NOTE RENDERING / CRUD ---
 
         const createNoteElement = (note) => {
-            // Container
             const div = document.createElement('div');
             div.className = 'note-card p-4 rounded-xl shadow-lg border hover:shadow-2xl transition-all duration-300 transform hover:scale-[1.01] flex flex-col cursor-grab';
-            div.draggable = currentSortMethod === 'unsorted'; // Nur bei unsortiert draggable
-            div.dataset.noteId = note.id; // Fügt die ID als Datenattribut hinzu
+            div.draggable = currentSortMethod === 'unsorted'; 
+            div.dataset.noteId = note.id; 
 
-            // Header mit Titel und Buttons
             const header = document.createElement('div');
             header.className = 'flex justify-between items-start mb-2';
             
             const title = document.createElement('h3');
             title.className = 'text-xl font-semibold text-gray-100 flex-grow pr-4';
-            // WICHTIG: Wenn der Titel leer ist, wird der Content in die Titelzeile verschoben, ansonsten wird 'Ohne Titel' verwendet.
-            title.textContent = note.title || 'Ohne Titel';
+
+            // WICHTIG: Wenn der Titel leer ist, wird der Anfang des Contents als Titel verwendet.
+            if (note.title.trim() === '' && note.content.trim() !== '') {
+                 // Entferne HTML-Tags, um den Anfang des Textes zu bekommen
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = note.content;
+                const plainText = tempDiv.textContent || tempDiv.innerText || '';
+                
+                title.textContent = plainText.substring(0, 100) + (plainText.length > 100 ? '...' : '');
+                title.classList.add('italic', 'text-gray-400'); // Optional: Stil, um anzuzeigen, dass es der Inhalt ist
+            } else {
+                title.textContent = note.title || 'Ohne Titel';
+                title.classList.remove('italic', 'text-gray-400');
+            }
 
             header.appendChild(title);
 
-            // Button-Container
             const btnContainer = document.createElement('div');
             btnContainer.className = 'flex-shrink-0 flex space-x-2';
             
-            // Edit Button
             const editBtn = document.createElement('button');
             editBtn.className = 'calculator-btn bg-blue-600 text-white p-2 rounded-full text-sm hover:bg-blue-700 transition-colors edit-btn';
             editBtn.innerHTML = '✏️';
             btnContainer.appendChild(editBtn);
             
-            // Delete Button
             const deleteBtn = document.createElement('button');
             deleteBtn.className = 'calculator-btn bg-red-600 text-white p-2 rounded-full text-sm hover:bg-red-700 transition-colors delete-btn';
             deleteBtn.innerHTML = '🗑️';
@@ -869,35 +869,20 @@ class="text-gray-300 mb-4 text-center">Geben Sie die URL für den Link ein.</p>
             header.appendChild(btnContainer);
             div.appendChild(header);
 
-            // Content
-            const contentDiv = document.createElement('div');
-            contentDiv.className = 'text-gray-300 note-content mt-2';
-            // Nur Haupttext anzeigen, wenn kein Titel eingegeben wurde UND der Content nicht leer ist.
-            if (note.content.trim() !== '' && note.title.trim() !== '') {
+            // Content (Wird nur angezeigt, wenn ein Titel vorhanden ist, ODER wenn der Content sehr lang ist)
+            // AUF WUNSCH: WIRD AUSGEBLENDET, WENN IM TITEL ANGEZEIGT (ansonsten wäre es doppelt).
+            if (note.title.trim() !== '' && note.content.trim() !== '') {
+                const contentDiv = document.createElement('div');
+                contentDiv.className = 'text-gray-300 note-content mt-2';
                 contentDiv.innerHTML = note.content;
                 div.appendChild(contentDiv);
-            } else if (note.content.trim() !== '' && note.title.trim() === '') {
-                // Wenn kein Titel, den Content in die Title-Zeile verschieben
-                title.textContent = note.content.substring(0, 100) + (note.content.length > 100 ? '...' : '');
-                // Der vollständige Content muss im Edit-Modus wiederhergestellt werden
-                div.dataset.fullContent = note.content;
-            } else if (note.title.trim() === '') {
-                 title.textContent = 'Ohne Titel';
             }
             
-            // Footer
-            const dateSpan = document.createElement('span');
-            dateSpan.className = 'text-xs text-gray-500 mt-3 self-end';
-            dateSpan.textContent = new Date(note.updatedAt).toLocaleDateString('de-DE', {
-                year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit'
-            });
-            div.appendChild(dateSpan);
+            // Das Datum wurde entfernt, wie gewünscht.
             
-            // Füge Event Listener hinzu
              editBtn.addEventListener('click', () => editNote(note.id, note.title, note.content));
              deleteBtn.addEventListener('click', () => deleteNote(note.id));
              
-             // Nur Drag-Listener hinzufügen, wenn Drag erlaubt ist
              if (currentSortMethod === 'unsorted') {
                  div.addEventListener('dragstart', handleDragStart);
                  div.addEventListener('dragover', handleDragOver);
@@ -910,7 +895,7 @@ class="text-gray-300 mb-4 text-center">Geben Sie die URL für den Link ein.</p>
         
         const renderNotes = (searchQuery = '') => {
             const fragment = document.createDocumentFragment();
-            notesList.innerHTML = ''; // Liste leeren
+            notesList.innerHTML = ''; 
             
             if (notesData.length === 0) {
                 noNotesMessage.classList.remove('hidden');
@@ -949,7 +934,6 @@ class="text-gray-300 mb-4 text-center">Geben Sie die URL für den Link ein.</p>
             const now = new Date().toISOString();
 
             if (editingNoteId !== null) {
-                // Bestehende Notiz bearbeiten
                 const noteIndex = notesData.findIndex(note => note.id === editingNoteId);
                 if (noteIndex !== -1) {
                     notesData[noteIndex].title = title;
@@ -960,7 +944,6 @@ class="text-gray-300 mb-4 text-center">Geben Sie die URL für den Link ein.</p>
                 saveNoteBtn.textContent = 'Notiz speichern';
                 showModal("Notiz erfolgreich aktualisiert!");
             } else {
-                // Neue Notiz erstellen
                 const newNote = {
                     id: Date.now(),
                     title: title,
@@ -975,11 +958,9 @@ class="text-gray-300 mb-4 text-center">Geben Sie die URL für den Link ein.</p>
             noteTitleInput.value = '';
             noteEditor.innerHTML = '';
             
-            // Toolbar-Zustand zurücksetzen
             updateToolbarState();
 
             saveNotesToLocal();
-            // Nach dem Speichern immer nach dem aktuellen Sortierkriterium neu rendern
             sortNotes(currentSortMethod, false); 
         };
         
@@ -998,8 +979,17 @@ class="text-gray-300 mb-4 text-center">Geben Sie die URL für den Link ein.</p>
             noteTitleInput.value = title;
             noteEditor.innerHTML = content;
             saveNoteBtn.textContent = 'Änderungen speichern';
-            window.scrollTo({ top: 0, behavior: 'smooth' }); // Zum Editor scrollen
+            window.scrollTo({ top: 0, behavior: 'smooth' }); 
             noteEditor.focus();
+            // Die Auswahl muss neu gesetzt werden, damit updateToolbarState funktioniert
+            const range = document.createRange();
+            range.selectNodeContents(noteEditor);
+            range.collapse(false);
+            const selection = window.getSelection();
+            selection.removeAllRanges();
+            selection.addRange(range);
+            saveSelection(); 
+
             updateToolbarState();
         };
 
@@ -1011,9 +1001,7 @@ class="text-gray-300 mb-4 text-center">Geben Sie die URL für den Link ein.</p>
             const sortMethodText = sortMethodTextElement ? sortMethodTextElement.textContent : 'Unsortiert';
             sortDropdownBtn.textContent = `Sortieren nach: ${sortMethodText}`;
 
-            // Entferne active-Klassen von allen Sortier-Items
             sortDropdownItems.forEach(item => item.classList.remove('active'));
-            // Setze das aktive Item
             if (sortMethodTextElement) {
                 sortMethodTextElement.classList.add('active');
             }
@@ -1033,12 +1021,10 @@ class="text-gray-300 mb-4 text-center">Geben Sie die URL für den Link ein.</p>
                     break;
                 case 'unsorted':
                 default:
-                    // Wenn unsortiert, sortiere nach der ursprünglichen id (erstellungsreihenfolge)
                     notesData.sort((a, b) => b.id - a.id);
                     break;
             }
 
-            // Speichere die neue Reihenfolge für 'unsorted'
             if (method === 'unsorted') {
                 saveNotesToLocal();
             }
@@ -1059,7 +1045,7 @@ class="text-gray-300 mb-4 text-center">Geben Sie die URL für den Link ein.</p>
             }
             dragSrcEl = e.currentTarget;
             e.dataTransfer.effectAllowed = 'move';
-            e.dataTransfer.setData('text/plain', e.currentTarget.dataset.noteId); // Überträgt die ID
+            e.dataTransfer.setData('text/plain', e.currentTarget.dataset.noteId); 
             e.currentTarget.classList.add('dragging');
         };
 
@@ -1081,11 +1067,9 @@ class="text-gray-300 mb-4 text-center">Geben Sie die URL für den Link ein.</p>
                 const dragIndex = listArray.indexOf(dragSrcEl);
                 const dropIndex = listArray.indexOf(targetEl);
 
-                // Daten-Array neu anordnen
                 const [draggedNote] = notesData.splice(dragIndex, 1);
                 notesData.splice(dropIndex, 0, draggedNote);
                 
-                // DOM-Elemente neu anordnen
                 if (dragIndex < dropIndex) {
                     notesList.insertBefore(dragSrcEl, targetEl.nextSibling);
                 } else {
@@ -1105,12 +1089,13 @@ class="text-gray-300 mb-4 text-center">Geben Sie die URL für den Link ein.</p>
 
         // Event Listener für die Toolbar-Buttons (mit Fokus-Wiederherstellung)
         noteEditor.addEventListener('mouseup', saveSelection); 
-        noteEditor.addEventListener('keyup', saveSelection);
-        // Stellt sicher, dass die Auswahl gespeichert wird, bevor der Button gedrückt wird (für Touch-Geräte)
+        noteEditor.addEventListener('keyup', updateToolbarState); // keyup löst updateToolbarState aus
+        // Stellt sicher, dass die Auswahl gespeichert wird, bevor der Button gedrückt wird (für Touch/Click)
         document.querySelectorAll('.toolbar-btn, .dropdown-item').forEach(btn => {
             btn.addEventListener('mousedown', saveSelection);
         });
 
+        // WICHTIG: Die Toolbar-Buttons rufen jetzt executeFormatAndRestore auf.
         boldBtn.addEventListener('click', () => executeFormatAndRestore('bold'));
         italicBtn.addEventListener('click', () => executeFormatAndRestore('italic'));
         underlineBtn.addEventListener('click', () => executeFormatAndRestore('underline'));
@@ -1120,7 +1105,6 @@ class="text-gray-300 mb-4 text-center">Geben Sie die URL für den Link ein.</p>
 
         listDropdownBtn.addEventListener('click', (e) => {
             e.stopPropagation();
-            // Speichere die Auswahl BEVOR das Dropdown geöffnet wird
             saveSelection(); 
             listDropdownMenu.classList.toggle('active');
             sizeDropdownMenu.classList.remove('active');
@@ -1129,7 +1113,6 @@ class="text-gray-300 mb-4 text-center">Geben Sie die URL für den Link ein.</p>
         });
         listDropdownItems.forEach(item => item.addEventListener('click', (e) => {
             e.stopPropagation();
-            // toggleCustomList übernimmt save/restoreSelection und focus
             toggleCustomList(item.dataset.value); 
             listDropdownMenu.classList.remove('active');
         }));
@@ -1144,7 +1127,7 @@ class="text-gray-300 mb-4 text-center">Geben Sie die URL für den Link ein.</p>
         });
         sizeDropdownItems.forEach(item => item.addEventListener('click', (e) => {
             e.stopPropagation();
-            executeFormatAndRestore('fontSize', item.dataset.value); // Führt Befehl aus und stellt Fokus wieder her
+            executeFormatAndRestore('fontSize', item.dataset.value); 
             sizeDropdownMenu.classList.remove('active');
         }));
 
@@ -1154,13 +1137,14 @@ class="text-gray-300 mb-4 text-center">Geben Sie die URL für den Link ein.</p>
             colorDropdownMenu.classList.toggle('active');
             listDropdownMenu.classList.remove('active');
             sizeDropdownMenu.classList.remove('active');
+            colorDropdownMenu.classList.remove('active');
             sortDropdownMenu.classList.remove('active');
         });
         colorDropdownItems.forEach(item => item.addEventListener('click', (e) => {
             e.stopPropagation();
             const colorName = item.dataset.value;
             const hexColor = colorMap[colorName];
-            executeFormatAndRestore('foreColor', hexColor); // Führt Befehl aus und stellt Fokus wieder her
+            executeFormatAndRestore('foreColor', hexColor); 
             colorDropdownMenu.classList.remove('active');
         }));
 
@@ -1194,7 +1178,7 @@ class="text-gray-300 mb-4 text-center">Geben Sie die URL für den Link ein.</p>
         exportBtn.addEventListener('click', exportNotes);
         importFileInput.addEventListener('change', importNotes);
         
-        // Event listener zur Aktualisierung des Toolbar-Zustands
+        // Event listener zur Aktualisierung des Toolbar-Zustands bei Fokuswechsel
         noteEditor.addEventListener('focus', updateToolbarState);
         noteEditor.addEventListener('blur', updateToolbarState);
         noteEditor.addEventListener('input', updateToolbarState);
