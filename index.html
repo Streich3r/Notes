@@ -38,20 +38,20 @@
             outline: none !important;
         }
 
-        /* --- KORRIGIERTES FOKUS-VERHALTEN (V8) --- */
+        /* --- FOKUS-FIX (ENTFERNT GRAUEN RING BEIM KLICK) --- */
         .toolbar-btn, .dropdown-item, #sort-dropdown-btn, #save-note-btn {
-            background-color: #4b5563;
-            /* bg-gray-600 */
+            background-color: #4b5563; /* Basis-Farbe (bg-gray-600) */
             -webkit-tap-highlight-color: transparent; 
-            /* Entfernt den grauen Flash auf mobilen Geräten */
             transition: background-color 0.15s;
         }
 
         /* FIX 1: Entfernt jegliche visuelle Markierung nach dem Mausklick (grauer Focus) */
-        /* Wichtig: Überschreibt den Standard-Focus-Zustand des Browsers */
         .toolbar-btn:focus, .dropdown-item:focus, #sort-dropdown-btn:focus, #save-note-btn:focus {
+            /* Setzt Outline und Shadow zurück */
             outline: none !important;
             box-shadow: none !important;
+            /* Stellt sicher, dass die Hintergrundfarbe nicht auf eine Browser-Default-Graustufe springt */
+            background-color: inherit; 
         }
 
         /* FIX 2: Definiert einen sichtbaren Fokus NUR für TASTUR-Barrierefreiheit (Tab-Taste) */
@@ -61,7 +61,7 @@
             box-shadow: none !important; 
         }
 
-        /* Active-Zustand (Blaue Markierung) muss über allen anderen stehen */
+        /* Active-Zustand (Blaue Markierung BLEIBT) */
         .toolbar-btn.active, .dropdown-item.active {
             background-color: #2563eb !important; 
             color: #ffffff !important;
@@ -74,14 +74,12 @@
 
         /* Spezial-Override für den Save-Button (blau) */
         #save-note-btn { background-color: #2563eb; }
-        /* Stellt sicher, dass die blaue Farbe bei :focus-visible bleibt, aber der Outline Ring erscheint */
-        #save-note-btn:focus, #save-note-btn:focus-visible { 
-            background-color: #2563eb !important;
-            /* Die Fokus-Markierungen werden durch die globalen Regeln oben definiert */
-        }
         #save-note-btn:hover { background-color: #1d4ed8; }
         #save-note-btn:active { background-color: #1e40af !important; }
+        /* Sicherstellen, dass der Fokus-Fix auch den Save-Button erfasst */
+        #save-note-btn:focus:not(.active) { background-color: #1d4ed8 !important; }
         
+        /* Note-Editor Platzhalter-Stile */
         #note-editor:empty:before {
             content: attr(placeholder);
             color: #718096;
@@ -89,7 +87,7 @@
             display: block;
         }
         
-        /* --- STABILISIERTE LISTE-STYLES --- */
+        /* --- STABILISIERTE LISTEN-STYLES --- */
         #note-editor li, .note-card li {
             color: #ffffff !important;
         }
@@ -98,29 +96,6 @@
             color: #ffffff !important;
         }
         
-        #note-editor ul, #note-editor ol, .note-card ul, .note-card ol {
-            margin-left: 1.5rem;
-        }
-
-        /* Kreise (Hohle Kreise) */
-        #note-editor ul[style*="list-style-type: circle"], .note-card ul[style*="list-style-type: circle"] {
-            list-style-type: circle !important;
-        }
-        
-        /* Punkte (Gefüllte Scheiben/Discs) */
-        #note-editor ul[style*="list-style-type: disc"], .note-card ul[style*="list-style-type: disc"] {
-            list-style-type: disc !important;
-        }
-        
-        /* Fallback für ul ohne Stil */
-        #note-editor ul:not([style]), .note-card ul:not([style]) {
-             list-style-type: disc !important;
-        }
-        
-        #note-editor ol, .note-card ol {
-            list-style-type: decimal;
-        }
-
         .dropdown-menu {
             display: none;
             position: absolute;
@@ -144,8 +119,7 @@
             </h1>
         </header>
 
-        <div class="mb-6 flex 
-flex-col sm:flex-row gap-4">
+        <div class="mb-6 flex flex-col sm:flex-row gap-4">
             <input type="text" id="search-input" placeholder="Notizen durchsuchen..." class="w-full sm:w-1/3 p-3 rounded-xl border border-gray-600 bg-gray-800 text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300 focus:outline-none">
             
             <div class="flex gap-4 w-full sm:w-2/3">
@@ -237,8 +211,7 @@ flex-col sm:flex-row gap-4">
             <div id="note-editor" class="w-full rounded-xl border border-gray-600 bg-gray-800 text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none transition-all duration-300" contenteditable="true" placeholder="Schreiben Sie hier Ihre neue Notiz..."></div>
             
             <div class="mt-4 flex justify-end space-x-2">
-                <button id="save-note-btn" class="bg-blue-600 text-white font-medium py-2 px-5 
-rounded-full shadow-lg hover:bg-blue-700 transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50">
+                <button id="save-note-btn" class="bg-blue-600 text-white font-medium py-2 px-5 rounded-full shadow-lg hover:bg-blue-700 transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50">
                     Notiz speichern
                 </button>
             </div>
@@ -247,15 +220,13 @@ rounded-full shadow-lg hover:bg-blue-700 transition-all duration-300 transform h
         <div id="notes-list" class="space-y-4">
         </div>
 
-        <div id="loading-indicator" class="text-center 
-text-gray-400 mt-8 hidden">
+        <div id="loading-indicator" class="text-center text-gray-400 mt-8 hidden">
             <div class="animate-spin inline-block w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full"></div>
             <p class="mt-2">Notizen werden geladen...</p>
         </div>
 
         <div id="no-notes-message" class="text-center text-gray-400 mt-8 hidden">
-            <p>Sie haben noch keine Notizen.
-Fügen Sie eine neue hinzu, um zu beginnen!</p>
+            <p>Sie haben noch keine Notizen. Fügen Sie eine neue hinzu, um zu beginnen!</p>
         </div>
     </div>
 
@@ -278,8 +249,7 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors focus:out
         <div class="bg-gray-800 p-6 rounded-2xl shadow-xl max-w-lg w-full">
             <h3 class="text-xl font-bold text-gray-200 mb-4 text-center">Link einfügen</h3>
             
-            <p 
-class="text-gray-300 mb-4 text-center">Geben Sie die URL für den Link ein.</p>
+            <p class="text-gray-300 mb-4 text-center">Geben Sie die URL für den Link ein.</p>
             <input type="text" id="link-url-input" placeholder="https://beispiel.de" class="w-full p-3 rounded-xl border border-gray-600 bg-gray-900 text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300 focus:outline-none">
             <div class="mt-6 flex justify-end space-x-4">
                 <button id="link-cancel-btn" class="bg-gray-600 text-gray-200 font-medium py-2 px-5 rounded-full hover:bg-gray-500 transition-colors focus:outline-none">
@@ -333,6 +303,7 @@ class="text-gray-300 mb-4 text-center">Geben Sie die URL für den Link ein.</p>
         const modalText = document.getElementById('modal-text');
         const modalConfirmBtn = document.getElementById('modal-confirm-btn');
         const modalCancelBtn = document.getElementById('modal-cancel-btn');
+        
         // Link-Modal-Elemente
         const linkModalBackdrop = document.getElementById('link-modal-backdrop');
         const linkUrlInput = document.getElementById('link-url-input');
@@ -341,11 +312,10 @@ class="text-gray-300 mb-4 text-center">Geben Sie die URL für den Link ein.</p>
 
         let notesData = [];
         let editingNoteId = null;
-        let savedRange;
-        // Zum Speichern der Auswahl
+        let savedRange; 
         let currentSortMethod = 'unsorted';
-        // Speicherschlüssel als Konstante definieren
         const NOTES_STORAGE_KEY = 'notes';
+        
         const colorMap = {
             'red': '#ff0000',
             'green': '#008000',
@@ -360,7 +330,7 @@ class="text-gray-300 mb-4 text-center">Geben Sie die URL für den Link ein.</p>
         };
         // Drag-and-Drop-Variablen
         let draggedItem = null;
-
+        
         const showModal = (message, showCancelButton = false) => {
             return new Promise(resolve => {
                 modalText.textContent = message;
@@ -379,11 +349,12 @@ class="text-gray-300 mb-4 text-center">Geben Sie die URL für den Link ein.</p>
                 modalCancelBtn.onclick = cancelHandler;
             });
         };
-
+        
         const showLinkModal = () => {
             return new Promise(resolve => {
                 linkUrlInput.value = '';
                 linkModalBackdrop.classList.remove('hidden');
+                
                 const insertHandler = () => {
                     linkModalBackdrop.classList.add('hidden');
                     resolve(linkUrlInput.value);
@@ -392,6 +363,7 @@ class="text-gray-300 mb-4 text-center">Geben Sie die URL für den Link ein.</p>
                     linkModalBackdrop.classList.add('hidden');
                     resolve(null);
                 };
+                
                 linkInsertBtn.onclick = insertHandler;
                 linkCancelBtn.onclick = cancelHandler;
             });
@@ -401,7 +373,6 @@ class="text-gray-300 mb-4 text-center">Geben Sie die URL für den Link ein.</p>
         const collapseSelection = () => {
             const selection = window.getSelection();
             if (selection.rangeCount > 0) {
-                // Hebt die aktive Textmarkierung auf und lässt nur den Cursor stehen
                 selection.collapseToEnd();
             }
         };
@@ -409,12 +380,7 @@ class="text-gray-300 mb-4 text-center">Geben Sie die URL für den Link ein.</p>
         
         const saveNotesToLocal = () => {
             try {
-                // Entferne die Drag-Positionen, da sie nicht Teil des Modells sind
-                const notesToSave = notesData.map(note => {
-                    const { dragIndex, ...rest } = note; 
-                    return rest;
-                });
-                localStorage.setItem(NOTES_STORAGE_KEY, JSON.stringify(notesToSave));
+                localStorage.setItem(NOTES_STORAGE_KEY, JSON.stringify(notesData));
             } catch (e) {
                 console.error("Fehler beim Speichern der Notizen im lokalen Speicher:", e);
                 showModal("Ihre Notizen konnten nicht gespeichert werden. Der lokale Speicher ist möglicherweise voll.");
@@ -435,7 +401,6 @@ class="text-gray-300 mb-4 text-center">Geben Sie die URL für den Link ein.</p>
                     updatedAt: note.updatedAt || now
                 }));
 
-                // Wende die Standard-Sortierung an, um die UI zu initialisieren und zu rendern
                 sortNotes(currentSortMethod);
             } catch (e) {
                 console.error("Fehler beim Laden der Notizen aus dem lokalen Speicher:", e);
@@ -463,29 +428,27 @@ class="text-gray-300 mb-4 text-center">Geben Sie die URL für den Link ein.</p>
             a.click();
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
-            await showModal('Notizen erfolgreich exportiert!', false);
+            
+            // ⭐ ANFORDERUNG ERFÜLLT: Export-Erfolgs-Meldung entfernt
+            // await showModal('Notizen erfolgreich exportiert!', false); 
         };
-
+        
         const importNotes = (event) => {
             const file = event.target.files[0];
             if (!file) return;
 
             const reader = new FileReader();
-
             reader.onload = async (e) => {
                 try {
                     const importedNotes = JSON.parse(e.target.result);
                     if (Array.isArray(importedNotes)) {
-                        // NEUE LOGIK: Kombiniert die bestehenden Notizen mit den importierten Notizen.
+                        
                         // Fügt nur Notizen hinzu, die noch nicht existieren (anhand der ID).
                         const existingIds = new Set(notesData.map(n => n.id));
                         const uniqueNewNotes = importedNotes.filter(n => !existingIds.has(n.id));
-
                         notesData = notesData.concat(uniqueNewNotes);
-
-                        // Speichere die kombinierte Liste in Local Storage
+                        
                         saveNotesToLocal();
-                        // Lade die Notizen neu und rendere sie (wendet auch die Sortierung an)
                         loadNotesFromLocal();
                         await showModal(`Erfolgreich ${uniqueNewNotes.length} Notizen importiert!`, false);
                     } else {
@@ -496,81 +459,56 @@ class="text-gray-300 mb-4 text-center">Geben Sie die URL für den Link ein.</p>
                     console.error('Import error:', error);
                 }
             };
-
             reader.onerror = () => {
                 showModal('Fehler beim Lesen der Datei.', false);
             };
-
             reader.readAsText(file);
         };
         // --- ENDE IMPORT/EXPORT FUNKTIONEN ---
 
+
+        
         const applyFormat = (command, value = null) => {
             document.execCommand(command, false, value);
         };
-
-        const toggleList = (command) => {
-            applyFormat(command);
-        };
-
+        
         const rgbToHex = (rgb) => {
             if (!rgb || !rgb.startsWith('rgb')) return rgb;
             if(rgb.trim() === '') return '';
-
+            
             const parts = rgb.match(/^rgb\((\d+),\s*(\d+),\s*(\d+)\)$/);
             if (!parts) return rgb;
-
             const hex = (x) => {
                 const h = parseInt(x).toString(16);
                 return h.length === 1 ? '0' + h : h;
             };
-
             return '#' + hex(parts[1]) + hex(parts[2]) + hex(parts[3]);
         };
-
-        // ******************************************************
-        // ** KORRIGIERTE DOM-MANIPULATIONS-LOGIK FÜR LISTEN **
-        // ******************************************************
         
-        /**
-         * Helferfunktion: Findet das nächste Block-Level-Element (p, div, li, hx) 
-         * in Bezug auf den aktuellen Cursor innerhalb des noteEditor.
-         */
         const getCurrentBlockElement = (selection) => {
             if (!selection.rangeCount) return null;
             let node = selection.getRangeAt(0).startContainer;
 
-            // Wenn es ein Textknoten ist, gehe zum übergeordneten Element
             if (node.nodeType === Node.TEXT_NODE) {
                 node = node.parentNode;
             }
 
-            // Finde den nächsten Block-Level-Elternteil (P, DIV, LI)
             while (node && node !== noteEditor) {
                 const tagName = node.tagName;
-                // Füge DIV hinzu, falls der Editor ein leeres DIV erstellt (z.B. bei Enter)
                 if (['P', 'DIV', 'LI', 'H1', 'H2', 'H3'].includes(tagName)) {
                     return node;
                 }
                 node = node.parentNode;
             }
-            // Fallback
             return noteEditor;
         };
 
-        /**
-         * Führt die unabhängige Listenaktion pro Zeile durch (manuelle DOM-Manipulation).
-         * @param {string} targetStyle - 'decimal', 'disc', 'circle'
-         */
         const toggleCustomList = (targetStyle) => {
             const selection = window.getSelection();
             if (!selection.rangeCount) return;
 
-            // Finde das aktuelle Block-Element
             const currentBlock = getCurrentBlockElement(selection);
-
             if (!currentBlock || currentBlock === noteEditor) {
-                // Fallback für leere Zeile im Root: Erstelle ein P-Tag und rufe Funktion erneut auf
                 document.execCommand('insertParagraph', false, null);
                 const newP = getCurrentBlockElement(selection);
                 if (newP && newP !== noteEditor) {
@@ -578,96 +516,181 @@ class="text-gray-300 mb-4 text-center">Geben Sie die URL für den Link ein.</p>
                 }
                 return;
             }
-
+            
             const isCurrentlyLi = currentBlock.tagName === 'LI';
             let currentListType = null;
             let currentListStyle = 'none';
 
             if (isCurrentlyLi) {
                 const parentList = currentBlock.parentNode;
-                currentListType = parentList.tagName; // 'UL' or 'OL'
-                currentListStyle = currentListType === 'OL' ? 
-                    'decimal' : (parentList.style.listStyleType || 'disc');
+                currentListType = parentList.tagName;
+                currentListStyle = currentListType === 'OL' ?
+                'decimal' : (parentList.style.listStyleType || 'disc');
                 if (currentListStyle === '') currentListStyle = 'disc';
             }
 
-            // ------------------------------------
             // 1. ZIEL: DEAKTIVIERUNG (Toggle OFF)
-            // ------------------------------------
-            // Prüfe, ob der Zielstil gleich dem aktuellen Stil ist
-            if (isCurrentlyLi && (
-                (targetStyle === 'decimal' && currentListStyle === 'decimal') ||
-                (targetStyle === 'disc' && (currentListStyle === 'disc' || currentListStyle === '')) ||
-                (targetStyle === 'circle' && currentListStyle === 'circle')
-            ) ) {
-                // Unliste das Element: Content in ein P-Tag zurückführen
+            if (isCurrentlyLi && 
+                ( (targetStyle === 'decimal' && currentListStyle === 'decimal') || 
+                  (targetStyle === 'disc' && (currentListStyle === 'disc' || currentListStyle === '')) ||
+                  (targetStyle === 'circle' && currentListStyle === 'circle') ) ) 
+            {
                 const content = currentBlock.innerHTML;
                 const newBlock = document.createElement('p');
                 newBlock.innerHTML = content;
                 const parentList = currentBlock.parentNode;
                 
-                // Füge den neuen Block vor der Elternliste ein
-                parentList.parentNode.insertBefore(newBlock, parentList); 
-                currentBlock.remove(); // Entferne das li
-
-                // Aufräumen: Wenn die Elternliste jetzt leer ist und nur noch <br> enthält, entferne sie
+                parentList.parentNode.insertBefore(newBlock, parentList);
+                currentBlock.remove(); 
+                
                 if (parentList.children.length === 0 || parentList.innerHTML.trim() === '<br>') {
                     parentList.remove();
                 }
-
-                // Setze den Cursor zurück
+                
                 selection.removeAllRanges();
                 const newRange = document.createRange();
                 newRange.selectNodeContents(newBlock);
                 newRange.collapse(false);
                 selection.addRange(newRange);
-                return; // Aktion beendet
+                return;
             }
-            
-            // ------------------------------------
+
             // 2. ZIEL: STIL-WECHSEL INNERHALB UL (disc <-> circle)
-            // ------------------------------------
             if (isCurrentlyLi && currentListType === 'UL' && targetStyle !== 'decimal') {
                 const parentList = currentBlock.parentNode;
-                // FIX: Explizit 'disc' setzen, nicht leere Zeichenkette
-                const targetMarkerStyle = targetStyle === 'disc' ? 'disc' : 'circle';
+                const targetMarkerStyle = targetStyle === 'disc' ? 'disc' : targetStyle;
                 parentList.style.listStyleType = targetMarkerStyle;
-                updateToolbarState(); // Aktualisiere den Zustand
-                return; // Aktion beendet
+                updateToolbarState();
+                return;
             }
 
-            // ------------------------------------
-            // 3. ZIEL: AKTIVIERUNG ODER LISTENTYP-WECHSEL (z.B. P zu UL/OL, OL zu UL)
-            // ------------------------------------
-            let newParentList;
-            if (targetStyle === 'decimal') {
-                newParentList = document.createElement('ol');
-            } else {
-                newParentList = document.createElement('ul');
-                // Setze den gewünschten Stil direkt auf das UL-Element
-                newParentList.style.listStyleType = targetStyle;
+            // 3. ZIEL: AKTIVIERUNG / TYP-WECHSEL
+            let elementToReplace = currentBlock;
+            let contentToWrap = currentBlock.innerHTML;
+
+            // Bei Listen-Wechsel (z.B. OL <-> UL), zuerst das LI auflösen.
+            if (isCurrentlyLi) {
+                const parentList = currentBlock.parentNode;
+                contentToWrap = currentBlock.innerHTML;
+
+                const tempP = document.createElement('p');
+                tempP.innerHTML = contentToWrap;
+                
+                parentList.parentNode.insertBefore(tempP, parentList);
+                currentBlock.remove();
+                
+                if (parentList.children.length === 0) {
+                    parentList.remove();
+                }
+                elementToReplace = tempP;
             }
 
-            const listItem = document.createElement('li');
-            listItem.innerHTML = currentBlock.innerHTML;
+            // Erstellen der neuen Listenstruktur
+            const listTag = targetStyle === 'decimal' ? 'OL' : 'UL';
+            const newList = document.createElement(listTag);
+            const newLi = document.createElement('li');
+            newLi.innerHTML = contentToWrap || '<br>';
+            newList.appendChild(newLi);
 
-            // Ersetze das aktuelle Block-Element (P, DIV, etc.) durch die neue Liste
-            currentBlock.parentNode.insertBefore(newParentList, currentBlock);
-            newParentList.appendChild(listItem);
-            currentBlock.remove(); // Entferne das alte Block-Element
+            // Style setzen (nur für UL)
+            if (listTag === 'UL') {
+                const targetMarkerStyle = targetStyle === 'disc' ? 'disc' : targetStyle;
+                newList.style.listStyleType = targetMarkerStyle;
+            }
 
-            // Setze den Cursor in das neue Listenelement
+            // Ersetzen im DOM
+            if (elementToReplace && elementToReplace.parentNode) {
+                elementToReplace.parentNode.insertBefore(newList, elementToReplace);
+                elementToReplace.remove();
+            }
+
+            // Cursor setzen
             selection.removeAllRanges();
             const newRange = document.createRange();
-            newRange.selectNodeContents(listItem);
+            newRange.selectNodeContents(newLi);
             newRange.collapse(false);
             selection.addRange(newRange);
-            updateToolbarState();
         };
+        
+        const updateToolbarState = () => {
+            document.querySelectorAll('.toolbar-btn.active').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.dropdown-item.active').forEach(btn => btn.classList.remove('active'));
+            
+            const selection = window.getSelection();
 
-        // ******************************************************
-        // ** ENDE KORRIGIERTE DOM-MANIPULATIONS-LOGIK FÜR LISTEN **
-        // ******************************************************
+            if (!selection || selection.rangeCount === 0 || !noteEditor.contains(selection.anchorNode)) {
+                const defaultColorBtn = document.querySelector(`.dropdown-item[data-value="white"]`);
+                if (defaultColorBtn) defaultColorBtn.classList.add('active');
+                const defaultSizeBtn = document.querySelector(`.dropdown-item[data-value="3"]`);
+                if (defaultSizeBtn) defaultSizeBtn.classList.add('active');
+                return;
+            }
+
+            if (document.queryCommandState('bold')) boldBtn.classList.add('active');
+            if (document.queryCommandState('italic')) italicBtn.classList.add('active');
+            if (document.queryCommandState('underline')) underlineBtn.classList.add('active');
+            if (document.queryCommandState('indent')) indentBtn.classList.add('active');
+            if (document.queryCommandState('outdent')) outdentBtn.classList.add('active');
+            if (document.queryCommandState('createLink')) linkBtn.classList.add('active');
+
+            const currentSize = document.queryCommandValue('fontSize');
+            const sizeButton = document.querySelector(`.dropdown-item[data-value="${currentSize || '3'}"]`);
+            if (sizeButton) sizeButton.classList.add('active');
+
+            let colorFound = false;
+            let currentNode = selection.anchorNode.nodeType === Node.TEXT_NODE ?
+                selection.anchorNode.parentNode : selection.anchorNode;
+            
+            const queryColor = document.queryCommandValue('foreColor');
+            if (queryColor && queryColor !== 'rgb(0, 0, 0)' && queryColor.toLowerCase() !== '#000000') {
+                const hexColor = rgbToHex(queryColor);
+                const colorKey = Object.keys(colorMap).find(key => colorMap[key].toLowerCase() === hexColor);
+                if (colorKey) {
+                    const colorButton = document.querySelector(`.dropdown-item[data-value="${colorKey}"]`);
+                    if (colorButton) {
+                        colorButton.classList.add('active');
+                        colorFound = true;
+                    }
+                }
+            }
+
+            if (!colorFound) {
+                while (currentNode && currentNode !== noteEditor) {
+                    const currentColor = currentNode.style.color ||
+                        currentNode.getAttribute('color');
+                    if (currentColor) {
+                        const normalizedColor = currentColor.toLowerCase().trim();
+                        const hexColor = rgbToHex(normalizedColor);
+                        const colorKey = Object.keys(colorMap).find(key => colorMap[key].toLowerCase() === hexColor || colorMap[key].toLowerCase() === normalizedColor);
+                        if (colorKey) {
+                            const colorButton = document.querySelector(`.dropdown-item[data-value="${colorKey}"]`);
+                            if (colorButton) {
+                                colorButton.classList.add('active');
+                                colorFound = true;
+                                break;
+                            }
+                        }
+                    }
+                    currentNode = currentNode.parentElement;
+                }
+            }
+
+            if (!colorFound) {
+                const defaultColorBtn = document.querySelector(`.dropdown-item[data-value="white"]`);
+                if (defaultColorBtn) defaultColorBtn.classList.add('active');
+            }
+
+            const currentBlock = getCurrentBlockElement(selection);
+            if (currentBlock && currentBlock.tagName === 'LI') {
+                const parentList = currentBlock.parentNode;
+                const listStyle = parentList.style.listStyleType || (parentList.tagName === 'OL' ? 'decimal' : 'disc');
+                
+                const listButton = document.querySelector(`.dropdown-item[data-value="${listStyle}"]`);
+                if (listButton) {
+                    listButton.classList.add('active');
+                }
+            }
+        };
 
         const saveSelection = () => {
             if (window.getSelection().rangeCount > 0) {
@@ -682,156 +705,66 @@ class="text-gray-300 mb-4 text-center">Geben Sie die URL für den Link ein.</p>
                 selection.addRange(savedRange);
             }
         };
-
         
+        // --- HAUPTFUNKTIONEN ZUM HINZUFÜGEN, BEARBEITEN UND LÖSCHEN ---
         const saveNote = () => {
             const title = noteTitleInput.value.trim();
             const content = noteEditor.innerHTML.trim();
 
-            // NEUE LOGIK (V8): Titel-Fallback: Wenn der Titel leer ist, nimm die erste Zeile des Inhalts.
-            let finalTitle = title;
-            if (!finalTitle && content) {
-                // 1. Entferne alle HTML-Tags, ersetze sie durch Leerzeichen, um sauberen Text zu erhalten.
-                let plainContent = content.replace(/<[^>]*>/g, ' ').trim();
-                // 2. Entferne Zeilenumbrüche/zusätzliche Leerzeichen
-                plainContent = plainContent.replace(/\s{2,}/g, ' '); 
-
-                // 3. Nimm die ersten 50 Zeichen
-                let firstLine = plainContent.substring(0, 50).trim(); 
-                
-                // 4. Stelle sicher, dass der Titel nicht nur Leerzeichen ist.
-                if (firstLine) {
-                    finalTitle = firstLine;
-                }
-            }
-            
-            // Fallback auf "Ohne Titel", wenn immer noch leer (z.B. nur Whitespace)
-            if (!finalTitle) {
-                finalTitle = 'Ohne Titel';
-            }
-
-            if (finalTitle === 'Ohne Titel' && !content) {
+            if (!title && !content) {
                 showModal("Die Notiz ist leer. Bitte geben Sie einen Titel oder Inhalt ein.");
                 return;
             }
-            
-            const now = new Date();
-            const timestamp = now.toISOString();
+
+            const now = new Date().toISOString();
 
             if (editingNoteId) {
-                // Notiz bearbeiten
                 const noteIndex = notesData.findIndex(n => n.id === editingNoteId);
                 if (noteIndex !== -1) {
-                    notesData[noteIndex].title = finalTitle; 
+                    notesData[noteIndex].title = title;
                     notesData[noteIndex].content = content;
-                    notesData[noteIndex].updatedAt = timestamp;
+                    notesData[noteIndex].updatedAt = now;
                 }
                 editingNoteId = null; 
                 saveNoteBtn.textContent = 'Notiz speichern';
             } else {
-                // Neue Notiz erstellen
                 const newNote = {
                     id: Date.now().toString(),
-                    title: finalTitle,
+                    title: title,
                     content: content,
-                    createdAt: timestamp,
-                    updatedAt: timestamp
+                    createdAt: now,
+                    updatedAt: now
                 };
-                // Füge die neue Notiz am Anfang der Liste hinzu
                 notesData.unshift(newNote);
             }
 
-            // Felder leeren und Notizen speichern/anzeigen
+            saveNotesToLocal();
+            sortNotes('unsorted'); 
             noteTitleInput.value = '';
             noteEditor.innerHTML = '';
             
-            saveNotesToLocal();
-            // Erzwungene Neusortierung/Neurenderung, um die neue Notiz anzuzeigen
-            sortNotes(currentSortMethod);
-        };
-        
-
-        const renderNotes = (searchTerm = '') => {
-            notesList.innerHTML = '';
-            const filteredNotes = notesData.filter(note => {
-                const search = searchTerm.toLowerCase().trim();
-                if (!search) return true;
-                return note.title.toLowerCase().includes(search) || 
-                       note.content.toLowerCase().includes(search);
-            });
-
-            if (filteredNotes.length === 0) {
-                noNotesMessage.classList.remove('hidden');
-            } else {
-                noNotesMessage.classList.add('hidden');
-            }
-
-            filteredNotes.forEach(note => {
-                const card = createNoteCard(note);
-                notesList.appendChild(card);
-            });
-        };
-
-        const createNoteCard = (note) => {
-            const div = document.createElement('div');
-            div.className = 'note-card p-4 rounded-xl shadow-lg border-l-4 border-blue-500 hover:shadow-xl transition-shadow cursor-grab';
-            div.setAttribute('draggable', currentSortMethod === 'unsorted' ? 'true' : 'false');
-            div.dataset.id = note.id;
-
-            const date = new Date(note.updatedAt).toLocaleDateString('de-DE', {
-                year: 'numeric',
-                month: 'short',
-                day: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit'
-            });
-
-            // Entferne alle HTML-Tags für das Snippet, um reinen Text zu erhalten
-            const contentSnippet = note.content.replace(/<[^>]*>/g, ' ').trim().substring(0, 150) + (note.content.length > 150 ? '...' : '');
-
-            div.innerHTML = `
-                <div class="flex justify-between items-start mb-2">
-                    <h3 class="text-xl font-bold text-gray-100">${note.title || 'Ohne Titel'}</h3>
-                    <div class="text-sm text-gray-400">Aktualisiert: ${date}</div>
-                </div>
-                <div class="text-gray-300 mb-4 overflow-hidden max-h-24 note-content-preview">${contentSnippet}</div>
-                <div class="flex justify-end space-x-2 mt-4">
-                    <button class="edit-btn text-blue-400 hover:text-blue-300 font-medium transition-colors">Bearbeiten</button>
-                    <button class="delete-btn text-red-400 hover:text-red-300 font-medium transition-colors">Löschen</button>
-                </div>
-            `;
-             
-             // Event Listener an die erstellten Buttons anhängen
-             div.querySelector('.edit-btn').addEventListener('click', () => editNote(note.id, note.title, note.content));
-             div.querySelector('.delete-btn').addEventListener('click', () => deleteNote(note.id));
-        
-             // Nur Drag-Listener hinzufügen, wenn Drag erlaubt ist
-             if (currentSortMethod === 'unsorted') {
-                 div.addEventListener('dragstart', handleDragStart);
-                 div.addEventListener('dragover', handleDragOver);
-                 div.addEventListener('drop', handleDrop);
-                 div.addEventListener('dragend', handleDragEnd);
-             }
-             return div;
+            noteEditor.blur();
+            noteTitleInput.blur();
         };
 
         const editNote = (id, title, content) => {
+            editingNoteId = id;
             noteTitleInput.value = title;
             noteEditor.innerHTML = content;
-            editingNoteId = id;
             saveNoteBtn.textContent = 'Änderungen speichern';
-            // Scroll zur Eingabeformular
-            noteTitleInput.scrollIntoView({ behavior: 'smooth' });
             noteEditor.focus();
+            
+            document.getElementById('note-editor').scrollIntoView({ behavior: 'smooth' });
+            updateToolbarState(); 
         };
 
         const deleteNote = async (id) => {
-            const confirm = await showModal("Sind Sie sicher, dass Sie diese Notiz löschen möchten?", true);
-            if (confirm) {
+            const confirmed = await showModal("Möchten Sie diese Notiz wirklich löschen?", true);
+            if (confirmed) {
                 notesData = notesData.filter(note => note.id !== id);
                 saveNotesToLocal();
-                sortNotes(currentSortMethod); // Re-render
-                // Wenn die gelöschte Notiz die aktuell bearbeitete Notiz war
+                renderNotes(searchInput.value); 
+                
                 if (editingNoteId === id) {
                     editingNoteId = null;
                     noteTitleInput.value = '';
@@ -841,78 +774,83 @@ class="text-gray-300 mb-4 text-center">Geben Sie die URL für den Link ein.</p>
             }
         };
 
+        // --- SORTIER-LOGIK ---
         const sortNotes = (method) => {
             currentSortMethod = method;
-            
-            // Setze den Text des Dropdowns
-            const selectedItem = document.querySelector(`#sort-dropdown-menu button[data-value="${method}"]`);
-            if (selectedItem) {
-                const label = selectedItem.textContent.trim();
-                sortDropdownBtn.textContent = `Sortieren nach: ${label}`;
-
-                // Markiere den aktiven Button im Dropdown
-                sortDropdownItems.forEach(item => item.classList.remove('active'));
-                selectedItem.classList.add('active');
-            }
+            let sortedNotes = [...notesData];
 
             switch (method) {
                 case 'newest':
-                    notesData.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+                    sortedNotes.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
                     break;
                 case 'oldest':
-                    notesData.sort((a, b) => new Date(a.updatedAt) - new Date(b.updatedAt));
+                    sortedNotes.sort((a, b) => new Date(a.updatedAt) - new Date(b.updatedAt));
                     break;
                 case 'title-asc':
-                    notesData.sort((a, b) => a.title.localeCompare(b.title));
+                    sortedNotes.sort((a, b) => a.title.localeCompare(b.title));
                     break;
                 case 'title-desc':
-                    notesData.sort((a, b) => b.title.localeCompare(a.title));
+                    sortedNotes.sort((a, b) => b.title.localeCompare(a.title));
                     break;
                 case 'unsorted':
-                    // In diesem Fall behalten wir die Reihenfolge aus dem Speicher bei 
-                    // (oder die zuletzt durch Drag-and-Drop geänderte Reihenfolge)
-                    break;
                 default:
-                    // Fallback
-                    notesData.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+                    break;
             }
-            
+            notesData = sortedNotes;
             renderNotes(searchInput.value);
-            // Speichere die neue Reihenfolge für 'unsorted'
-            if (method !== 'unsorted') {
-                saveNotesToLocal();
+            
+            sortDropdownItems.forEach(item => item.classList.remove('active'));
+            const activeItem = document.querySelector(`#sort-dropdown-menu .dropdown-item[data-value="${method}"]`);
+            if (activeItem) activeItem.classList.add('active');
+            
+            sortDropdownBtn.innerHTML = `Sortieren nach: ${activeItem ? activeItem.textContent : 'Unsortiert'}`;
+        };
+        
+        // --- RENDERING-LOGIK ---
+        const renderNotes = (searchTerm = '') => {
+            notesList.innerHTML = '';
+            loadingIndicator.classList.add('hidden');
+            
+            const normalizedSearch = searchTerm.toLowerCase().trim();
+            const filteredNotes = notesData.filter(note => 
+                note.title.toLowerCase().includes(normalizedSearch) ||
+                note.content.toLowerCase().includes(normalizedSearch) 
+            );
+
+            if (filteredNotes.length === 0) {
+                noNotesMessage.classList.remove('hidden');
+            } else {
+                noNotesMessage.classList.add('hidden');
+                filteredNotes.forEach(note => {
+                    const card = createNoteCard(note);
+                    notesList.appendChild(card);
+                });
             }
         };
 
-        // --- DRAG AND DROP LOGIC ---
-
+        // --- DRAG AND DROP FUNKTIONEN ---
         const handleDragStart = (e) => {
             if (currentSortMethod !== 'unsorted') return;
             draggedItem = e.target.closest('.note-card');
-            if (!draggedItem) return;
             e.dataTransfer.effectAllowed = 'move';
             e.dataTransfer.setData('text/plain', draggedItem.dataset.id);
-            setTimeout(() => {
-                draggedItem.classList.add('dragging');
-            }, 0);
+            setTimeout(() => draggedItem.classList.add('dragging'), 0); 
         };
 
         const handleDragOver = (e) => {
-            if (currentSortMethod !== 'unsorted' || !draggedItem) return;
+            if (currentSortMethod !== 'unsorted') return;
             e.preventDefault(); 
             e.dataTransfer.dropEffect = 'move';
 
-            const targetItem = e.target.closest('.note-card');
-            if (targetItem && targetItem !== draggedItem) {
-                const targetRect = targetItem.getBoundingClientRect();
-                const mouseY = e.clientY;
-                const isBefore = mouseY < targetRect.top + targetRect.height / 2;
-                
-                // Visuelles Feedback
-                if (isBefore) {
-                    notesList.insertBefore(draggedItem, targetItem);
+            const target = e.target.closest('.note-card');
+            if (target && target !== draggedItem) {
+                const notesContainer = notesList;
+                const after = target.getBoundingClientRect().top + target.offsetHeight / 2 < e.clientY;
+
+                if (after) {
+                    notesContainer.insertBefore(draggedItem, target.nextElementSibling);
                 } else {
-                    notesList.insertBefore(draggedItem, targetItem.nextSibling);
+                    notesContainer.insertBefore(draggedItem, target);
                 }
             }
         };
@@ -920,207 +858,62 @@ class="text-gray-300 mb-4 text-center">Geben Sie die URL für den Link ein.</p>
         const handleDrop = (e) => {
             if (currentSortMethod !== 'unsorted' || !draggedItem) return;
             e.preventDefault();
-            // Die visuelle DOM-Reihenfolge wurde bereits in handleDragOver geändert.
-            // Jetzt die Daten-Array-Reihenfolge synchronisieren.
+            
             const draggedId = draggedItem.dataset.id;
             const droppedIndex = Array.from(notesList.children).indexOf(draggedItem);
 
             const oldIndex = notesData.findIndex(n => n.id === draggedId);
             if (oldIndex !== -1) {
                 const [note] = notesData.splice(oldIndex, 1);
-                // Füge die Notiz an der neuen Position (basierend auf DOM-Index) wieder ein
                 notesData.splice(droppedIndex, 0, note);
                 saveNotesToLocal();
-                renderNotes(searchInput.value); // Re-render, um `draggable` auf false zu setzen/aktualisieren
+                renderNotes(searchInput.value);
             }
         };
 
-        const handleDragEnd = () => {
-            if (draggedItem) {
-                draggedItem.classList.remove('dragging');
-            }
+        const handleDragEnd = (e) => {
+            if (currentSortMethod !== 'unsorted') return;
+            draggedItem.classList.remove('dragging');
             draggedItem = null;
         };
+        // --- ENDE DRAG AND DROP FUNKTIONEN ---
 
-        // --- DROPDOWN LOGIC ---
-
-        const toggleDropdown = (menu) => {
-            // Schließe alle anderen offenen Dropdowns
-            document.querySelectorAll('.dropdown-menu.active').forEach(openMenu => {
-                if (openMenu !== menu) {
-                    openMenu.classList.remove('active');
-                }
-            });
-            // Schalte das aktuelle Dropdown um
-            menu.classList.toggle('active');
-        };
-
-        const closeAllDropdowns = (e) => {
-            const isToolbarButton = e.target.closest('.toolbar-btn');
-            const isSortButton = e.target.closest('#sort-dropdown-btn');
+        const createNoteCard = (note) => {
+            const div = document.createElement('div');
+            div.dataset.id = note.id;
+            div.className = `note-card p-4 border rounded-xl shadow-lg transition-all duration-300 hover:shadow-2xl hover:border-blue-500 flex flex-col ${currentSortMethod === 'unsorted' ? 'cursor-grab' : 'cursor-default'}`;
+            div.draggable = currentSortMethod === 'unsorted'; 
             
-            // Schließe alle Dropdowns, wenn außerhalb geklickt wird
-            if (!isToolbarButton && !isSortButton) {
-                 document.querySelectorAll('.dropdown-menu.active').forEach(menu => {
-                    menu.classList.remove('active');
-                });
-            }
-        };
-
-        // --- TOOLBAR LOGIC ---
-
-        const saveAndRestoreSelection = (callback) => {
-            saveSelection();
-            if (noteEditor.contains(document.activeElement)) {
-                // Führe den Formatierungsbefehl aus, solange der Editor aktiv ist
-                callback();
-            } else {
-                // Wenn der Editor den Fokus verloren hat, versuchen wir, die Auswahl wiederherzustellen und den Befehl auszuführen
-                restoreSelection();
-                callback();
-                // Setze den Fokus zurück auf den Editor, um die Eingabebereitschaft zu gewährleisten
-                noteEditor.focus(); 
-            }
-        };
-
-        const updateToolbarState = () => {
-            const selection = window.getSelection();
+            // ⭐ ANFORDERUNG UMGESETZT: Wenn Titel leer, Haupttext als Titel, sonst Titel verwenden. KEIN "Ohne Titel"
+            const displayTitle = note.title.trim() || note.content.replace(/<[^>]*>/g, ' ').trim().substring(0, 50).trim();
             
-            // Wenn der Editor nicht fokussiert ist, oder keine Auswahl vorhanden ist, deaktivieren wir die Aktiven Zustände
-            if (!document.activeElement || !noteEditor.contains(document.activeElement)) {
-                document.querySelectorAll('.toolbar-btn.active').forEach(btn => btn.classList.remove('active'));
-                return;
-            }
-
-            // Text-Formatierungen
-            boldBtn.classList.toggle('active', document.queryCommandState('bold'));
-            italicBtn.classList.toggle('active', document.queryCommandState('italic'));
-            underlineBtn.classList.toggle('active', document.queryCommandState('underline'));
+            // ⭐ ANFORDERUNG UMGESETZT: Haupttext/Snippet wird ausgeblendet, wenn Titel vorhanden ist
+            // Da der Titel nun immer den besten verfügbaren Text anzeigt (Titel oder Snippet), 
+            // blenden wir das Content-Preview-Div komplett aus, wie gewünscht.
+            // Derzeit wurde die Funktion des Snippets entfernt, um die Anforderung "Haupttext ausgeblendet" zu erfüllen
+            // und nur den Titel anzuzeigen.
             
-            // Listen-Formatierungen: Die native Abfrage ist oft unzuverlässig für benutzerdefinierte Listen-Styles
-            // Hier müssten wir manuell den Zustand des aktuellen Blocks prüfen.
-            const currentBlock = getCurrentBlockElement(selection);
-            let isUl = false;
-            let isOl = false;
-            let listStyle = '';
-
-            if (currentBlock && currentBlock.tagName === 'LI') {
-                const parentList = currentBlock.parentNode;
-                if (parentList.tagName === 'UL') {
-                    isUl = true;
-                    listStyle = parentList.style.listStyleType || 'disc';
-                } else if (parentList.tagName === 'OL') {
-                    isOl = true;
-                    listStyle = 'decimal';
-                }
+            div.innerHTML = `
+                <div class="flex justify-between items-start mb-2">
+                    <h3 class="text-xl font-bold text-gray-100">${displayTitle}</h3>
+                    </div>
+                <div class="mt-auto flex justify-end space-x-3">
+                    <button class="edit-btn text-blue-400 hover:text-blue-300 font-medium transition-colors">Bearbeiten</button>
+                    <button class="delete-btn text-red-400 hover:text-red-300 font-medium transition-colors">Löschen</button>
+                </div>
+            `;
+            
+            div.querySelector('.edit-btn').addEventListener('click', () => editNote(note.id, note.title, note.content));
+            div.querySelector('.delete-btn').addEventListener('click', () => deleteNote(note.id));
+            
+            if (currentSortMethod === 'unsorted') {
+                div.addEventListener('dragstart', handleDragStart);
+                div.addEventListener('dragover', handleDragOver);
+                div.addEventListener('drop', handleDrop);
+                div.addEventListener('dragend', handleDragEnd);
             }
-
-            listDropdownItems.forEach(item => {
-                item.classList.remove('active');
-                const value = item.dataset.value;
-
-                if (value === 'decimal' && isOl) {
-                    item.classList.add('active');
-                } else if (value === listStyle && isUl) {
-                    item.classList.add('active');
-                }
-            });
+            return div;
         };
-
-        // --- EVENT LISTENERS ---
-
-        listDropdownBtn.addEventListener('click', () => toggleDropdown(listDropdownMenu));
-        sizeDropdownBtn.addEventListener('click', () => toggleDropdown(sizeDropdownMenu));
-        colorDropdownBtn.addEventListener('click', () => toggleDropdown(colorDropdownMenu));
-        sortDropdownBtn.addEventListener('click', (e) => {
-            e.stopPropagation(); // Verhindert, dass der Klick das Dropdown sofort wieder schließt
-            toggleDropdown(sortDropdownMenu);
-        });
-        
-        // Schließe alle Dropdowns, wenn irgendwo außerhalb geklickt wird
-        document.addEventListener('click', closeAllDropdowns);
-
-        // Toolbar Button Aktionen
-        boldBtn.addEventListener('click', () => saveAndRestoreSelection(() => applyFormat('bold')));
-        italicBtn.addEventListener('click', () => saveAndRestoreSelection(() => applyFormat('italic')));
-        underlineBtn.addEventListener('click', () => saveAndRestoreSelection(() => applyFormat('underline')));
-        indentBtn.addEventListener('click', () => saveAndRestoreSelection(() => applyFormat('indent')));
-        outdentBtn.addEventListener('click', () => saveAndRestoreSelection(() => applyFormat('outdent')));
-        
-        // Listen-Dropdown-Aktionen (Verwendung der custom logic)
-        listDropdownItems.forEach(item => {
-            item.addEventListener('click', (e) => {
-                e.stopPropagation(); // Verhindert, dass der Klick das Dropdown schließt
-                toggleDropdown(listDropdownMenu); // Schließe manuell nach Auswahl
-                saveAndRestoreSelection(() => {
-                    toggleCustomList(item.dataset.value);
-                    updateToolbarState(); // State muss manuell nach DOM-Änderung aktualisiert werden
-                });
-            });
-        });
-
-        // Schriftgröße Dropdown-Aktionen
-        sizeDropdownItems.forEach(item => {
-            item.addEventListener('click', (e) => {
-                e.stopPropagation();
-                toggleDropdown(sizeDropdownMenu);
-                saveAndRestoreSelection(() => applyFormat('fontSize', item.dataset.value));
-            });
-        });
-
-        // Schriftfarbe Dropdown-Aktionen
-        colorDropdownItems.forEach(item => {
-            item.addEventListener('click', (e) => {
-                e.stopPropagation();
-                toggleDropdown(colorDropdownMenu);
-                const colorHex = colorMap[item.dataset.value];
-                saveAndRestoreSelection(() => applyFormat('foreColor', colorHex));
-            });
-        });
-
-        // Link-Button Aktion
-        linkBtn.addEventListener('click', async () => {
-            saveSelection();
-            const url = await showLinkModal();
-            if (url) {
-                restoreSelection();
-                // Wenn Text ausgewählt ist, füge den Link direkt ein
-                const selection = window.getSelection();
-                if (selection.toString().length > 0) {
-                    applyFormat('createLink', url);
-                } else {
-                    // Wenn kein Text ausgewählt ist, füge den Text mit Link ein
-                    const link = document.createElement('a');
-                    link.href = url;
-                    link.target = "_blank";
-                    link.textContent = url;
-                    
-                    const range = savedRange;
-                    if (range) {
-                        range.deleteContents();
-                        range.insertNode(link);
-                        // Setze den Cursor nach dem Link
-                        range.setStartAfter(link);
-                        range.setEndAfter(link);
-                        selection.removeAllRanges();
-                        selection.addRange(range);
-                    } else {
-                        // Fallback: Füge einfach am Ende des Editors ein
-                        noteEditor.focus();
-                        document.execCommand('insertHTML', false, link.outerHTML + '&nbsp;');
-                    }
-                }
-            }
-        });
-        
-        // Sortier-Dropdown-Aktionen
-        sortDropdownItems.forEach(item => {
-            item.addEventListener('click', (e) => {
-                e.stopPropagation();
-                toggleDropdown(sortDropdownMenu);
-                sortNotes(item.dataset.value);
-            });
-        });
 
 
         saveNoteBtn.addEventListener('click', saveNote);
@@ -1133,13 +926,15 @@ class="text-gray-300 mb-4 text-center">Geben Sie die URL für den Link ein.</p>
         noteEditor.addEventListener('mouseup', updateToolbarState); 
         noteEditor.addEventListener('keyup', updateToolbarState); 
         
-        // ** GEÄNDERT: Implementiert Touch-Click-Verhalten **
-        noteEditor.addEventListener('touchstart', saveSelection); // Speichert die Auswahl vor dem Tippen
-        
-        // Um den Fokusring-Fehler zu vermeiden, speichern wir die Auswahl BEVOR ein Toolbar-Button geklickt wird
-        document.querySelectorAll('.toolbar-btn, .dropdown-item').forEach(btn => {
-            btn.addEventListener('mousedown', saveSelection);
+        // Fügt den Fokus-Entferner für Toolbar- und Dropdown-Buttons hinzu, um den Fokusring zu vermeiden
+        document.querySelectorAll('.toolbar-btn, .dropdown-item, #sort-dropdown-btn, #save-note-btn').forEach(btn => {
+             // Speichert die Auswahl, bevor der Fokus auf den Button wechselt
+            btn.addEventListener('mousedown', saveSelection); 
         });
+
+        noteEditor.addEventListener('focus', updateToolbarState);
+        noteEditor.addEventListener('blur', updateToolbarState);
+
 
         // Initial loading of notes
         window.addEventListener('load', loadNotesFromLocal);
