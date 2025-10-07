@@ -21,7 +21,6 @@
             font-family: 'Inter', sans-serif;
             background-color: #000000;
             color: #e2e8f0;
-            /* VOM RECHNER-CODE ÜBERNOMMEN */
             -webkit-tap-highlight-color: transparent;
         }
 
@@ -55,39 +54,31 @@
         /* --- RECHNER-PRINZIP CSS-REGELN FÜR ALLE BUTTONS --- */
         /* ----------------------------------------------------- */
         .calculator-btn, label[for="import-file-input"] {
-            /* WICHTIG: Verbessert die Reaktionszeit und verhindert Fokus-Probleme auf Touch-Geräten */
             -webkit-tap-highlight-color: transparent;
             touch-action: manipulation;
-            /* Übergänge für den Klick-Effekt. transform ist schnell (.06s) */
             transition: transform .06s ease, background-color 0.2s ease;
             border: none;
         }
 
-        /* 1. Klick-Effekt (Der Rechner-Effekt: kurz kleiner werden) */
         .calculator-btn:active, label[for="import-file-input"]:active {
             transform: scale(0.96); 
         }
 
-        /* 2. MAUS-FOKUS FIX: Unterdrückt den durch Mausklick ausgelösten Fokus */
         .calculator-btn:focus, label[for="import-file-input"]:focus {
             outline: none !important;
             box-shadow: none !important;
         }
 
-        /* 3. TASTUR-FOKUS: Definiert einen sichtbaren Fokus NUR für Barrierefreiheit (Tab-Taste) */
         .calculator-btn:focus-visible, label[for="import-file-input"]:focus-visible {
             outline: 2px solid var(--accent); 
             outline-offset: 2px;
         }
-        
-        /* --- SPEZIFISCHE FARB-ANPASSUNGEN (Basis & Hover/Active-Farben) --- */
         
         /* Graue Buttons (Toolbar, Sort, Modal-Cancel) */
         .toolbar-btn, .dropdown-item, #sort-dropdown-btn, #modal-cancel-btn, #link-cancel-btn {
             background-color: var(--btn-gray) !important;
         }
         
-        /* WICHTIG: Kein heller Hover-Zustand. Active-Zustand wird dunkler. */
         .toolbar-btn:hover:not(.active), .dropdown-item:hover:not(.active), #sort-dropdown-btn:hover, #modal-cancel-btn:hover, #link-cancel-btn:hover {
             background-color: var(--btn-gray) !important;
         }
@@ -96,7 +87,6 @@
              background-color: #374151 !important; /* bg-gray-700 */
         }
 
-        /* Toggle/Active-Zustände (Beibehaltung der blauen Markierung) */
         .toolbar-btn.active, .dropdown-item.active {
             background-color: var(--btn-blue) !important;
             color: #ffffff !important;
@@ -142,17 +132,18 @@
             display: block;
         }
         
-        /* --- STABILISIERTE LISTE-STYLES --- */
+        /* --- STABILISIERTE LISTE-STYLES (WICHTIG für Layout-Stabilität) --- */
+        #note-editor ul, #note-editor ol, .note-card ul, .note-card ol {
+            margin: 0; /* Entfernt Standard-Margin */
+            padding-left: 1.5rem; /* Behält Einrückung bei */
+        }
+        
         #note-editor li, .note-card li {
             color: #ffffff !important;
         }
 
         #note-editor li::marker, .note-card li::marker {
             color: #ffffff !important;
-        }
-        
-        #note-editor ul, #note-editor ol, .note-card ul, .note-card ol {
-            margin-left: 1.5rem;
         }
 
         /* Kreise (Hohle Kreise) */
@@ -185,6 +176,12 @@
 
         .dropdown-menu.active {
             display: block;
+        }
+
+        /* Spezielle Regel für Link-Färbung im Editor */
+        #note-editor a {
+            color: #3b82f6; /* Tailwind blue-500 */
+            text-decoration: underline;
         }
     </style>
 </head>
@@ -430,6 +427,10 @@ class="text-gray-300 mb-4 text-center">Geben Sie die URL für den Link ein.</p>
         };
         // Drag-and-Drop-Variablen
         let draggedItem = null;
+        
+        // ******************************************************
+        // ** MODAL LOGIK **
+        // ******************************************************
         const showModal = (message, showCancelButton = false) => {
             return new Promise(resolve => {
                 modalText.textContent = message;
@@ -452,36 +453,100 @@ class="text-gray-300 mb-4 text-center">Geben Sie die URL für den Link ein.</p>
     
             });
         };
+
         const showLinkModal = () => {
             return new Promise(resolve => {
                 linkUrlInput.value = '';
                 linkModalBackdrop.classList.remove('hidden');
-                const insertHandler = () => {
                 
-        
+                const insertHandler = () => {
                     linkModalBackdrop.classList.add('hidden');
                     resolve(linkUrlInput.value);
                 };
                 const cancelHandler = () => {
                     linkModalBackdrop.classList.add('hidden');
-           
-        
                     resolve(null);
                 };
+                // Einmalige Event Listener, um Konflikte zu vermeiden
                 linkInsertBtn.onclick = insertHandler;
                 linkCancelBtn.onclick = cancelHandler;
+                
+                // Fokus auf das Eingabefeld, sobald das Modal geöffnet wird
+                linkUrlInput.focus();
             });
         };
         
         
-        const collapseSelection = () => {
+        // ******************************************************
+        // ** SELECTION/FOCUS LOGIK (WICHTIG für Toolbar) **
+        // ******************************************************
+        const saveSelection = () => {
             const selection = window.getSelection();
             if (selection.rangeCount > 0) {
-                // Hebt die aktive Textmarkierung auf und lässt nur den Cursor stehen
-                selection.collapseToEnd();
+                savedRange = selection.getRangeAt(0);
+            } else {
+                savedRange = null;
             }
         };
 
+        const restoreSelection = () => {
+            if (savedRange) {
+                const selection = window.getSelection();
+                selection.removeAllRanges();
+                selection.addRange(savedRange);
+                savedRange = null; // Range nach Gebrauch löschen
+            }
+        };
+        
+        /**
+         * Führt einen Formatierungsbefehl aus und stellt den Fokus in den Editor zurück.
+         * @param {string} command - Der execCommand-Befehl.
+         * @param {string} value - Der Wert für den execCommand-Befehl.
+         */
+        const executeFormatAndRestore = (command, value = null) => {
+            // 1. Auswahl wiederherstellen, falls vorhanden (nach Dropdown-Klick)
+            restoreSelection();
+            
+            // 2. Führe den Formatierungsbefehl aus
+            document.execCommand(command, false, value);
+            
+            // 3. Fokus in den Editor zurücksetzen (WICHTIG)
+            noteEditor.focus();
+            
+            // 4. Toolbar-Status aktualisieren
+            updateToolbarState();
+        };
+
+        
+        const executeLinkCommand = async () => {
+            // 1. Auswahl speichern
+            saveSelection(); 
+            
+            // 2. Modal anzeigen und auf URL warten
+            const url = await showLinkModal();
+            
+            // 3. Auswahl wiederherstellen (damit der Link korrekt an die Stelle eingefügt wird)
+            restoreSelection(); 
+            
+            if (url) {
+                // Führt den Link-Befehl aus und ersetzt die aktuelle Auswahl
+                document.execCommand('createLink', false, url);
+                
+                // Manuelle Korrektur für target="_blank"
+                const selection = window.getSelection();
+                const node = selection.anchorNode;
+                // Findet das umgebende A-Tag und setzt target="_blank"
+                let linkElement = node.nodeType === 1 && node.tagName === 'A' ? node : node.parentNode;
+                if (linkElement && linkElement.tagName === 'A') {
+                    linkElement.setAttribute('target', '_blank');
+                }
+            }
+            
+            // 4. Fokus in den Editor zurücksetzen
+            noteEditor.focus(); 
+            updateToolbarState(); 
+        };
+        
         
         const saveNotesToLocal = () => {
             try {
@@ -526,7 +591,7 @@ class="text-gray-300 mb-4 text-center">Geben Sie die URL für den Link ein.</p>
             a.click();
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
-            await showModal('Notizen erfolgreich exportiert!', false);
+            // KEINE MELDUNG nach erfolgreichem Export, wie gewünscht.
         };
         const importNotes = (event) => {
              const file = event.target.files[0];
@@ -553,6 +618,8 @@ class="text-gray-300 mb-4 text-center">Geben Sie die URL für den Link ein.</p>
                     await showModal('Fehler beim Lesen oder Parsen der Datei.', false);
                     console.error('Import error:', error);
                 }
+                // Zurücksetzen des File-Inputs, damit die gleiche Datei erneut importiert werden kann
+                event.target.value = null; 
             };
             reader.onerror = () => {
                 showModal('Fehler beim Lesen der Datei.', false);
@@ -560,33 +627,6 @@ class="text-gray-300 mb-4 text-center">Geben Sie die URL für den Link ein.</p>
             reader.readAsText(file);
         };
         // --- ENDE IMPORT/EXPORT FUNKTIONEN ---
-
-        const applyFormat = (command, value = null) => {
-            document.execCommand(command, false, value);
-        };
-        
-        const toggleList = (command) => {
-            applyFormat(command);
-        };
-
-        const rgbToHex = (rgb) => {
-            if (!rgb || !rgb.startsWith('rgb')) return rgb;
-            if(rgb.trim() === '') return '';
-
-            const parts = rgb.match(/^rgb\((\d+),\s*(\d+),\s*(\d+)\)$/);
-            if (!parts) return rgb;
-
-            const hex = (x) => {
-                const h = parseInt(x).toString(16);
-                return h.length === 1 ? '0' + h : h;
-            };
-
-            return '#' + hex(parts[1]) + hex(parts[2]) + hex(parts[3]);
-        };
-        
-        // ******************************************************
-        // ** KORRIGIERTE DOM-MANIPULATIONS-LOGIK FÜR LISTEN **
-        // ******************************************************
 
         /**
          * Helferfunktion: Findet das nächste Block-Level-Element (p, div, li, hx)
@@ -597,44 +637,52 @@ class="text-gray-300 mb-4 text-center">Geben Sie die URL für den Link ein.</p>
 
             let node = selection.getRangeAt(0).startContainer;
             
-            // Wenn es ein Textknoten ist, gehe zum übergeordneten Element
             if (node.nodeType === Node.TEXT_NODE) {
                 node = node.parentNode;
             }
 
-            // Finde den nächsten Block-Level-Elternteil (P, DIV, LI)
             while (node && node !== noteEditor) {
                 const tagName = node.tagName;
                 
-                // Füge DIV hinzu, falls der Editor ein leeres DIV erstellt (z.B. bei Enter)
                 if (['P', 'DIV', 'LI', 'H1', 'H2', 'H3'].includes(tagName)) {
                     return node;
                 }
                 node = node.parentNode;
             }
 
-            // Fallback
             return noteEditor;
         };
 
         /**
          * Führt die unabhängige Listenaktion pro Zeile durch (manuelle DOM-Manipulation).
+         * Diese Funktion stellt den Fokus im Anschluss wieder her.
          * @param {string} targetStyle - 'decimal', 'disc', 'circle'
          */
         const toggleCustomList = (targetStyle) => {
+            saveSelection(); // Speichere die Auswahl VOR der DOM-Manipulation
+
             const selection = window.getSelection();
             if (!selection.rangeCount) return;
 
             // Finde das aktuelle Block-Element
             const currentBlock = getCurrentBlockElement(selection);
 
+            // Der Rest der DOM-Logik zur Listenumschaltung...
             if (!currentBlock || currentBlock === noteEditor) {
-                // Fallback für leere Zeile im Root: Erstelle ein P-Tag und rufe Funktion erneut auf
                 document.execCommand('insertParagraph', false, null);
                 const newP = getCurrentBlockElement(selection);
                 if (newP && newP !== noteEditor) {
-                    toggleCustomList(targetStyle);
+                    // Setze den Cursor auf das neue P-Tag
+                    selection.removeAllRanges();
+                    const tempRange = document.createRange();
+                    tempRange.selectNodeContents(newP);
+                    tempRange.collapse(false);
+                    selection.addRange(tempRange);
+                    toggleCustomList(targetStyle); // Erneuter Versuch
                 }
+                restoreSelection();
+                noteEditor.focus();
+                updateToolbarState();
                 return;
             }
 
@@ -645,7 +693,6 @@ class="text-gray-300 mb-4 text-center">Geben Sie die URL für den Link ein.</p>
             if (isCurrentlyLi) {
                 const parentList = currentBlock.parentNode;
                 currentListType = parentList.tagName; // 'UL' or 'OL'
-                // Verwende style.listStyleType, wenn gesetzt, ansonsten Fallback auf 'disc' oder 'decimal'
                 currentListStyle = currentListType === 'OL' ? 
                     'decimal' : (parentList.style.listStyleType || 'disc');
                 if (currentListStyle === '') currentListStyle = 'disc';
@@ -654,195 +701,104 @@ class="text-gray-300 mb-4 text-center">Geben Sie die URL für den Link ein.</p>
             // ------------------------------------
             // 1. ZIEL: DEAKTIVIERUNG (Toggle OFF)
             // ------------------------------------
-            // Prüfe, ob der Zielstil gleich dem aktuellen Stil ist
             if (isCurrentlyLi && (
                 (targetStyle === 'decimal' && currentListStyle === 'decimal') ||
                 (targetStyle === 'disc' && (currentListStyle === 'disc' || currentListStyle === '')) ||
                 (targetStyle === 'circle' && currentListStyle === 'circle')
             )) {
-                // Unliste das Element: Content in ein P-Tag zurückführen
                 const content = currentBlock.innerHTML;
                 const parentList = currentBlock.parentNode;
                 const newBlock = document.createElement('p');
                 newBlock.innerHTML = content;
                 
-                // Füge den neuen Block vor der Elternliste ein
                 parentList.parentNode.insertBefore(newBlock, parentList);
-                
-                currentBlock.remove(); // Entferne das li
+                currentBlock.remove(); 
 
-                // Aufräumen: Wenn die Elternliste jetzt leer ist (oder nur <br> enthält), entferne sie
                 if (parentList.children.length === 0 || parentList.innerHTML.trim() === '<br>') {
                     parentList.remove();
                 }
 
-                // Setze den Cursor zurück
                 selection.removeAllRanges();
                 const newRange = document.createRange();
                 newRange.selectNodeContents(newBlock);
                 newRange.collapse(false);
                 selection.addRange(newRange);
-                return; // Aktion beendet
-            }
-
+            } 
             // ------------------------------------
             // 2. ZIEL: STIL-WECHSEL INNERHALB UL (disc <-> circle)
             // ------------------------------------
-            if (isCurrentlyLi && currentListType === 'UL' && targetStyle !== 'decimal') {
+            else if (isCurrentlyLi && currentListType === 'UL' && targetStyle !== 'decimal') {
                 const parentList = currentBlock.parentNode;
-                // FIX: Explizit 'disc' setzen, nicht leere Zeichenkette
                 const targetMarkerStyle = targetStyle === 'disc' ? 'disc' : targetStyle;
                 
-                // Ändere nur den Stil der Elternliste (der für diese einzelne LI-Zeile gilt)
                 parentList.style.listStyleType = targetMarkerStyle;
 
-                // Cursor wiederherstellen
                 selection.removeAllRanges();
                 const newRange = document.createRange();
                 newRange.selectNodeContents(currentBlock);
                 newRange.collapse(false);
                 selection.addRange(newRange);
-                return; // Aktion beendet
             }
-
             // ------------------------------------
             // 3. ZIEL: AKTIVIERUNG / TYP-WECHSEL (P/Div -> List, OL -> UL, UL -> OL)
             // ------------------------------------
-            let elementToReplace = currentBlock;
-            let contentToWrap = currentBlock.innerHTML;
-
-            // 3a. Bei Listen-Wechsel (z.B. OL <-> UL), zuerst das LI auflösen.
-            if (isCurrentlyLi) {
-                const parentList = currentBlock.parentNode;
+            else {
+                let elementToReplace = currentBlock;
                 
-                // Speichere den Inhalt der Zeile
-                contentToWrap = currentBlock.innerHTML;
-
-                // Erstelle ein P-Tag (dies ist das elementToReplace nach dem Aufräumen)
-                const tempP = document.createElement('p');
-                tempP.innerHTML = contentToWrap;
-                
-                // Füge das P-Tag vor der Elternliste ein
-                parentList.parentNode.insertBefore(tempP, parentList);
-                elementToReplace = tempP;
-                
-                currentBlock.remove(); // Entferne das li
-
-                // Aufräumen: Wenn die Elternliste jetzt leer ist, entferne sie
-                if (parentList.children.length === 0 || parentList.innerHTML.trim() === '<br>') {
-                    parentList.remove();
-                }
-
-                // Setze den Cursor auf den neuen P-Tag
-                selection.removeAllRanges();
-                const tempRange = document.createRange();
-                tempRange.selectNodeContents(tempP);
-                tempRange.collapse(false);
-                selection.addRange(tempRange);
-                
-                // Setze currentBlock und contentToWrap für den nächsten Schritt zurück
-                // Der neue P-Tag wird in den nächsten Schritten in eine Liste umgewandelt.
-            }
-            
-            // 3b. Umwandlung in die ZIEL-Liste (P/DIV -> List)
-            const ListType = targetStyle === 'decimal' ? 'OL' : 'UL';
-            const newList = document.createElement(ListType);
-            const newLi = document.createElement('li');
-
-            // Füge den Inhalt (aus P/DIV) in das LI ein
-            newLi.innerHTML = elementToReplace.innerHTML;
-            newList.appendChild(newLi);
-
-            // Setze den richtigen Marker-Stil für UL
-            if (ListType === 'UL') {
-                newList.style.listStyleType = targetStyle === 'decimal' ? 'disc' : targetStyle;
-            }
-
-            // Ersetze den Block (P/DIV) durch die neue Liste
-            elementToReplace.parentNode.replaceChild(newList, elementToReplace);
-
-            // Setze den Cursor an das Ende des neuen LI-Elements
-            selection.removeAllRanges();
-            const newRange = document.createRange();
-            newRange.selectNodeContents(newLi);
-            newRange.collapse(false);
-            selection.addRange(newRange);
-        };
-        // ******************************************************
-        // ** ENDE KORRIGIERTE DOM-MANIPULATIONS-LOGIK **
-        // ******************************************************
-
-
-        /**
-         * Ruft die Funktion showModal für Bestätigungsdialoge auf.
-         * @param {string} message - Die anzuzeigende Nachricht.
-         * @param {string} command - Der auszuführende execCommand-Befehl.
-         * @param {string} value - Der Wert für den execCommand-Befehl.
-         */
-        const executeFormatWithConfirmation = async (message, command, value = null) => {
-            const result = await showModal(message, true); // true = Show cancel button
-            if (result) {
-                applyFormat(command, value);
-            }
-        };
-
-        const executeLinkCommand = async () => {
-            if (document.queryCommandState('insertHTML')) {
-                // Im Idealfall sollte die Auswahl bereits gespeichert sein
-                const url = await showLinkModal();
-                if (url) {
-                    restoreSelection();
-                    const aTag = document.createElement('a');
-                    aTag.href = url;
-                    aTag.target = '_blank';
+                // 3a. Bei Listen-Wechsel (z.B. OL <-> UL), zuerst das LI auflösen.
+                if (isCurrentlyLi) {
+                    const parentList = currentBlock.parentNode;
                     
-                    // Führt den Befehl aus und ersetzt die aktuelle Auswahl (falls vorhanden) mit dem Link
-                    // Wir verwenden createLink nicht direkt, da es oft zu Problemen mit `contenteditable` führt
-                    document.execCommand('createLink', false, url);
+                    const tempP = document.createElement('p');
+                    tempP.innerHTML = currentBlock.innerHTML;
                     
-                    // Manuelle Korrektur, da createLink manchmal nur Textknoten mit dem Link umhüllt
-                    const selection = window.getSelection();
-                    if (selection.anchorNode.parentNode.tagName === 'A') {
-                        selection.anchorNode.parentNode.setAttribute('target', '_blank');
+                    parentList.parentNode.insertBefore(tempP, parentList);
+                    elementToReplace = tempP;
+                    
+                    currentBlock.remove(); 
+
+                    if (parentList.children.length === 0 || parentList.innerHTML.trim() === '<br>') {
+                        parentList.remove();
                     }
+                    // Cursor wird nach Umwandlung gesetzt
                 }
-            } else {
-                showModal("Sie müssen zuerst den Text auswählen, der verlinkt werden soll.");
-            }
-        };
+                
+                // 3b. Umwandlung in die ZIEL-Liste (P/DIV -> List)
+                const ListType = targetStyle === 'decimal' ? 'OL' : 'UL';
+                const newList = document.createElement(ListType);
+                const newLi = document.createElement('li');
 
+                newLi.innerHTML = elementToReplace.innerHTML;
+                newList.appendChild(newLi);
 
-        const saveSelection = () => {
-            const selection = window.getSelection();
-            if (selection.rangeCount > 0) {
-                savedRange = selection.getRangeAt(0);
-            }
-        };
+                if (ListType === 'UL') {
+                    newList.style.listStyleType = targetStyle === 'decimal' ? 'disc' : targetStyle;
+                }
 
-        const restoreSelection = () => {
-            if (savedRange) {
-                const selection = window.getSelection();
+                elementToReplace.parentNode.replaceChild(newList, elementToReplace);
+
+                // Setze den Cursor an das Ende des neuen LI-Elements
                 selection.removeAllRanges();
-                selection.addRange(savedRange);
+                const newRange = document.createRange();
+                newRange.selectNodeContents(newLi);
+                newRange.collapse(false);
+                selection.addRange(newRange);
             }
-        };
 
-        const isListActive = () => {
-            return document.queryCommandState('insertOrderedList') || document.queryCommandState('insertUnorderedList');
-        };
-
-        const getActiveListStyle = (parentElement) => {
-            if (parentElement.tagName === 'OL') return 'decimal';
-            if (parentElement.tagName === 'UL') {
-                return parentElement.style.listStyleType || 'disc';
-            }
-            return null;
+            // Fokus wiederherstellen und Toolbar aktualisieren
+            noteEditor.focus(); 
+            updateToolbarState();
         };
 
         const updateToolbarState = () => {
             const selection = window.getSelection();
+            
+            // FÜR FOKUS/CURSOR RÜCKKEHR: Speichere die Auswahl bei MouseUp oder KeyUp
+            if (document.activeElement === noteEditor) {
+                 saveSelection();
+            }
+
             if (selection.rangeCount === 0 || !noteEditor.contains(selection.anchorNode)) {
-                // Setze alle Buttons auf inaktiv, wenn der Fokus nicht im Editor liegt
                 document.querySelectorAll('.toolbar-btn').forEach(btn => btn.classList.remove('active'));
                 return;
             }
@@ -860,13 +816,11 @@ class="text-gray-300 mb-4 text-center">Geben Sie die URL für den Link ein.</p>
             
             if (currentBlock && currentBlock.tagName === 'LI') {
                 const parentList = currentBlock.parentNode;
-                const activeListStyle = getActiveListStyle(parentList);
+                const activeListStyle = parentList.tagName === 'OL' ? 'decimal' : (parentList.style.listStyleType || 'disc');
                 
-                // Aktualisiere den Dropdown-Button-Text
                 const activeItem = Array.from(listDropdownItems).find(item => item.dataset.value === activeListStyle);
                 listDropdownBtn.textContent = activeItem ? `Aufzählung: ${activeItem.textContent}` : 'Aufzählung';
                 
-                // Setze das Dropdown-Item auf aktiv
                 if (activeItem) {
                     activeItem.classList.add('active');
                 }
@@ -883,6 +837,7 @@ class="text-gray-300 mb-4 text-center">Geben Sie die URL für den Link ein.</p>
             const div = document.createElement('div');
             div.className = 'note-card p-4 rounded-xl shadow-lg border hover:shadow-2xl transition-all duration-300 transform hover:scale-[1.01] flex flex-col cursor-grab';
             div.draggable = currentSortMethod === 'unsorted'; // Nur bei unsortiert draggable
+            div.dataset.noteId = note.id; // Fügt die ID als Datenattribut hinzu
 
             // Header mit Titel und Buttons
             const header = document.createElement('div');
@@ -890,7 +845,9 @@ class="text-gray-300 mb-4 text-center">Geben Sie die URL für den Link ein.</p>
             
             const title = document.createElement('h3');
             title.className = 'text-xl font-semibold text-gray-100 flex-grow pr-4';
+            // WICHTIG: Wenn der Titel leer ist, wird der Content in die Titelzeile verschoben, ansonsten wird 'Ohne Titel' verwendet.
             title.textContent = note.title || 'Ohne Titel';
+
             header.appendChild(title);
 
             // Button-Container
@@ -914,10 +871,20 @@ class="text-gray-300 mb-4 text-center">Geben Sie die URL für den Link ein.</p>
 
             // Content
             const contentDiv = document.createElement('div');
-            contentDiv.className = 'text-gray-300 note-content';
-            contentDiv.innerHTML = note.content;
-            div.appendChild(contentDiv);
-
+            contentDiv.className = 'text-gray-300 note-content mt-2';
+            // Nur Haupttext anzeigen, wenn kein Titel eingegeben wurde UND der Content nicht leer ist.
+            if (note.content.trim() !== '' && note.title.trim() !== '') {
+                contentDiv.innerHTML = note.content;
+                div.appendChild(contentDiv);
+            } else if (note.content.trim() !== '' && note.title.trim() === '') {
+                // Wenn kein Titel, den Content in die Title-Zeile verschieben
+                title.textContent = note.content.substring(0, 100) + (note.content.length > 100 ? '...' : '');
+                // Der vollständige Content muss im Edit-Modus wiederhergestellt werden
+                div.dataset.fullContent = note.content;
+            } else if (note.title.trim() === '') {
+                 title.textContent = 'Ohne Titel';
+            }
+            
             // Footer
             const dateSpan = document.createElement('span');
             dateSpan.className = 'text-xs text-gray-500 mt-3 self-end';
@@ -1040,17 +1007,16 @@ class="text-gray-300 mb-4 text-center">Geben Sie die URL für den Link ein.</p>
 
         const sortNotes = (method, shouldRender = true) => {
             currentSortMethod = method;
-            const sortMethodText = sortDropdownItems.querySelector(`.dropdown-item[data-value="${method}"]`).textContent;
+            const sortMethodTextElement = Array.from(sortDropdownItems).find(item => item.dataset.value === method);
+            const sortMethodText = sortMethodTextElement ? sortMethodTextElement.textContent : 'Unsortiert';
             sortDropdownBtn.textContent = `Sortieren nach: ${sortMethodText}`;
 
             // Entferne active-Klassen von allen Sortier-Items
             sortDropdownItems.forEach(item => item.classList.remove('active'));
             // Setze das aktive Item
-            sortDropdownItems.forEach(item => {
-                if (item.dataset.value === method) {
-                    item.classList.add('active');
-                }
-            });
+            if (sortMethodTextElement) {
+                sortMethodTextElement.classList.add('active');
+            }
 
             switch (method) {
                 case 'newest':
@@ -1078,7 +1044,7 @@ class="text-gray-300 mb-4 text-center">Geben Sie die URL für den Link ein.</p>
             }
 
             if (shouldRender) {
-                renderNotes();
+                renderNotes(searchInput.value);
             }
         };
 
@@ -1093,7 +1059,7 @@ class="text-gray-300 mb-4 text-center">Geben Sie die URL für den Link ein.</p>
             }
             dragSrcEl = e.currentTarget;
             e.dataTransfer.effectAllowed = 'move';
-            e.dataTransfer.setData('text/html', e.currentTarget.innerHTML);
+            e.dataTransfer.setData('text/plain', e.currentTarget.dataset.noteId); // Überträgt die ID
             e.currentTarget.classList.add('dragging');
         };
 
@@ -1107,8 +1073,9 @@ class="text-gray-300 mb-4 text-center">Geben Sie die URL für den Link ein.</p>
             if (currentSortMethod !== 'unsorted') return;
             e.stopPropagation();
 
-            if (dragSrcEl !== e.currentTarget) {
-                const targetEl = e.currentTarget;
+            const targetEl = e.currentTarget;
+
+            if (dragSrcEl !== targetEl) {
                 const listArray = Array.from(notesList.children);
                 
                 const dragIndex = listArray.indexOf(dragSrcEl);
@@ -1136,16 +1103,25 @@ class="text-gray-300 mb-4 text-center">Geben Sie die URL für den Link ein.</p>
 
         // --- EVENT LISTENERS ---
 
-        // Toolbar-Events
-        boldBtn.addEventListener('click', () => applyFormat('bold'));
-        italicBtn.addEventListener('click', () => applyFormat('italic'));
-        underlineBtn.addEventListener('click', () => applyFormat('underline'));
-        indentBtn.addEventListener('click', () => applyFormat('indent'));
-        outdentBtn.addEventListener('click', () => applyFormat('outdent'));
+        // Event Listener für die Toolbar-Buttons (mit Fokus-Wiederherstellung)
+        noteEditor.addEventListener('mouseup', saveSelection); 
+        noteEditor.addEventListener('keyup', saveSelection);
+        // Stellt sicher, dass die Auswahl gespeichert wird, bevor der Button gedrückt wird (für Touch-Geräte)
+        document.querySelectorAll('.toolbar-btn, .dropdown-item').forEach(btn => {
+            btn.addEventListener('mousedown', saveSelection);
+        });
+
+        boldBtn.addEventListener('click', () => executeFormatAndRestore('bold'));
+        italicBtn.addEventListener('click', () => executeFormatAndRestore('italic'));
+        underlineBtn.addEventListener('click', () => executeFormatAndRestore('underline'));
+        indentBtn.addEventListener('click', () => executeFormatAndRestore('indent'));
+        outdentBtn.addEventListener('click', () => executeFormatAndRestore('outdent'));
         linkBtn.addEventListener('click', executeLinkCommand);
 
         listDropdownBtn.addEventListener('click', (e) => {
             e.stopPropagation();
+            // Speichere die Auswahl BEVOR das Dropdown geöffnet wird
+            saveSelection(); 
             listDropdownMenu.classList.toggle('active');
             sizeDropdownMenu.classList.remove('active');
             colorDropdownMenu.classList.remove('active');
@@ -1153,13 +1129,14 @@ class="text-gray-300 mb-4 text-center">Geben Sie die URL für den Link ein.</p>
         });
         listDropdownItems.forEach(item => item.addEventListener('click', (e) => {
             e.stopPropagation();
-            toggleCustomList(item.dataset.value);
+            // toggleCustomList übernimmt save/restoreSelection und focus
+            toggleCustomList(item.dataset.value); 
             listDropdownMenu.classList.remove('active');
-            updateToolbarState(); // Aktualisiert den Text des Buttons
         }));
         
         sizeDropdownBtn.addEventListener('click', (e) => {
             e.stopPropagation();
+            saveSelection(); 
             sizeDropdownMenu.classList.toggle('active');
             listDropdownMenu.classList.remove('active');
             colorDropdownMenu.classList.remove('active');
@@ -1167,20 +1144,13 @@ class="text-gray-300 mb-4 text-center">Geben Sie die URL für den Link ein.</p>
         });
         sizeDropdownItems.forEach(item => item.addEventListener('click', (e) => {
             e.stopPropagation();
-            applyFormat('fontSize', item.dataset.value);
-            // Zusätzlicher Hack: Markiert den Text in der Editor-Ansicht mit <span>, um die Größe beizubehalten
-            const currentSelection = window.getSelection();
-            if(currentSelection.rangeCount > 0){
-                 // Der Befehl document.execCommand('fontSize', ...) erzeugt ein <font>-Tag. 
-                 // Tailwind verwendet keine <font>-Tags.
-                 // Wir verlassen uns hier auf die Browser-Implementierung, 
-                 // da eine manuelle DOM-Manipulation für Schriftgröße zu komplex ist.
-            }
+            executeFormatAndRestore('fontSize', item.dataset.value); // Führt Befehl aus und stellt Fokus wieder her
             sizeDropdownMenu.classList.remove('active');
         }));
 
         colorDropdownBtn.addEventListener('click', (e) => {
             e.stopPropagation();
+            saveSelection(); 
             colorDropdownMenu.classList.toggle('active');
             listDropdownMenu.classList.remove('active');
             sizeDropdownMenu.classList.remove('active');
@@ -1190,7 +1160,7 @@ class="text-gray-300 mb-4 text-center">Geben Sie die URL für den Link ein.</p>
             e.stopPropagation();
             const colorName = item.dataset.value;
             const hexColor = colorMap[colorName];
-            applyFormat('foreColor', hexColor);
+            executeFormatAndRestore('foreColor', hexColor); // Führt Befehl aus und stellt Fokus wieder her
             colorDropdownMenu.classList.remove('active');
         }));
 
@@ -1225,10 +1195,10 @@ class="text-gray-300 mb-4 text-center">Geben Sie die URL für den Link ein.</p>
         importFileInput.addEventListener('change', importNotes);
         
         // Event listener zur Aktualisierung des Toolbar-Zustands
-        noteEditor.addEventListener('mouseup', updateToolbarState); 
-        noteEditor.addEventListener('keyup', updateToolbarState);
         noteEditor.addEventListener('focus', updateToolbarState);
         noteEditor.addEventListener('blur', updateToolbarState);
+        noteEditor.addEventListener('input', updateToolbarState);
+
 
         // Initial loading of notes
         window.addEventListener('load', loadNotesFromLocal);
