@@ -47,21 +47,31 @@
             outline: none !important;         /* Kein Standard-Outline */
         }
         
-        /* NEUER FIX: Setzt den Button-Hintergrund im Fokus, Active und Focus-Visible Zustand auf transparent, um hellgraue Markierung zu entfernen */
-        .toolbar-btn:focus, 
-        .dropdown-item:focus, 
-        #sort-dropdown-btn:focus,
-        #save-note-btn:focus,
+        /* FIX 2.0: Entfernt dauerhaften grauen Fokus-Hintergrund */
+        /* Setzt Hintergrundfarbe auf die BASIS-Farbe (grau) der Toolbar, um Browser-Defaults zu überschreiben */
+        .toolbar-btn:focus-visible, 
+        .dropdown-item:focus-visible, 
+        #sort-dropdown-btn:focus-visible {
+             background-color: #4b5563 !important; /* bg-gray-600 */
+        }
+        /* Setzt Save-Button auf seine Basis-Farbe (blau) */
+        #save-note-btn:focus-visible {
+            background-color: #2563eb !important; /* bg-blue-600 */
+        }
+        
+        /* FIX 2.1: Fügt den Tap-Highlight-Fix für Touch-Geräte hinzu */
+        .toolbar-btn, .dropdown-item, #sort-dropdown-btn, #save-note-btn {
+            -webkit-tap-highlight-color: transparent; 
+        }
+        
+        /* Stellt sicher, dass das Drücken (Active-State) nicht permanent grau bleibt, indem es transparent gesetzt wird */
         .toolbar-btn:active, 
         .dropdown-item:active, 
         #sort-dropdown-btn:active,
-        #save-note-btn:active,
-        .toolbar-btn:focus-visible,
-        .dropdown-item:focus-visible, 
-        #sort-dropdown-btn:focus-visible,
-        #save-note-btn:focus-visible {
+        #save-note-btn:active {
              background-color: transparent !important;
         }
+
 
         #note-editor:empty:before {
             content: attr(placeholder);
@@ -934,7 +944,6 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors focus:out
         listDropdownItems.forEach(item => {
             item.addEventListener('click', (e) => {
                 e.preventDefault();
-             
                 e.stopPropagation();
                 
                 const listStyle = e.target.getAttribute('data-value');
@@ -942,80 +951,49 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors focus:out
                 
                 if (!selection.rangeCount) return;
          
-               
                 // 1. Dropdown schließen und Fokus vom Button entfernen
                 listDropdownMenu.classList.remove('active');
                 listDropdownBtn.blur(); 
 
-                // Sicherstellen, dass der Editor den Fokus hat, BEVOR wir Formatierung anwenden (wichtig für execCommand)
-      
+                // Sicherstellen, dass der Editor den Fokus hat
                 noteEditor.focus();
-        // Wir verwenden setTimeout, um sicherzustellen, dass die DOM-Änderungen der Liste
-                // angewendet und der Toolbar-Status korrekt aktualisiert wird.
-        setTimeout(() => {
-                    const executeListLogic = () => {
-                         if (listStyle === 'decimal') {
-                            // Nummerierte Liste
-              
-                            applyFormat('insertOrderedList');
-                        } else { // disc, circle
-                            
-                            const 
-        currentUl = selection.anchorNode.closest('ul');
-                            const currentStyle = currentUl ? (currentUl.style.listStyleType || 'disc') : 'none'; 
-
-                            // Toggling OFF (Liste ausschalten)
-                            
-        const isDiscOrEmpty = currentStyle === 'disc' || currentStyle === '';
-                            const matchFound = (listStyle === 'disc' && isDiscOrEmpty) || (currentStyle === listStyle);
-
-                            if (currentUl && matchFound) {
+        
+                setTimeout(() => {
+                    const currentUl = selection.anchorNode.closest('ul');
+                    const currentOl = selection.anchorNode.closest('ol');
                     
-                                applyFormat('insertUnorderedList'); // Schaltet die Liste AUS
-                            } else {
-                                // Stil ändern oder neue Liste erstellen
-               
-                                 
-                                // Zuerst OL entfernen
-                                if (document.queryCommandState('insertOrderedList')) {
-              
-                                    applyFormat('insertOrderedList');
-        }
-                                
-                                // Stelle sicher, dass UL aktiv ist
-                              
-        if (!document.queryCommandState('insertUnorderedList')) {
-                                    applyFormat('insertUnorderedList');
-        } 
-                                
-                                // Warten (kurz) und den Style zu erzwingen
-                            
-        setTimeout(() => {
-                                     const ulToStyle = selection.anchorNode.closest('ul');
-                                     if (ulToStyle) {
-               
-                                         // disc (Punkte) wird am besten als leerer String gesetzt, da es der Standard ist.
-                                        ulToStyle.style.listStyleType = listStyle === 'disc' ? '' : listStyle;
-             
-        }
-                                    
-                                    // Letzter Schritt: Fokus und 
-        // Update
-                                    updateToolbarState(); 
-                                    noteEditor.focus(); 
-                          
-        }, 1);
-                                return; 
-                            }
+                    if (listStyle === 'decimal') {
+                        // Toggle OL (Nummerierung)
+                        applyFormat('insertOrderedList');
+                        
+                    } else { // disc, circle (Ungeordnete Listen)
+                        
+                        // Fall 1: OL ist aktiv -> erst OL ausschalten, dann UL einschalten
+                        if (currentOl) {
+                            applyFormat('insertOrderedList'); // OL ausschalten
+                            applyFormat('insertUnorderedList'); // UL einschalten
+                        } 
+                        // Fall 2: Keine Liste aktiv -> UL einschalten
+                        else if (!currentUl) {
+                            applyFormat('insertUnorderedList'); 
                         }
                         
-                        // Final focus/update für Decimal und erfolgreiches Toggle-Off
-            
-        updateToolbarState(); 
-                        noteEditor.focus(); 
-                    };
+                        // Style nach Toggle erzwingen
+                        setTimeout(() => {
+                             const ulToStyle = selection.anchorNode.closest('ul');
+                             if (ulToStyle) {
+                                // disc (Punkte) wird am besten als leerer String gesetzt, da es der Standard ist.
+                                ulToStyle.style.listStyleType = listStyle === 'disc' ? '' : listStyle;
+                             }
+                             updateToolbarState(); 
+                             noteEditor.focus(); 
+                        }, 1);
+                        return; 
+                    }
                     
-                    executeListLogic();
+                    // Final update für Decimal und erfolgreiches Toggle-Off
+                    updateToolbarState(); 
+                    noteEditor.focus(); 
                 }, 1);
             });
         });
