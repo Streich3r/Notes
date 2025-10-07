@@ -27,7 +27,6 @@
             min-height: 100px;
             padding: 1rem;
             border-radius: 0.75rem;
-            /* WICHTIG: border-color hier beibehalten für Standard-Grau */
             border: 1px solid #4a5568; 
             background-color: #1a202c;
             color: #ffffff;
@@ -40,31 +39,33 @@
             outline: none !important;
         }
 
-        /* --- FIX: Fokus-/Klick-Probleme (Grauer Flash und Permanenz) --- */
-        .toolbar-btn, .dropdown-item, #sort-dropdown-btn {
+        /* --- FIX: Globale Fokus-/Klick-Probleme (Entfernt hässliche graue Markierung) --- */
+        .toolbar-btn, .dropdown-item, #sort-dropdown-btn, #save-note-btn {
             background-color: #4b5563; /* bg-gray-600 */
-            -webkit-tap-highlight-color: transparent; 
+            -webkit-tap-highlight-color: transparent; /* Entfernt den grauen Flash auf mobilen Geräten */
             transition: background-color 0.15s;
         }
         
-        /* Entfernt jegliche visuelle Ablenkung beim Fokus (dauerhafter grauer Kasten) */
+        /* Aggressive Entfernung aller nativen Fokus-Markierungen (hellgraue Ringe/Ränder) */
         .toolbar-btn:focus, .dropdown-item:focus, #sort-dropdown-btn:focus, #save-note-btn:focus,
         .toolbar-btn:focus-visible, .dropdown-item:focus-visible, #sort-dropdown-btn:focus-visible, #save-note-btn:focus-visible {
             outline: none !important;         
             box-shadow: none !important;      
+            /* Hält die Farbe bei, wenn der native Fokus aktiv ist, um den Kontrast zu vermeiden */
             background-color: #4b5563 !important; 
         }
         
-        /* Active-Zustand (Klick-Effekt / kurzer Blink) */
-        .toolbar-btn:active, .dropdown-item:active, #sort-dropdown-btn:active {
-            background-color: #374151 !important; 
+        /* Active-Zustand (Blaue Markierung) */
+        .toolbar-btn.active, .dropdown-item.active {
+            background-color: #2563eb !important; 
+            color: #ffffff !important;
         }
 
         /* Hover-Zustand (muss über Focus stehen) */
-        .toolbar-btn:hover, .dropdown-item:hover, #sort-dropdown-btn:hover {
-            background-color: #6b7280; 
+        .toolbar-btn:hover:not(.active), .dropdown-item:hover:not(.active), #sort-dropdown-btn:hover {
+            background-color: #6b7280 !important; 
         }
-        
+
         /* Spezial-Override für den Save-Button (blau) */
         #save-note-btn { background-color: #2563eb; }
         #save-note-btn:focus, #save-note-btn:focus-visible { 
@@ -73,7 +74,6 @@
         #save-note-btn:hover { background-color: #1d4ed8; }
         #save-note-btn:active { background-color: #1e40af !important; }
 
-
         #note-editor:empty:before {
             content: attr(placeholder);
             color: #718096;
@@ -81,16 +81,6 @@
             display: block;
         }
         
-        /* Stil für den aktiven Zustand (sofort blau) */
-        .toolbar-btn.active {
-            background-color: #2563eb !important; 
-            color: #ffffff;
-        }
-        .dropdown-item.active {
-            background-color: #2563eb !important;
-            color: #ffffff !important; 
-        }
-
         /* --- STABILISIERTE LISTE-STYLES --- */
         #note-editor li, .note-card li {
             color: #ffffff !important;
@@ -142,133 +132,101 @@
             </h1>
         </header>
 
-        <div class="mb-6 flex 
-flex-col sm:flex-row gap-4">
+        <div class="mb-6 flex flex-col sm:flex-row gap-4">
             <input type="text" id="search-input" placeholder="Notizen durchsuchen..." class="w-full sm:w-1/3 p-3 rounded-xl border border-gray-600 bg-gray-800 text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300 focus:outline-none">
             
             <div class="flex gap-4 w-full sm:w-2/3">
                 <div class="relative w-full sm:w-1/2">
                     <button 
-id="sort-dropdown-btn" 
-class="w-full p-3 rounded-xl border border-gray-600 bg-gray-800 text-gray-100 text-left hover:bg-gray-700 transition-colors focus:outline-none">
+                        id="sort-dropdown-btn" 
+                        class="w-full p-3 rounded-xl border border-gray-600 bg-gray-800 text-gray-100 text-left hover:bg-gray-700 transition-colors focus:outline-none">
                         Sortieren nach: Unsortiert
                     </button>
                     <div id="sort-dropdown-menu" class="dropdown-menu mt-2 w-full">
-                   
-    <button class="dropdown-item w-full text-left px-4 py-2 hover:bg-gray-600 rounded-lg active" data-value="unsorted">Unsortiert</button>
+                        <button class="dropdown-item w-full text-left px-4 py-2 hover:bg-gray-600 rounded-lg active" data-value="unsorted">Unsortiert</button>
                         <button class="dropdown-item w-full text-left px-4 py-2 hover:bg-gray-600 rounded-lg" data-value="newest">Datum (neueste zuerst)</button>
                         <button class="dropdown-item w-full text-left px-4 py-2 hover:bg-gray-600 rounded-lg" data-value="oldest">Datum (älteste zuerst)</button>
-                 
-    <button class="dropdown-item w-full text-left px-4 py-2 hover:bg-gray-600 rounded-lg" data-value="title-asc">Titel (A-Z)</button>
+                        <button class="dropdown-item w-full text-left px-4 py-2 hover:bg-gray-600 rounded-lg" data-value="title-asc">Titel (A-Z)</button>
                         <button class="dropdown-item w-full text-left px-4 py-2 hover:bg-gray-600 rounded-lg" data-value="title-desc">Titel (Z-A)</button>
                     </div>
                 </div>
 
-               <div class="flex 
-gap-2 w-full sm:w-1/2">
+                <div class="flex gap-2 w-full sm:w-1/2">
                     <button id="export-btn" class="w-1/2 p-3 rounded-xl border border-gray-600 bg-green-600 text-white font-medium hover:bg-green-700 transition-colors focus:outline-none">
                         Export 💾
                     </button>
-                  
-    <label for="import-file-input" 
-class="w-1/2 p-3 rounded-xl border border-gray-600 bg-yellow-600 text-white font-medium hover:bg-yellow-700 transition-colors cursor-pointer text-center flex items-center justify-center focus:outline-none">
+                    <label for="import-file-input" 
+                        class="w-1/2 p-3 rounded-xl border border-gray-600 bg-yellow-600 text-white font-medium hover:bg-yellow-700 transition-colors cursor-pointer text-center flex items-center justify-center focus:outline-none">
                         Import 📥
                     </label>
                     <input type="file" id="import-file-input" accept="application/json" style="display: none;">
-           
-</div>
                 </div>
+            </div>
         </div>
 
         <div class="mb-6 p-4 bg-gray-800 rounded-2xl shadow-inner">
             <h2 class="text-2xl font-bold text-gray-200 mb-4">Neue Notiz erstellen</h2>
             
-            <input type="text" id="note-title-input" placeholder="Titel der Notiz (optional)" class="w-full p-3 mb-4 rounded-xl border border-gray-600 bg-gray-800 text-gray-100 focus:ring-2 
-focus:ring-blue-500 focus:border-blue-500 transition-all duration-300 focus:outline-none">
+            <input type="text" id="note-title-input" placeholder="Titel der Notiz (optional)" class="w-full p-3 mb-4 rounded-xl border border-gray-600 bg-gray-800 text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300 focus:outline-none">
   
           
             <div class="flex flex-wrap gap-2 mb-4 p-2 bg-gray-700 rounded-xl">
                 <button id="bold-btn" class="toolbar-btn p-2 rounded-lg bg-gray-600 text-gray-200 hover:bg-gray-500 transition-colors font-bold focus:outline-none">B</button>
                 <button id="italic-btn" class="toolbar-btn p-2 rounded-lg bg-gray-600 text-gray-200 hover:bg-gray-500 transition-colors italic focus:outline-none">I</button>
-             
-    <button id="underline-btn" class="toolbar-btn p-2 rounded-lg 
-bg-gray-600 text-gray-200 hover:bg-gray-500 transition-colors underline focus:outline-none">U</button>
+                <button id="underline-btn" class="toolbar-btn p-2 rounded-lg bg-gray-600 text-gray-200 hover:bg-gray-500 transition-colors underline focus:outline-none">U</button>
                 
                 <div class="relative inline-block">
                     <button id="list-dropdown-btn" class="toolbar-btn p-2 rounded-lg bg-gray-600 text-gray-200 hover:bg-gray-500 transition-colors focus:outline-none">
-                        
-Aufzählung
-          
-          </button>
+                        Aufzählung
+                    </button>
                     <div id="list-dropdown-menu" class="dropdown-menu">
                         <button class="dropdown-item w-full text-left px-4 py-2 hover:bg-gray-600 rounded-lg" data-value="decimal">Nummerierung</button>
-                        <button class="dropdown-item 
-w-full text-left px-4 py-2 hover:bg-gray-600 rounded-lg" data-value="disc">Punkte</button>
-    
+                        <button class="dropdown-item w-full text-left px-4 py-2 hover:bg-gray-600 rounded-lg" data-value="disc">Punkte</button>
                         <button class="dropdown-item w-full text-left px-4 py-2 hover:bg-gray-600 rounded-lg" data-value="circle">Kreise</button>
                     </div>
                 </div>
 
-    
-                <div class="relative 
-inline-block">
+                <div class="relative inline-block">
                     <button id="size-dropdown-btn" class="toolbar-btn p-2 rounded-lg bg-gray-600 text-gray-200 hover:bg-gray-500 transition-colors focus:outline-none">
                         Schriftgröße
                     </button>
-              
-             
-    <div id="size-dropdown-menu" class="dropdown-menu">
+                    <div id="size-dropdown-menu" class="dropdown-menu">
                         <button class="dropdown-item w-full text-left px-4 py-2 hover:bg-gray-600 rounded-lg" data-value="1">Klein</button>
                         <button class="dropdown-item w-full text-left px-4 py-2 hover:bg-gray-600 rounded-lg" data-value="3">Mittel</button>
-                        <button class="dropdown-item w-full text-left 
-px-4 py-2 hover:bg-gray-600 rounded-lg" data-value="5">Groß</button>
- 
+                        <button class="dropdown-item w-full text-left px-4 py-2 hover:bg-gray-600 rounded-lg" data-value="5">Groß</button>
                     </div>
                 </div>
 
                 <div class="relative inline-block">
                     <button id="color-dropdown-btn" class="toolbar-btn p-2 rounded-lg bg-gray-600 text-gray-200 hover:bg-gray-500 transition-colors focus:outline-none">
-              
-    
-                   Schriftfarbe
+                        Schriftfarbe
                     </button>
                     <div id="color-dropdown-menu" class="dropdown-menu">
                         <button class="dropdown-item w-full text-left px-4 py-2 hover:bg-gray-600 rounded-lg text-white" data-value="white">Weiß</button>
-       
-                
                         <button class="dropdown-item w-full text-left px-4 py-2 hover:bg-gray-600 rounded-lg text-red-500" data-value="red">Rot</button>
                         <button class="dropdown-item w-full text-left px-4 py-2 hover:bg-gray-600 rounded-lg text-green-500" data-value="green">Grün</button>
-                        <button class="dropdown-item 
-w-full text-left px-4 py-2 hover:bg-gray-600 rounded-lg text-blue-500" data-value="blue">Blau</button>
-                
+                        <button class="dropdown-item w-full text-left px-4 py-2 hover:bg-gray-600 rounded-lg text-blue-500" data-value="blue">Blau</button>
                         <button class="dropdown-item w-full text-left px-4 py-2 hover:bg-gray-600 rounded-lg text-yellow-500" data-value="yellow">Gelb</button>
-                        </div>
+                    </div>
                 </div>
 
-    
-            
                 <button id="link-btn" class="toolbar-btn p-2 rounded-lg bg-gray-600 text-gray-200 hover:bg-gray-500 transition-colors focus:outline-none">
                     Link
                 </button>
 
                 <button id="indent-btn" class="toolbar-btn p-2 rounded-lg bg-gray-600 text-gray-200 hover:bg-gray-500 transition-colors focus:outline-none">
-    
-                 Einrücken
-          
+                    Einrücken
                 </button>
                 <button id="outdent-btn" class="toolbar-btn p-2 rounded-lg bg-gray-600 text-gray-200 hover:bg-gray-500 transition-colors focus:outline-none">
                     Ausrücken
-             
-    </button>
+                </button>
             </div>
             
           
             <div id="note-editor" class="w-full rounded-xl border border-gray-600 bg-gray-800 text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none transition-all duration-300" contenteditable="true" placeholder="Schreiben Sie hier Ihre neue Notiz..."></div>
             
             <div class="mt-4 flex justify-end space-x-2">
-   
-              <button id="save-note-btn" class="bg-blue-600 text-white font-medium py-2 px-5 rounded-full shadow-lg hover:bg-blue-700 transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50">
-                 
+                <button id="save-note-btn" class="bg-blue-600 text-white font-medium py-2 px-5 rounded-full shadow-lg hover:bg-blue-700 transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50">
                     Notiz speichern
                 </button>
             </div>
@@ -276,18 +234,16 @@ w-full text-left px-4 py-2 hover:bg-gray-600 rounded-lg text-blue-500" data-valu
         </div>
 
         <div id="notes-list" class="space-y-4">
-            </div>
+        </div>
 
         <div id="loading-indicator" class="text-center text-gray-400 mt-8 hidden">
             <div class="animate-spin inline-block w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full"></div>
-     
-               <p class="mt-2">Notizen werden geladen...</p>
+            <p class="mt-2">Notizen werden geladen...</p>
         </div>
 
-        <div id="no-notes-message" 
-class="text-center text-gray-400 mt-8 hidden">
+        <div id="no-notes-message" class="text-center text-gray-400 mt-8 hidden">
             <p>Sie haben noch keine Notizen.
-Fügen Sie eine neue hinzu, um zu beginnen!</p>
+            Fügen Sie eine neue hinzu, um zu beginnen!</p>
         </div>
     </div>
 
@@ -301,7 +257,6 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors focus:out
                 </button>
                 <button id="modal-cancel-btn" class="bg-gray-600 text-gray-200 font-medium py-2 px-5 rounded-full hover:bg-gray-500 transition-colors hidden focus:outline-none">
                     Abbrechen
-           
                 </button>
             </div>
         </div>
@@ -311,20 +266,16 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors focus:out
         <div class="bg-gray-800 p-6 rounded-2xl shadow-xl max-w-lg w-full">
             <h3 class="text-xl font-bold text-gray-200 mb-4 text-center">Link einfügen</h3>
             
-<p class="text-gray-300 mb-4 text-center">Geben Sie die URL für den Link ein.</p>
-     
-               <input type="text" id="link-url-input" placeholder="https://beispiel.de" class="w-full p-3 rounded-xl border border-gray-600 bg-gray-900 text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300 focus:outline-none">
+            <p class="text-gray-300 mb-4 text-center">Geben Sie die URL für den Link ein.</p>
+            <input type="text" id="link-url-input" placeholder="https://beispiel.de" class="w-full p-3 rounded-xl border border-gray-600 bg-gray-900 text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300 focus:outline-none">
             <div class="mt-6 flex justify-end space-x-4">
                 <button id="link-cancel-btn" class="bg-gray-600 text-gray-200 font-medium py-2 px-5 rounded-full hover:bg-gray-500 transition-colors focus:outline-none">
-            
-                Abbrechen
+                    Abbrechen
                 </button>
- 
                 <button id="link-insert-btn" class="bg-blue-600 text-white font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors focus:outline-none">
                     Einfügen
                 </button>
             </div>
- 
         </div>
     </div>
 
@@ -931,12 +882,14 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors focus:out
                 e.preventDefault(); // Verhindert Fokus
             });
         button.addEventListener('click', (e) => {
+                // Wichtig: Blur sofort vor der Ausführung
+                e.currentTarget.blur();
+                
                 applyFormat(command, value); 
-                // Aggressive blur + Editor Focus
-                e.currentTarget.blur(); 
+                
+                // Editor Focus im Timeout
                 setTimeout(() => {
                     noteEditor.focus(); 
-  
                     updateToolbarState();   
                 }, 1);
             });
@@ -1102,21 +1055,24 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors focus:out
                 e.preventDefault();
                 e.stopPropagation();
                 
-                const listStyle = e.target.getAttribute('data-value'); // 'decimal', 'disc', 'circle'
+                const listStyle = e.target.getAttribute('data-value'); 
                 const selection = window.getSelection();
                 
                 if (!selection.rangeCount) return;
          
                 listDropdownMenu.classList.remove('active');
+                
+                // WICHTIG: 1. Den Fokus sofort vom Item und dem Haupt-Button entfernen.
+                e.currentTarget.blur(); 
                 listDropdownBtn.blur(); 
                 
-                // styleWithCSS muss aktiv sein, da es für Farben/Größen/etc. benötigt wird
+                // styleWithCSS muss aktiv sein
                 document.execCommand('styleWithCSS', false, true); 
                 
-                // Führe die neue, unabhängige Listenaktion aus
+                // Führe die unabhängige Listenaktion aus
                 toggleCustomList(listStyle);
                 
-                // Beende styleWithCSS und aktualisiere den Zustand
+                // WICHTIG: 2. Nach der DOM-Manipulation den Editor fokussieren und den Status aktualisieren.
                 setTimeout(() => {
                     noteEditor.focus();
                     document.execCommand('styleWithCSS', false, false);
