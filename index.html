@@ -27,16 +27,17 @@
             min-height: 100px;
             padding: 1rem;
             border-radius: 0.75rem;
+            /* WICHTIG: border-color hier beibehalten für Standard-Grau */
+            border: 1px solid #4a5568; 
             background-color: #1a202c;
             color: #ffffff;
             outline: none; 
             transition: all 0.3s;
         }
         
-        /* FIX 6.0: Ermöglicht den Blauen Fokus-Ring/Rand, indem widersprüchliches CSS entfernt wird */
+        /* FIX: Ermöglicht den Blauen Fokus-Ring/Rand, indem widersprüchliches CSS entfernt wird */
         #note-editor:focus {
             outline: none !important;
-            /* box-shadow: none !important; <-- DIES WURDE ENTFERNT */
         }
 
         /* --- FIX: Fokus-/Klick-Probleme (Grauer Flash und Permanenz) --- */
@@ -935,66 +936,62 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors focus:out
                     // WICHTIG: Setze styleWithCSS, um List-Styles zuverlässiger zu setzen
                     document.execCommand('styleWithCSS', false, true);
                     
-                    // 1. ZUSTAND BESTIMMEN
-                    const isOlActive = document.queryCommandState('insertOrderedList');
-                    const isUlActive = document.queryCommandState('insertUnorderedList');
-                    let currentList = selection.anchorNode.closest('ul') || selection.anchorNode.closest('ol'); 
-
+                    // Zustände ermitteln
+                    const isTargetOl = listStyle === 'decimal';
+                    const targetCommand = isTargetOl ? 'insertOrderedList' : 'insertUnorderedList';
+                    const targetMarkerStyle = listStyle === 'disc' ? '' : listStyle; 
+                    
+                    const isCurrentOlActive = document.queryCommandState('insertOrderedList');
+                    const isCurrentUlActive = document.queryCommandState('insertUnorderedList');
+                    let currentList = selection.anchorNode.closest('ul') || selection.anchorNode.closest('ol');
+                    
                     let currentEffectiveStyle = 'none';
-                    if (isOlActive) {
+                    if (isCurrentOlActive) {
                         currentEffectiveStyle = 'decimal';
-                    } else if (isUlActive) {
-                        let style = currentList && currentList.tagName === 'UL' ? (currentList.style.listStyleType || 'disc') : 'disc';
-                        currentEffectiveStyle = style === '' ? 'disc' : style;
+                    } else if (isCurrentUlActive && currentList && currentList.tagName === 'UL') {
+                        currentEffectiveStyle = currentList.style.listStyleType || 'disc';
+                        if (currentEffectiveStyle === '') currentEffectiveStyle = 'disc';
                     }
                     
-                    const targetStyle = listStyle === 'disc' ? 'disc' : listStyle; 
-                    const isTargetOl = targetStyle === 'decimal';
-                    const isTargetUl = !isTargetOl;
+                    // --- NEUE, STABILISIERTE LOGIK ---
 
-                    
-                    // 2. AKTION DURCHFÜHREN
-                    if (currentEffectiveStyle === targetStyle) {
-                        // STATE 1: Bereits aktiv -> Toggle OFF
-                        if (isTargetOl) {
-                            toggleList('insertOrderedList');
-                        } else {
-                            toggleList('insertUnorderedList');
-                        }
-                    } else {
-                        // STATE 2 & 3: Switch oder Toggle ON
+                    if (listStyle === currentEffectiveStyle) {
+                        // 1. ZIEL: DEAKTIVIERUNG (Toggle OFF)
+                        // Wenn der aktive Button erneut geklickt wird, deaktivieren Sie die Liste für die aktuelle Zeile.
+                        toggleList(targetCommand);
 
-                        if (isTargetOl) {
-                            // Target is OL (decimal)
-                            if (isUlActive) toggleList('insertUnorderedList'); // Deactivate UL first
-                            toggleList('insertOrderedList'); // Activate OL
-                        } else {
-                            // Target is UL (disc or circle)
-                            if (isOlActive) toggleList('insertOrderedList'); // Deactivate OL first
+                    } else if (isTargetOl) {
+                        // 2. ZIEL: NUMMERIERUNG (OL)
+                        // Wechsel zu OL. Zuerst UL deaktivieren, falls aktiv.
+                        if (isCurrentUlActive) toggleList('insertUnorderedList'); 
+                        toggleList('insertOrderedList');
 
-                            // Wenn UL bereits aktiv ist, aber anderer Stil (Kreise -> Punkte), muss sie kurz deaktiviert werden.
-                            if (isUlActive) { 
-                                toggleList('insertUnorderedList'); 
+                    } else if (isCurrentUlActive && currentList && currentList.tagName === 'UL') {
+                        // 3. ZIEL: WECHSEL ZWISCHEN UNGEORDNETEN STYLES (disc <-> circle)
+                        // Da die UL bereits aktiv ist, ändern wir NUR den Style-Type des Parent-UL-Containers.
+                        currentList.style.listStyleType = targetMarkerStyle;
+                        
+                    } else { 
+                        // 4. ZIEL: AKTIVIERUNG VON UL (von OL oder Non-List)
+                        // Aktivieren Sie die UL mit dem gewünschten Style.
+                        if (isCurrentOlActive) toggleList('insertOrderedList'); 
+                        
+                        // Aktivieren Sie UL
+                        toggleList('insertUnorderedList');
+                        
+                        // Den Style im Nachgang setzen, um sicherzustellen, dass die UL im DOM ist
+                        setTimeout(() => {
+                            let newUl = selection.anchorNode.closest('ul');
+                            if (newUl) {
+                                newUl.style.listStyleType = targetMarkerStyle;
                             }
-                            
-                            // Activate UL
-                            toggleList('insertUnorderedList');
-
-                            // Style anwenden, da execCommand sofort zurückkehrt, aber DOM-Änderung verzögert ist
-                            setTimeout(() => {
-                                const newUl = selection.anchorNode.closest('ul');
-                                if (newUl) {
-                                    // 'disc' ist der Standard und wird am besten mit leerem String gesetzt, um CSS-Overrides zu ermöglichen
-                                    newUl.style.listStyleType = targetStyle === 'disc' ? '' : targetStyle;
-                                }
-                                updateToolbarState(); 
-                                document.execCommand('styleWithCSS', false, false);
-                            }, 1);
-                            return; // Return early, da der Style-Wechsel im Timeout abgeschlossen wird
-                        }
+                            updateToolbarState(); 
+                            document.execCommand('styleWithCSS', false, false);
+                        }, 1);
+                        return; // Beende hier, da Style-Änderung asynchron ist
                     }
 
-                    // Finalize für synchrone Fälle (OL toggle, oder UL toggle off)
+                    // Finalisiere für synchrone Fälle (Toggle OFF, OL Toggle)
                     document.execCommand('styleWithCSS', false, false);
                     updateToolbarState(); 
                     
