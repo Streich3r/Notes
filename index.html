@@ -16,7 +16,6 @@
             background-color: #1a202c;
             border-color: #2d3748;
             cursor: grab;
-            /* FIX: Verhindert Text-Überlauf */
             word-break: break-word;
             overflow-wrap: break-word;
         }
@@ -28,18 +27,16 @@
             min-height: 100px;
             padding: 1rem;
             border-radius: 0.75rem;
-            /* FIX: Entfernt hartcodierten Border-Style, um Tailwind-Fokus zu ermöglichen */
             background-color: #1a202c;
-            /* Textfarbe auf reines Weiß setzen */
             color: #ffffff;
             outline: none; 
             transition: all 0.3s;
         }
         
-        /* FIX 5.0: Erlaubt den Blauen Fokus-Ring/Rand, indem alle aggressiven Overrides entfernt werden, außer dem nativen Outline */
+        /* FIX 6.0: Ermöglicht den Blauen Fokus-Ring/Rand, indem widersprüchliches CSS entfernt wird */
         #note-editor:focus {
             outline: none !important;
-            box-shadow: none !important;
+            /* box-shadow: none !important; <-- DIES WURDE ENTFERNT */
         }
 
         /* --- FIX: Fokus-/Klick-Probleme (Grauer Flash und Permanenz) --- */
@@ -533,6 +530,10 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors focus:out
         const applyFormat = (command, value = null) => {
             document.execCommand(command, false, value);
         };
+        
+        const toggleList = (command) => {
+            applyFormat(command); 
+        };
 
         
          const rgbToHex = (rgb) => {
@@ -927,11 +928,6 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors focus:out
                 listDropdownMenu.classList.remove('active');
                 listDropdownBtn.blur(); 
                 
-                // Helferfunktion für execCommand, um Wiederholung zu vermeiden
-                const toggleList = (command) => {
-                    applyFormat(command); 
-                };
-
                 // Timeout ist nötig, da execCommand asynchron ist
                 setTimeout(() => {
                     noteEditor.focus(); 
@@ -939,71 +935,66 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors focus:out
                     // WICHTIG: Setze styleWithCSS, um List-Styles zuverlässiger zu setzen
                     document.execCommand('styleWithCSS', false, true);
                     
+                    // 1. ZUSTAND BESTIMMEN
                     const isOlActive = document.queryCommandState('insertOrderedList');
                     const isUlActive = document.queryCommandState('insertUnorderedList');
-                    // Muss nach der DOM-Manipulation erneut geprüft werden!
                     let currentList = selection.anchorNode.closest('ul') || selection.anchorNode.closest('ol'); 
 
                     let currentEffectiveStyle = 'none';
                     if (isOlActive) {
                         currentEffectiveStyle = 'decimal';
                     } else if (isUlActive) {
-                        // Ermittle den aktuellen Style 
                         let style = currentList && currentList.tagName === 'UL' ? (currentList.style.listStyleType || 'disc') : 'disc';
                         currentEffectiveStyle = style === '' ? 'disc' : style;
                     }
                     
                     const targetStyle = listStyle === 'disc' ? 'disc' : listStyle; 
+                    const isTargetOl = targetStyle === 'decimal';
+                    const isTargetUl = !isTargetOl;
+
                     
-                    if (targetStyle === 'decimal') {
-                        // ZIEL: NUMMERIERUNG (OL)
-                        if (currentEffectiveStyle === 'decimal') {
-                            // Bereits aktiv -> Deaktivieren (Toggle OFF)
+                    // 2. AKTION DURCHFÜHREN
+                    if (currentEffectiveStyle === targetStyle) {
+                        // STATE 1: Bereits aktiv -> Toggle OFF
+                        if (isTargetOl) {
                             toggleList('insertOrderedList');
                         } else {
-                            // Umschalten von UL/keine Liste -> Aktivieren
-                            if (isUlActive) toggleList('insertUnorderedList'); // UL deaktivieren
-                            toggleList('insertOrderedList'); // OL aktivieren
-                        }
-                    } else { 
-                        // ZIEL: UNGEORDNETE LISTE (disc oder circle)
-                        
-                        if (currentEffectiveStyle === 'decimal') {
-                            // Wechsel von OL zu UL
-                            toggleList('insertOrderedList'); // Deaktiviert OL
-                            toggleList('insertUnorderedList'); // Aktiviert UL
-                            
-                            // Style muss in einem separaten Timeout gesetzt werden, da DOM-Änderungen verzögert sind
-                            setTimeout(() => {
-                                const newUl = selection.anchorNode.closest('ul');
-                                if(newUl) newUl.style.listStyleType = targetStyle === 'disc' ? '' : targetStyle;
-                                updateToolbarState(); 
-                                document.execCommand('styleWithCSS', false, false);
-                            }, 1);
-                            return; 
-                            
-                        } else if (currentEffectiveStyle === targetStyle) {
-                            // UL ist aktiv, gleicher Stil -> Deaktivieren (Toggle OFF)
                             toggleList('insertUnorderedList');
-                            
+                        }
+                    } else {
+                        // STATE 2 & 3: Switch oder Toggle ON
+
+                        if (isTargetOl) {
+                            // Target is OL (decimal)
+                            if (isUlActive) toggleList('insertUnorderedList'); // Deactivate UL first
+                            toggleList('insertOrderedList'); // Activate OL
                         } else {
-                            // UL ist nicht aktiv ODER UL mit anderem Stil ist aktiv -> Stil ändern / UL aktivieren
-                            if (!isUlActive) {
-                                toggleList('insertUnorderedList'); // Aktiviert UL (wenn nicht aktiv)
+                            // Target is UL (disc or circle)
+                            if (isOlActive) toggleList('insertOrderedList'); // Deactivate OL first
+
+                            // Wenn UL bereits aktiv ist, aber anderer Stil (Kreise -> Punkte), muss sie kurz deaktiviert werden.
+                            if (isUlActive) { 
+                                toggleList('insertUnorderedList'); 
                             }
                             
-                            // Stil setzen (funktioniert auch für den Stil-Wechsel)
+                            // Activate UL
+                            toggleList('insertUnorderedList');
+
+                            // Style anwenden, da execCommand sofort zurückkehrt, aber DOM-Änderung verzögert ist
                             setTimeout(() => {
                                 const newUl = selection.anchorNode.closest('ul');
-                                if(newUl) newUl.style.listStyleType = targetStyle === 'disc' ? '' : targetStyle;
+                                if (newUl) {
+                                    // 'disc' ist der Standard und wird am besten mit leerem String gesetzt, um CSS-Overrides zu ermöglichen
+                                    newUl.style.listStyleType = targetStyle === 'disc' ? '' : targetStyle;
+                                }
                                 updateToolbarState(); 
                                 document.execCommand('styleWithCSS', false, false);
                             }, 1);
-                            return; 
+                            return; // Return early, da der Style-Wechsel im Timeout abgeschlossen wird
                         }
                     }
-                    
-                    // Finalize für synchrone Fälle
+
+                    // Finalize für synchrone Fälle (OL toggle, oder UL toggle off)
                     document.execCommand('styleWithCSS', false, false);
                     updateToolbarState(); 
                     
