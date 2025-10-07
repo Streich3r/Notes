@@ -34,7 +34,6 @@
             transition: all 0.3s;
         }
         
-        /* FIX: Ermöglicht den Blauen Fokus-Ring/Rand, indem widersprüchliches CSS entfernt wird */
         #note-editor:focus {
             outline: none !important;
         }
@@ -46,12 +45,12 @@
             transition: background-color 0.15s;
         }
         
-        /* Aggressive Entfernung aller nativen Fokus-Markierungen (hellgraue Ringe/Ränder) */
+        /* TEST: Aggressive Hinzufügung eines ROTTEN Fokus-Rings (zum Debuggen der :focus-Regel) */
         .toolbar-btn:focus, .dropdown-item:focus, #sort-dropdown-btn:focus, #save-note-btn:focus,
         .toolbar-btn:focus-visible, .dropdown-item:focus-visible, #sort-dropdown-btn:focus-visible, #save-note-btn:focus-visible {
-            outline: none !important;         
-            box-shadow: none !important;      
-            /* Hält die Farbe bei, wenn der native Fokus aktiv ist, um den Kontrast zu vermeiden */
+            /* !WENN DIESER RING SICHTBAR IST, ARBEITET DIE :FOCUS-REGEL KORREKT! */
+            outline: 2px solid red !important;        /* Zeigt eine rote Outline */
+            box-shadow: 0 0 0 4px rgba(255, 0, 0, 0.7) !important; /* Fügt einen roten Schatten hinzu */
             background-color: #4b5563 !important; 
         }
         
@@ -1066,15 +1065,18 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors focus:out
                 e.currentTarget.blur(); 
                 listDropdownBtn.blur(); 
                 
+                // NEU & WICHTIG: Sofortiger Versuch, den Fokus zurückzuholen.
+                noteEditor.focus();
+                
                 // styleWithCSS muss aktiv sein
                 document.execCommand('styleWithCSS', false, true); 
                 
                 // Führe die unabhängige Listenaktion aus
                 toggleCustomList(listStyle);
                 
-                // WICHTIG: 2. Nach der DOM-Manipulation den Editor fokussieren und den Status aktualisieren.
+                // WICHTIG: 2. Nach der DOM-Manipulation den Editor erneut fokussieren.
                 setTimeout(() => {
-                    noteEditor.focus();
+                    noteEditor.focus(); 
                     document.execCommand('styleWithCSS', false, false);
                     updateToolbarState(); 
                 }, 1);
