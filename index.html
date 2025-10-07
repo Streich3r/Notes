@@ -125,12 +125,39 @@
         label[for="import-file-input"]:active {
             background-color: #a16207 !important; /* bg-yellow-800 */
         }
+        
+        /* Dropdown Menü Styling */
+        .dropdown-menu {
+            position: absolute;
+            z-index: 10;
+            top: 100%;
+            left: 0;
+            margin-top: 0.5rem;
+            background-color: #374151; /* bg-gray-700 */
+            border-radius: 0.5rem;
+            padding: 0.25rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+            display: none;
+            flex-direction: column;
+            width: max-content;
+            min-width: 100%;
+        }
+
+        .dropdown-menu.active {
+            display: flex;
+        }
 
         #note-editor:empty:before {
             content: attr(placeholder);
             color: #718096;
             pointer-events: none;
             display: block;
+        }
+        
+        /* Spezielle Regel für Link-Färbung im Editor */
+        #note-editor a {
+            color: #3b82f6; /* Tailwind blue-500 */
+            text-decoration: underline;
         }
         
         /* --- STABILISIERTE LISTE-STYLES --- */
@@ -146,12 +173,6 @@
         #note-editor li::marker, .note-card li::marker {
             color: #ffffff !important;
         }
-        
-        /* Spezielle Regel für Link-Färbung im Editor */
-        #note-editor a {
-            color: #3b82f6; /* Tailwind blue-500 */
-            text-decoration: underline;
-        }
     </style>
 </head>
 <body class="bg-black min-h-screen p-4 flex items-center justify-center">
@@ -163,18 +184,18 @@
             </h1>
         </header>
 
-        <div class="mb-6 flex 
-flex-col sm:flex-row gap-4">
-            <input type="text" id="search-input" placeholder="Notizen durchsuchen..." class="w-full sm:w-1/3 p-3 rounded-xl border border-gray-600 bg-gray-800 text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300 focus:outline-none">
+        <div class="mb-6 flex flex-col md:flex-row gap-4">
+            <input type="text" id="search-input" placeholder="Notizen durchsuchen..." class="w-full md:w-1/3 p-3 rounded-xl border border-gray-600 bg-gray-800 text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300 focus:outline-none">
             
-            <div class="flex gap-4 w-full sm:w-2/3">
+            <div class="flex flex-col sm:flex-row gap-4 w-full md:w-2/3">
+                
                 <div class="relative w-full sm:w-1/2">
                     <button 
                         id="sort-dropdown-btn" 
                         class="calculator-btn w-full p-3 rounded-xl border border-gray-600 bg-gray-800 text-gray-100 text-left">
                         Sortieren nach: Unsortiert
                     </button>
-                    <div id="sort-dropdown-menu" class="dropdown-menu mt-2 w-full">
+                    <div id="sort-dropdown-menu" class="dropdown-menu">
                         <button class="calculator-btn dropdown-item w-full text-left px-4 py-2 rounded-lg active" data-value="unsorted">Unsortiert</button>
                         <button class="calculator-btn dropdown-item w-full text-left px-4 py-2 rounded-lg" data-value="newest">Datum (neueste zuerst)</button>
                         <button class="calculator-btn dropdown-item w-full text-left px-4 py-2 rounded-lg" data-value="oldest">Datum (älteste zuerst)</button>
@@ -203,8 +224,7 @@ flex-col sm:flex-row gap-4">
             <input type="text" id="note-title-input" placeholder="Titel der Notiz (optional)" class="w-full p-3 mb-4 rounded-xl border border-gray-600 bg-gray-800 text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300 focus:outline-none">
   
           
-            <div class="flex flex-wrap gap-2 mb-4 
-p-2 bg-gray-700 rounded-xl">
+            <div class="flex flex-wrap gap-2 mb-4 p-2 bg-gray-700 rounded-xl">
                 <button id="bold-btn" class="calculator-btn toolbar-btn p-2 rounded-lg text-gray-200 font-bold">B</button>
                 <button id="italic-btn" class="calculator-btn toolbar-btn p-2 rounded-lg text-gray-200 italic">I</button>
                 <button id="underline-btn" class="calculator-btn toolbar-btn p-2 rounded-lg text-gray-200 underline">U</button>
@@ -218,8 +238,7 @@ p-2 bg-gray-700 rounded-xl">
                     <div id="list-dropdown-menu" class="dropdown-menu">
                         <button class="calculator-btn dropdown-item w-full text-left px-4 py-2 rounded-lg" data-value="decimal">Nummerierung</button>
                         <button class="calculator-btn dropdown-item w-full text-left px-4 py-2 rounded-lg" data-value="disc">Punkte</button>
-                        <button class="calculator-btn dropdown-item w-full 
-text-left px-4 py-2 rounded-lg" data-value="circle">Kreise</button>
+                        <button class="calculator-btn dropdown-item w-full text-left px-4 py-2 rounded-lg" data-value="circle">Kreise</button>
                     </div>
                 </div>
 
