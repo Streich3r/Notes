@@ -565,7 +565,7 @@ class="text-gray-300 mb-4 text-center">Geben Sie die URL für den Link ein.</p>
         // ******************************************************
         
         /**
-         * Führt die Listenaktion durch (native execCommand + manuelle Stil-Anpassung für UL).
+         * Führt die Listenaktion durch (native execCommand + manuelle Stil-Anpassung).
          */
         const toggleList = (targetStyle) => {
             restoreSelection();
@@ -577,19 +577,27 @@ class="text-gray-300 mb-4 text-center">Geben Sie die URL für den Link ein.</p>
             // 1. Führe den Befehl aus (aktiviert/deaktiviert die Liste oder wechselt den Typ)
             document.execCommand(command, false, null);
             
-            // 2. Manuelle Anpassung für UL-Stile (disc, circle)
-            if (!isOrdered) {
-                 // Finde das übergeordnete UL-Element
-                 const selection = window.getSelection();
-                 if (selection.rangeCount > 0) {
-                     let node = selection.getRangeAt(0).startContainer;
-                     if (node.nodeType === Node.TEXT_NODE) node = node.parentNode;
-                     
-                     let ul = node.closest('ul');
-                     
-                     if (ul) {
-                         ul.style.listStyleType = targetStyle;
-                     }
+            // 2. Manuelle Anpassung für Listen-Stile (UL und OL)
+            // Finde das übergeordnete Listen-Element (UL oder OL)
+            const selection = window.getSelection();
+            if (selection.rangeCount > 0) {
+                 let node = selection.getRangeAt(0).startContainer;
+                 if (node.nodeType === Node.TEXT_NODE) node = node.parentNode;
+                 
+                 let list = node.closest('UL, OL');
+                 
+                 if (list) {
+                    if (isOrdered) {
+                         // Erzwinge Dezimal-Stil für OL (FIX für Nummerierung)
+                         if (list.tagName === 'OL') {
+                             list.style.listStyleType = targetStyle; // 'decimal'
+                         }
+                    } else {
+                         // Stil-Anpassung für UL
+                         if (list.tagName === 'UL') {
+                             list.style.listStyleType = targetStyle; // 'disc', 'circle'
+                         }
+                    }
                  }
             }
             
@@ -664,7 +672,7 @@ class="text-gray-300 mb-4 text-center">Geben Sie die URL für den Link ein.</p>
                     let activeListStyle = 'disc'; // Default for UL
                     
                     if (parentList.tagName === 'OL') {
-                        activeListStyle = 'decimal';
+                        activeListStyle = parentList.style.listStyleType || 'decimal'; // 'decimal' als Fallback
                     } else if (parentList.tagName === 'UL') {
                         activeListStyle = parentList.style.listStyleType || 'disc';
                     }
@@ -673,18 +681,11 @@ class="text-gray-300 mb-4 text-center">Geben Sie die URL für den Link ein.</p>
                     
                     if (activeItem) {
                         activeItem.classList.add('active');
-                        // Setze den Text des Hauptbuttons (nur den Formatnamen anzeigen)
-                        const formatName = activeItem.textContent.trim().split('(')[0].trim();
-                        listDropdownBtn.textContent = `Aufzählung: ${formatName}`;
-                    } else {
-                         listDropdownBtn.textContent = 'Aufzählung';
-                    }
-                } else {
-                    listDropdownBtn.textContent = 'Aufzählung';
-                }
-            } else {
-                 listDropdownBtn.textContent = 'Aufzählung';
+                        // FIX: Text wird NICHT auf den aktiven Wert gesetzt (Punkt 2)
+                    } 
+                } 
             }
+            listDropdownBtn.textContent = 'Aufzählung'; // FIX: Button-Text statisch halten
             
             // 2. Schriftgröße (Dropdown Active Marker FIX)
             sizeDropdownItems.forEach(item => item.classList.remove('active'));
@@ -694,13 +695,10 @@ class="text-gray-300 mb-4 text-center">Geben Sie die URL für den Link ein.</p>
                 const activeItem = Array.from(sizeDropdownItems).find(item => item.dataset.value === currentSize);
                 if (activeItem) {
                     activeItem.classList.add('active');
-                    sizeDropdownBtn.textContent = `Größe: ${activeItem.textContent}`;
-                } else {
-                    sizeDropdownBtn.textContent = 'Schriftgröße';
-                }
-            } else {
-                 sizeDropdownBtn.textContent = 'Schriftgröße';
-            }
+                    // FIX: Text wird NICHT auf den aktiven Wert gesetzt (Punkt 2)
+                } 
+            } 
+            sizeDropdownBtn.textContent = 'Schriftgröße'; // FIX: Button-Text statisch halten
 
 
             // 3. Schriftfarbe (Dropdown Active Marker FIX)
@@ -720,16 +718,11 @@ class="text-gray-300 mb-4 text-center">Geben Sie die URL für den Link ein.</p>
                     const activeItem = Array.from(colorDropdownItems).find(item => item.dataset.value === colorKey);
                     if (activeItem) {
                         activeItem.classList.add('active');
-                        colorDropdownBtn.textContent = `Farbe: ${activeItem.textContent}`;
-                    } else {
-                        colorDropdownBtn.textContent = 'Schriftfarbe';
-                    }
-                } else {
-                     colorDropdownBtn.textContent = 'Schriftfarbe';
-                }
-            } else {
-                 colorDropdownBtn.textContent = 'Schriftfarbe';
+                        // FIX: Text wird NICHT auf den aktiven Wert gesetzt (Punkt 2)
+                    } 
+                } 
             }
+            colorDropdownBtn.textContent = 'Schriftfarbe'; // FIX: Button-Text statisch halten
         };
 
 
@@ -815,7 +808,6 @@ class="text-gray-300 mb-4 text-center">Geben Sie die URL für den Link ein.</p>
         };
         
         const createNoteElement = (note) => {
-            // ... (Funktion bleibt wie zuvor, Datum bleibt entfernt) ...
             const div = document.createElement('div');
             div.className = 'note-card p-4 rounded-xl shadow-lg border hover:shadow-2xl transition-all duration-300 transform hover:scale-[1.01] flex flex-col cursor-grab';
             div.draggable = currentSortMethod === 'unsorted'; 
@@ -827,8 +819,10 @@ class="text-gray-300 mb-4 text-center">Geben Sie die URL für den Link ein.</p>
             const title = document.createElement('h3');
             title.className = 'text-xl font-semibold text-gray-100 flex-grow pr-4';
 
-            // Wenn der Titel leer ist, wird der Anfang des Contents als Titel verwendet.
-            if (note.title.trim() === '' && note.content.trim() !== '') {
+            const hasTitle = note.title.trim() !== '';
+
+            // Titel-Logik: Wenn Titel leer, zeige Anfang des Contents als Titel
+            if (!hasTitle && note.content.trim() !== '') {
                  // Entferne HTML-Tags, um den Anfang des Textes zu bekommen
                 const tempDiv = document.createElement('div');
                 tempDiv.innerHTML = note.content;
@@ -859,8 +853,8 @@ class="text-gray-300 mb-4 text-center">Geben Sie die URL für den Link ein.</p>
             header.appendChild(btnContainer);
             div.appendChild(header);
 
-            // Content nur anzeigen, wenn ein Titel vorhanden ist ODER der Inhalt lang ist
-            if (note.title.trim() !== '' && note.content.trim() !== '') {
+            // NEUE LOGIK (Punkt 1): Content nur anzeigen, wenn KEIN Titel vorhanden ist
+            if (!hasTitle && note.content.trim() !== '') {
                 const contentDiv = document.createElement('div');
                 contentDiv.className = 'text-gray-300 note-content mt-2';
                 contentDiv.innerHTML = note.content;
