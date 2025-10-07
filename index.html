@@ -6,7 +6,7 @@
     <title>Meine Offline-Notizen</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        @import url('https://fonts.fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap');
         body {
             font-family: 'Inter', sans-serif;
             background-color: #000000;
@@ -28,56 +28,52 @@
             min-height: 100px;
             padding: 1rem;
             border-radius: 0.75rem;
-            border: 1px solid #4a5568;
+            /* FIX: Entfernt hartcodierten Border-Style, um Tailwind-Fokus zu ermöglichen */
             background-color: #1a202c;
             /* Textfarbe auf reines Weiß setzen */
             color: #ffffff;
-            outline: none; /* WICHTIG: Entfernt den Browser-Standard-Fokus-Ring */
+            outline: none; 
             transition: all 0.3s;
         }
         
-        /* FIX 4.0: ERLAUBT DEN BLAUEN FOKUSRAND IM EDITOR (Tailwind-Klassen werden jetzt angewendet) */
-        /* Entfernt nur den nativen Browser-Outline, erlaubt aber die Tailwind-Focus-Klassen (focus:ring-2) */
+        /* FIX 5.0: Erlaubt den Blauen Fokus-Ring/Rand, indem alle aggressiven Overrides entfernt werden, außer dem nativen Outline */
         #note-editor:focus {
             outline: none !important;
             box-shadow: none !important;
         }
 
-        /* --- FIX 3.0: Löst ALLE Fokus-/Klick-Probleme (Grauer Flash und Permanenz) --- */
-        /* Setzt allgemeine Button-Stile */
+        /* --- FIX: Fokus-/Klick-Probleme (Grauer Flash und Permanenz) --- */
         .toolbar-btn, .dropdown-item, #sort-dropdown-btn {
             background-color: #4b5563; /* bg-gray-600 */
-            -webkit-tap-highlight-color: transparent; /* Verhindert iOS-Grau */
+            -webkit-tap-highlight-color: transparent; 
             transition: background-color 0.15s;
         }
         
         /* Entfernt jegliche visuelle Ablenkung beim Fokus (dauerhafter grauer Kasten) */
         .toolbar-btn:focus, .dropdown-item:focus, #sort-dropdown-btn:focus, #save-note-btn:focus,
         .toolbar-btn:focus-visible, .dropdown-item:focus-visible, #sort-dropdown-btn:focus-visible, #save-note-btn:focus-visible {
-            outline: none !important;         /* Kein Standard-Outline */
-            box-shadow: none !important;      /* Keine Box-Shadow */
-            /* Erzwungen: Setze Hintergrund auf normalen Zustand zurück (entfernt hellgraues Focus-Highlight) */
-            background-color: #4b5563 !important; /* Standard-Buttonfarbe */
+            outline: none !important;         
+            box-shadow: none !important;      
+            background-color: #4b5563 !important; 
         }
         
         /* Active-Zustand (Klick-Effekt / kurzer Blink) */
         .toolbar-btn:active, .dropdown-item:active, #sort-dropdown-btn:active {
-            background-color: #374151 !important; /* Dunkleres Grau für kurzen Blink */
+            background-color: #374151 !important; 
         }
 
         /* Hover-Zustand (muss über Focus stehen) */
         .toolbar-btn:hover, .dropdown-item:hover, #sort-dropdown-btn:hover {
-            background-color: #6b7280; /* bg-gray-500 */
+            background-color: #6b7280; 
         }
         
         /* Spezial-Override für den Save-Button (blau) */
         #save-note-btn { background-color: #2563eb; }
         #save-note-btn:focus, #save-note-btn:focus-visible { 
-            background-color: #2563eb !important; /* Standard-Blau */
+            background-color: #2563eb !important; 
         }
         #save-note-btn:hover { background-color: #1d4ed8; }
         #save-note-btn:active { background-color: #1e40af !important; }
-        /* --- ENDE FIX 3.0 --- */
 
 
         #note-editor:empty:before {
@@ -89,7 +85,7 @@
         
         /* Stil für den aktiven Zustand (sofort blau) */
         .toolbar-btn.active {
-            background-color: #2563eb !important; /* Wichtig: Überschreibt active/focus-visible */
+            background-color: #2563eb !important; 
             color: #ffffff;
         }
         .dropdown-item.active {
@@ -102,12 +98,10 @@
             color: #ffffff !important;
         }
 
-        /* Setzt die Marker (Punkte/Kreise/Zahlen) auf Weiß */
         #note-editor li::marker, .note-card li::marker {
             color: #ffffff !important;
         }
         
-        /* Allgemeine Listen-Einrückung */
         #note-editor ul, #note-editor ol, .note-card ul, .note-card ol {
             margin-left: 1.5rem;
         }
@@ -123,25 +117,8 @@
             list-style-type: disc !important;
         }
         
-        #note-editor h2 {
-            font-size: 1.5rem;
-            font-weight: 700;
-            margin-top: 1.5rem;
-            margin-bottom: 0.5rem;
-        }
-        #note-editor h3 {
-            font-size: 1.25rem;
-            font-weight: 600;
-            margin-top: 1rem;
-            margin-bottom: 0.5rem;
-        }
-        
         #note-editor ol, .note-card ol {
             list-style-type: decimal;
-        }
-
-        #note-editor blockquote {
-            margin-left: 2rem;
         }
 
         .dropdown-menu {
@@ -407,7 +384,7 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors focus:out
         let currentSortMethod = 'unsorted';
         // Speicherschlüssel als Konstante definieren
         const NOTES_STORAGE_KEY = 'notes';
-        // ** GEÄNDERT: 'black' ENTFERNT **
+        
         const colorMap = {
             'red': '#ff0000',
             'green': '#008000',
@@ -422,9 +399,7 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors focus:out
         };
         // Drag-and-Drop-Variablen
         let draggedItem = null;
-        /**
-         * Zeigt ein benutzerdefiniertes Modal anstelle von alert().
-        */
+        
         const showModal = (message, showCancelButton = false) => {
             return new Promise(resolve => {
                 modalText.textContent = message;
@@ -445,9 +420,7 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors focus:out
             });
         };
 
-        /**
-         * Zeigt ein Link-Modal an.
-        */
+        
         const showLinkModal = () => {
             return new Promise(resolve => {
                 linkUrlInput.value = '';
@@ -467,7 +440,7 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors focus:out
             });
         };
         
-        // ** NEU: Auswahl aufheben (simuliert Touch-Klick) **
+        
         const collapseSelection = () => {
             const selection = window.getSelection();
         if (selection.rangeCount > 0) {
@@ -476,9 +449,7 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors focus:out
         }
         };
 
-        /**
-         * Speichert Notizen im lokalen Speicher des Browsers.
-        */
+        
         const saveNotesToLocal = () => {
             try {
                 localStorage.setItem(NOTES_STORAGE_KEY, JSON.stringify(notesData));
@@ -488,9 +459,7 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors focus:out
         }
         };
 
-        /**
-         * Lädt Notizen aus dem lokalen Speicher des Browsers und wendet die Sortierung an.
-        */
+        
         const loadNotesFromLocal = () => {
             try {
                 const storedNotes = localStorage.getItem(NOTES_STORAGE_KEY);
@@ -560,16 +529,12 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors focus:out
         // --- ENDE IMPORT/EXPORT FUNKTIONEN ---
 
 
-        /**
-         * Wendet Formatierung auf den ausgewählten Text im Editor an.
-        */
+        
         const applyFormat = (command, value = null) => {
             document.execCommand(command, false, value);
         };
 
-        /**
-         * Helferfunktion zum Konvertieren von RGB-Strings (wie von Style.color) in Hex-Codes.
-        */
+        
          const rgbToHex = (rgb) => {
             if (!rgb || !rgb.startsWith('rgb')) return rgb;
         if(rgb.trim() === '') return '';
@@ -582,9 +547,7 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors focus:out
             };
             return '#' + hex(parts[1]) + hex(parts[2]) + hex(parts[3]);
         };
-        /**
-         * Aktualisiert den visuellen Zustand der Werkzeugleistenschaltflächen.
-        */
+        
         const updateToolbarState = () => {
             // Alle aktiven Zustände zurücksetzen
             document.querySelectorAll('.toolbar-btn.active').forEach(btn => btn.classList.remove('active'));
@@ -964,77 +927,86 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors focus:out
                 listDropdownMenu.classList.remove('active');
                 listDropdownBtn.blur(); 
                 
+                // Helferfunktion für execCommand, um Wiederholung zu vermeiden
+                const toggleList = (command) => {
+                    applyFormat(command); 
+                };
+
                 // Timeout ist nötig, da execCommand asynchron ist
                 setTimeout(() => {
                     noteEditor.focus(); 
                     
+                    // WICHTIG: Setze styleWithCSS, um List-Styles zuverlässiger zu setzen
+                    document.execCommand('styleWithCSS', false, true);
+                    
                     const isOlActive = document.queryCommandState('insertOrderedList');
                     const isUlActive = document.queryCommandState('insertUnorderedList');
-                    const currentList = selection.anchorNode.closest('ul') || selection.anchorNode.closest('ol');
+                    // Muss nach der DOM-Manipulation erneut geprüft werden!
+                    let currentList = selection.anchorNode.closest('ul') || selection.anchorNode.closest('ol'); 
 
                     let currentEffectiveStyle = 'none';
                     if (isOlActive) {
                         currentEffectiveStyle = 'decimal';
                     } else if (isUlActive) {
-                        // Ermittle den aktuellen Style (disc ist oft leer/Standard)
-                        let style = currentList ? (currentList.style.listStyleType || 'disc') : 'disc';
+                        // Ermittle den aktuellen Style 
+                        let style = currentList && currentList.tagName === 'UL' ? (currentList.style.listStyleType || 'disc') : 'disc';
                         currentEffectiveStyle = style === '' ? 'disc' : style;
                     }
                     
                     const targetStyle = listStyle === 'disc' ? 'disc' : listStyle; 
-
+                    
                     if (targetStyle === 'decimal') {
                         // ZIEL: NUMMERIERUNG (OL)
                         if (currentEffectiveStyle === 'decimal') {
                             // Bereits aktiv -> Deaktivieren (Toggle OFF)
-                            applyFormat('insertOrderedList');
+                            toggleList('insertOrderedList');
                         } else {
-                            // Anderer Listentyp oder keine Liste aktiv -> Aktivieren
-                            if (isUlActive) {
-                                // Zuerst UL deaktivieren
-                                applyFormat('insertUnorderedList');
-                            }
-                            // Dann OL aktivieren
-                            applyFormat('insertOrderedList');
+                            // Umschalten von UL/keine Liste -> Aktivieren
+                            if (isUlActive) toggleList('insertUnorderedList'); // UL deaktivieren
+                            toggleList('insertOrderedList'); // OL aktivieren
                         }
                     } else { 
                         // ZIEL: UNGEORDNETE LISTE (disc oder circle)
                         
                         if (currentEffectiveStyle === 'decimal') {
-                            // OL ist aktiv -> OL deaktivieren, UL aktivieren (muss warten, um Stil zu setzen)
-                            applyFormat('insertOrderedList'); // Deaktiviert OL
-                            applyFormat('insertUnorderedList'); // Aktiviert UL
+                            // Wechsel von OL zu UL
+                            toggleList('insertOrderedList'); // Deaktiviert OL
+                            toggleList('insertUnorderedList'); // Aktiviert UL
                             
+                            // Style muss in einem separaten Timeout gesetzt werden, da DOM-Änderungen verzögert sind
                             setTimeout(() => {
                                 const newUl = selection.anchorNode.closest('ul');
                                 if(newUl) newUl.style.listStyleType = targetStyle === 'disc' ? '' : targetStyle;
                                 updateToolbarState(); 
+                                document.execCommand('styleWithCSS', false, false);
                             }, 1);
                             return; 
                             
                         } else if (currentEffectiveStyle === targetStyle) {
                             // UL ist aktiv, gleicher Stil -> Deaktivieren (Toggle OFF)
-                            applyFormat('insertUnorderedList');
+                            toggleList('insertUnorderedList');
                             
                         } else {
-                            // UL ist nicht aktiv oder UL mit anderem Stil ist aktiv -> UL aktivieren/Stil ändern
+                            // UL ist nicht aktiv ODER UL mit anderem Stil ist aktiv -> Stil ändern / UL aktivieren
                             if (!isUlActive) {
-                                applyFormat('insertUnorderedList'); 
+                                toggleList('insertUnorderedList'); // Aktiviert UL (wenn nicht aktiv)
                             }
                             
-                            // Stil setzen (funktioniert auch, wenn UL bereits aktiv war und der Stil geändert werden muss)
+                            // Stil setzen (funktioniert auch für den Stil-Wechsel)
                             setTimeout(() => {
                                 const newUl = selection.anchorNode.closest('ul');
                                 if(newUl) newUl.style.listStyleType = targetStyle === 'disc' ? '' : targetStyle;
                                 updateToolbarState(); 
+                                document.execCommand('styleWithCSS', false, false);
                             }, 1);
                             return; 
                         }
                     }
                     
-                    // Finalize für Fälle ohne Timeout
+                    // Finalize für synchrone Fälle
+                    document.execCommand('styleWithCSS', false, false);
                     updateToolbarState(); 
-                    noteEditor.focus();
+                    
                 }, 1);
             });
         });
