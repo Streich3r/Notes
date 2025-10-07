@@ -184,40 +184,6 @@
             </h1>
         </header>
 
-        <div class="mb-6 flex flex-col md:flex-row gap-4">
-            <input type="text" id="search-input" placeholder="Notizen durchsuchen..." class="w-full md:w-1/3 p-3 rounded-xl border border-gray-600 bg-gray-800 text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300 focus:outline-none">
-            
-            <div class="flex flex-col sm:flex-row gap-4 w-full md:w-2/3">
-                
-                <div class="relative w-full sm:w-1/2">
-                    <button 
-                        id="sort-dropdown-btn" 
-                        class="calculator-btn w-full p-3 rounded-xl border border-gray-600 bg-gray-800 text-gray-100 text-left">
-                        Sortieren nach: Unsortiert
-                    </button>
-                    <div id="sort-dropdown-menu" class="dropdown-menu">
-                        <button class="calculator-btn dropdown-item w-full text-left px-4 py-2 rounded-lg active" data-value="unsorted">Unsortiert</button>
-                        <button class="calculator-btn dropdown-item w-full text-left px-4 py-2 rounded-lg" data-value="newest">Datum (neueste zuerst)</button>
-                        <button class="calculator-btn dropdown-item w-full text-left px-4 py-2 rounded-lg" data-value="oldest">Datum (älteste zuerst)</button>
-                        <button class="calculator-btn dropdown-item w-full text-left px-4 py-2 rounded-lg" data-value="title-asc">Titel (A-Z)</button>
-                        <button class="calculator-btn dropdown-item w-full text-left px-4 py-2 rounded-lg" data-value="title-desc">Titel (Z-A)</button>
-                    </div>
-                </div>
-
-                <div class="flex gap-2 w-full sm:w-1/2">
-                    <button id="export-btn" class="calculator-btn w-1/2 p-3 rounded-xl border border-gray-600 text-white font-medium">
-                        Export 💾
-                    </button>
-                    <label for="import-file-input" 
-                        class="w-1/2 p-3 rounded-xl border border-gray-600 text-white font-medium cursor-pointer text-center flex items-center justify-center">
-                        Import 📥
-                    </label>
-                    <input type="file" id="import-file-input" accept="application/json" style="display: none;">
-                </div>
-            </div>
-        </div>
-
-    
         <div class="mb-6 p-4 bg-gray-800 rounded-2xl shadow-inner">
             <h2 class="text-2xl font-bold text-gray-200 mb-4">Neue Notiz erstellen</h2>
             
@@ -295,6 +261,40 @@ rounded-full shadow-lg transform">
             </div>
     
         </div>
+        
+        <div class="mb-6 flex flex-col md:flex-row gap-4">
+            <input type="text" id="search-input" placeholder="Notizen durchsuchen..." class="w-full md:w-1/3 p-3 rounded-xl border border-gray-600 bg-gray-800 text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300 focus:outline-none">
+            
+            <div class="flex flex-col sm:flex-row gap-4 w-full md:w-2/3">
+                
+                <div class="relative w-full sm:w-1/2">
+                    <button 
+                        id="sort-dropdown-btn" 
+                        class="calculator-btn w-full p-3 rounded-xl border border-gray-600 bg-gray-800 text-gray-100 text-left">
+                        Sortieren nach: Unsortiert
+                    </button>
+                    <div id="sort-dropdown-menu" class="dropdown-menu">
+                        <button class="calculator-btn dropdown-item w-full text-left px-4 py-2 rounded-lg active" data-value="unsorted">Unsortiert</button>
+                        <button class="calculator-btn dropdown-item w-full text-left px-4 py-2 rounded-lg" data-value="newest">Datum (neueste zuerst)</button>
+                        <button class="calculator-btn dropdown-item w-full text-left px-4 py-2 rounded-lg" data-value="oldest">Datum (älteste zuerst)</button>
+                        <button class="calculator-btn dropdown-item w-full text-left px-4 py-2 rounded-lg" data-value="title-asc">Titel (A-Z)</button>
+                        <button class="calculator-btn dropdown-item w-full text-left px-4 py-2 rounded-lg" data-value="title-desc">Titel (Z-A)</button>
+                    </div>
+                </div>
+
+                <div class="flex gap-2 w-full sm:w-1/2">
+                    <button id="export-btn" class="calculator-btn w-1/2 p-3 rounded-xl border border-gray-600 text-white font-medium">
+                        Export 💾
+                    </button>
+                    <label for="import-file-input" 
+                        class="w-1/2 p-3 rounded-xl border border-gray-600 text-white font-medium cursor-pointer text-center flex items-center justify-center">
+                        Import 📥
+                    </label>
+                    <input type="file" id="import-file-input" accept="application/json" style="display: none;">
+                </div>
+            </div>
+        </div>
+
 
         <div id="notes-list" class="space-y-4">
         </div>
@@ -422,11 +422,10 @@ class="text-gray-300 mb-4 text-center">Geben Sie die URL für den Link ein.</p>
         
         /**
          * Konvertiert einen RGB-Farbstring in einen Hex-String.
-         * Nötig, da document.queryCommandValue('foreColor') oft RGB zurückgibt.
          */
         const rgbToHex = (rgb) => {
             const matches = rgb.match(/^rgb\((\d+),\s*(\d+),\s*(\d+)\)$/);
-            if (!matches) return rgb; // Wenn keine RGB-Daten, gib den ursprünglichen Wert zurück
+            if (!matches) return rgb; 
 
             const hex = (x) => ("0" + parseInt(x).toString(16)).slice(-2);
             return "#" + hex(matches[1]) + hex(matches[2]) + hex(matches[3]);
@@ -507,18 +506,49 @@ class="text-gray-300 mb-4 text-center">Geben Sie die URL für den Link ein.</p>
         
         /**
          * Führt einen Formatierungsbefehl aus und stellt den Fokus in den Editor zurück.
+         * Mit Workaround für gleichzeitiges Formatieren bei collapsed selection (Punkt 3 FIX).
          * @param {string} command - Der execCommand-Befehl.
          * @param {string} value - Der Wert für den execCommand-Befehl.
          */
         const executeFormatAndRestore = (command, value = null) => {
-            // WICHTIG: Auswahl wiederherstellen und Fokus setzen VOR execCommand
             restoreSelection();
             noteEditor.focus(); 
-
-            // Führe den Formatierungsbefehl aus
-            document.execCommand(command, false, value);
             
-            // Auswahl/Range erneut speichern, falls sich die Auswahl geändert hat
+            const selection = window.getSelection();
+            const rangeIsCollapsed = selection.rangeCount > 0 ? selection.getRangeAt(0).collapsed : true;
+            
+            // FIX: Workaround für gleichzeitiges Formatieren bei leerer Auswahl (z.B. B+I+U)
+            if (rangeIsCollapsed && ['bold', 'italic', 'underline', 'createLink'].includes(command)) {
+                 
+                // 1. Führe den Befehl aus. Wenn der Befehl aktiv ist, ignoriere den Workaround.
+                const isActive = document.queryCommandState(command);
+                document.execCommand(command, false, value);
+                
+                // 2. Wenn der Befehl gerade aktiviert wurde UND die Auswahl collapsed ist,
+                // muss man einen Platzhalter setzen und ihn wieder löschen, um das Format zu "halten"
+                // und die Verschachtelung zu erzwingen.
+                if (!isActive) {
+                    // Temporären Platzhalter (Zero Width No-Break Space) einfügen
+                    document.execCommand('insertText', false, '\uFEFF'); 
+                    
+                    // Auswahl um diesen Platzhalter erweitern (selektieren)
+                    const range = selection.getRangeAt(0);
+                    range.setStart(range.startContainer, range.startOffset - 1);
+                    range.setEnd(range.startContainer, range.startOffset + 1);
+                    
+                    // Befehl erneut ausführen, um den Platzhalter im aktuellen Stil zu formatieren
+                    document.execCommand(command, false, value);
+                    
+                    // Den Platzhalter löschen (Caret bleibt im formatierten Bereich)
+                    document.execCommand('delete', false, null);
+                }
+
+            } else {
+                 // Standardausführung für Textauswahl, Listen, Größe, etc.
+                 document.execCommand(command, false, value);
+            }
+
+            // Auswahl/Range erneut speichern
             saveSelection();
 
             // Toolbar-Status aktualisieren
@@ -566,42 +596,52 @@ class="text-gray-300 mb-4 text-center">Geben Sie die URL für den Link ein.</p>
         
         /**
          * Führt die Listenaktion durch (native execCommand + manuelle Stil-Anpassung).
+         * (Punkt 2 FIX: Stellt sicher, dass UL-Stile nur manuell geändert werden, wenn die Liste bereits existiert)
          */
         const toggleList = (targetStyle) => {
             restoreSelection();
             noteEditor.focus();
 
             const isOrdered = targetStyle === 'decimal';
-            const command = isOrdered ? 'insertOrderedList' : 'insertUnorderedList';
-            
-            // 1. Führe den Befehl aus (aktiviert/deaktiviert die Liste oder wechselt den Typ)
-            document.execCommand(command, false, null);
-            
-            // 2. Manuelle Anpassung für Listen-Stile (UL und OL)
-            // Finde das übergeordnete Listen-Element (UL oder OL)
             const selection = window.getSelection();
-            if (selection.rangeCount > 0) {
-                 let node = selection.getRangeAt(0).startContainer;
-                 if (node.nodeType === Node.TEXT_NODE) node = node.parentNode;
-                 
-                 let list = node.closest('UL, OL');
-                 
-                 if (list) {
-                    if (isOrdered) {
-                         // Erzwinge Dezimal-Stil für OL (FIX für Nummerierung)
-                         if (list.tagName === 'OL') {
-                             list.style.listStyleType = targetStyle; // 'decimal'
-                         }
-                    } else {
-                         // Stil-Anpassung für UL
-                         if (list.tagName === 'UL') {
-                             list.style.listStyleType = targetStyle; // 'disc', 'circle'
-                         }
+            
+            if (selection.rangeCount === 0) return;
+
+            let node = selection.getRangeAt(0).startContainer;
+            if (node.nodeType === Node.TEXT_NODE) node = node.parentNode;
+            
+            let list = node.closest('UL, OL');
+
+            // Wenn bereits eine Liste aktiv ist
+            if (list) {
+                // Wenn es der gleiche Listentyp ist (z.B. UL zu UL)
+                if ((isOrdered && list.tagName === 'OL') || (!isOrdered && list.tagName === 'UL')) {
+                    // Nur den Stil ändern (FIX für Punkte zu Kreise oder umgekehrt)
+                    list.style.listStyleType = targetStyle;
+                } else {
+                    // Wenn der Typ gewechselt werden soll (UL zu OL oder umgekehrt), 
+                    // dann execCommand ausführen
+                    const command = isOrdered ? 'insertOrderedList' : 'insertUnorderedList';
+                    document.execCommand(command, false, null); 
+                    
+                    // Manuell den Stil setzen, falls execCommand den Stil nicht übernommen hat
+                    list = node.closest('UL, OL'); // Liste neu suchen
+                    if (list) {
+                         list.style.listStyleType = targetStyle;
                     }
+                }
+            } else {
+                // Keine Liste aktiv: Neue Liste erstellen
+                const command = isOrdered ? 'insertOrderedList' : 'insertUnorderedList';
+                document.execCommand(command, false, null); 
+                
+                 // Manuell den Stil setzen (falls UL gewünscht ist)
+                 list = node.closest('UL, OL');
+                 if (list && !isOrdered) {
+                    list.style.listStyleType = targetStyle; 
                  }
             }
-            
-            // 3. Auswahl speichern und Toolbar aktualisieren
+
             saveSelection();
             updateToolbarState();
         };
@@ -681,7 +721,6 @@ class="text-gray-300 mb-4 text-center">Geben Sie die URL für den Link ein.</p>
                     
                     if (activeItem) {
                         activeItem.classList.add('active');
-                        // FIX: Text wird NICHT auf den aktiven Wert gesetzt (Punkt 2)
                     } 
                 } 
             }
@@ -695,7 +734,6 @@ class="text-gray-300 mb-4 text-center">Geben Sie die URL für den Link ein.</p>
                 const activeItem = Array.from(sizeDropdownItems).find(item => item.dataset.value === currentSize);
                 if (activeItem) {
                     activeItem.classList.add('active');
-                    // FIX: Text wird NICHT auf den aktiven Wert gesetzt (Punkt 2)
                 } 
             } 
             sizeDropdownBtn.textContent = 'Schriftgröße'; // FIX: Button-Text statisch halten
@@ -718,7 +756,6 @@ class="text-gray-300 mb-4 text-center">Geben Sie die URL für den Link ein.</p>
                     const activeItem = Array.from(colorDropdownItems).find(item => item.dataset.value === colorKey);
                     if (activeItem) {
                         activeItem.classList.add('active');
-                        // FIX: Text wird NICHT auf den aktiven Wert gesetzt (Punkt 2)
                     } 
                 } 
             }
@@ -853,7 +890,7 @@ class="text-gray-300 mb-4 text-center">Geben Sie die URL für den Link ein.</p>
             header.appendChild(btnContainer);
             div.appendChild(header);
 
-            // NEUE LOGIK (Punkt 1): Content nur anzeigen, wenn KEIN Titel vorhanden ist
+            // LOGIK: Content nur anzeigen, wenn KEIN Titel vorhanden ist
             if (!hasTitle && note.content.trim() !== '') {
                 const contentDiv = document.createElement('div');
                 contentDiv.className = 'text-gray-300 note-content mt-2';
@@ -1116,7 +1153,7 @@ class="text-gray-300 mb-4 text-center">Geben Sie die URL für den Link ein.</p>
             btn.addEventListener('mousedown', saveSelection);
         });
 
-        // WICHTIG: Die Toolbar-Buttons rufen jetzt executeFormatAndRestore auf.
+        // WICHTIG: Die Toolbar-Buttons rufen executeFormatAndRestore auf.
         boldBtn.addEventListener('click', () => executeFormatAndRestore('bold'));
         italicBtn.addEventListener('click', () => executeFormatAndRestore('italic'));
         underlineBtn.addEventListener('click', () => executeFormatAndRestore('underline'));
