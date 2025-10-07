@@ -2,60 +2,63 @@
 <html lang="de">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Minimaler Fokus-Test V6 (Finaler JS Fix)</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no"> <title>Minimaler Fokus-Test V7 (Rechner-Prinzip)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
+        /* VOM RECHNER-CODE ÜBERNOMMEN */
+        :root{
+            --btn:#1b2232; /* Entspricht in etwa dem ursprünglichen bg-gray-700/800 */
+            --accent:#6aa1ff;
+        }
+
         body {
+            margin: 0;
             background-color: #000000;
             display: flex;
             justify-content: center;
             align-items: center;
             min-height: 100vh;
+            /* VOM RECHNER-CODE ÜBERNOMMEN */
+            -webkit-tap-highlight-color: transparent;
         }
 
         .test-button {
-            background-color: #4b5563; /* Basis-Farbe: bg-gray-600 */
+            background-color: var(--btn); 
             color: #ffffff;
             padding: 15px 30px;
-            border-radius: 12px;
-            border: 2px solid #6b7280;
+            border-radius: 16px; /* VOM RECHNER-CODE ÜBERNOMMEN */
+            border: none; /* VOM RECHNER-CODE ÜBERNOMMEN */
             cursor: pointer;
-            
-            /* Übergänge für den Klick-Effekt */
-            transition: background-color 0.15s, transform 0.06s ease;
             font-size: 1.2rem;
             
-            /* WICHTIG: Verhindert den Highlight-Effekt auf Touch-Geräten */
-            -webkit-tap-highlight-color: transparent; 
-            touch-action: manipulation;
-        }
-        
-        /* ----------------------------------------------------- */
-        /* --- CSS: Nur Klick- und Tastatur-Fokus definieren --- */
-        /* ----------------------------------------------------- */
-        
-        /* 1. Klick-Effekt (wie im Rechner) */
-        .test-button:active {
-            transform: scale(0.96); 
+            /* Übergänge für den Klick-Effekt */
+            transition: transform .06s ease, filter .2s ease; /* VOM RECHNER-CODE ÜBERNOMMEN */
+            
+            /* WICHTIG: Verbessert die Reaktionszeit und verhindert Fokus-Probleme auf Touch-Geräten */
+            touch-action: manipulation; /* VOM RECHNER-CODE ÜBERNOMMEN */
         }
 
-        /* 2. MAUS-FOKUS FIX: Entfernt jegliche visuelle Markierung nach dem Mausklick */
-        /* WICHTIG: Nur outline/shadow entfernen, KEINE Hintergrundfarbe überschreiben. */
+        /* ----------------------------------------------------- */
+        /* --- RECHNER-PRINZIP CSS-REGELN --- */
+        /* ----------------------------------------------------- */
+        
+        /* 1. Klick-Effekt (Der Rechner-Effekt: kurz kleiner werden) */
+        .test-button:active {
+            transform: scale(0.96); /* VOM RECHNER-CODE ÜBERNOMMEN */
+            /* KEINE background-color Änderung */
+        }
+
+        /* 2. MAUS-FOKUS FIX: Unterdrückt den durch Mausklick ausgelösten Fokus */
+        /* WICHTIG: Der Rechner hat keine Style-Änderung für :focus, daher nur outline entfernen. */
         .test-button:focus {
             outline: none !important;
             box-shadow: none !important;
         }
 
-        /* 3. TASTUR-FOKUS: Fügt einen sichtbaren Fokus nur für Barrierefreiheit (Tab-Taste) hinzu */
+        /* 3. TASTUR-FOKUS: Definiert einen sichtbaren Fokus NUR für Barrierefreiheit (Tab-Taste) */
         .test-button:focus-visible {
-            outline: 2px solid #3b82f6;
+            outline: 2px solid var(--accent); /* VOM RECHNER-CODE ÜBERNOMMEN */
             outline-offset: 2px;
-        }
-
-        /* Hover-Effekt */
-        .test-button:hover:not(:active) {
-            background-color: #6b7280; 
         }
     </style>
 </head>
@@ -69,16 +72,12 @@
         const testButton = document.getElementById('single-test-button');
         let counter = 0;
         
+        // WICHTIG: KEINE JavaScript-Fokus-Workarounds, da der Rechner-Code keine braucht.
+        
         testButton.addEventListener('click', () => {
             counter++;
-            testButton.textContent = `Geklickt: ${counter} Mal (Sollte SOFORT normal sein)`;
-            
-            // 🚀 DER FINALE JS-FIX:
-            // Verschiebt den blur()-Befehl in die nächste Event-Schleife,
-            // um sicherzustellen, dass er NACH dem Browser-eigenen Fokus-Setzen ausgeführt wird.
-            setTimeout(() => {
-                 testButton.blur(); 
-            }, 0);
+            testButton.textContent = `Geklickt: ${counter} Mal (SOFORT normal)`;
+            console.log('Button geklickt.');
         });
     </script>
 </body>
