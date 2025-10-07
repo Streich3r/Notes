@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Minimaler Fokus-Test V4 (ID FIX)</title>
+    <title>Minimaler Fokus-Test V5 (Clean Fix)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body {
@@ -22,38 +22,43 @@
             border-radius: 12px;
             border: 2px solid #6b7280;
             cursor: pointer;
-            transition: background-color 0.15s;
+            
+            /* Übergänge für den visuellen Effekt */
+            transition: background-color 0.15s, transform 0.06s ease;
             font-size: 1.2rem;
-            /* FIX 1: Verhindert Touch-Highlight */
-            -webkit-tap-highlight-color: transparent !important; 
+            
+            /* WICHTIG: Verhindert den Highlight-Effekt auf Touch-Geräten */
+            -webkit-tap-highlight-color: transparent; 
+            touch-action: manipulation;
         }
 
         /* ----------------------------------------------------- */
-        /* --- EXTREMSTE CSS SPEZIFITÄT DURCH ID-SELEKTOR --- */
+        /* --- DIESER FIX SOLLTE DAS PROBLEM BEHEBEN --- */
         /* ----------------------------------------------------- */
         
-        /* FIX 2A: Unterdrückt Fokus (die Ursache für dauerhafte Helligkeit) */
-        #single-test-button:focus, 
-        #single-test-button:focus-visible {
-            outline: none !important;
-            box-shadow: none !important;
-            /* Wichtig: Zwingt die Farbe auf die Basis-Farbe zurück */
-            background-color: #4b5563 !important; 
-            border-color: #6b7280 !important;
+        /* 1. Klick-Effekt: Wird nur beim Drücken kurz kleiner */
+        .test-button:active {
+            transform: scale(0.96); 
         }
 
-        /* FIX 2B: Unterdrückt den MOUSE DOWN Zustand (:active) */
-        #single-test-button:active {
+        /* 2. MAUS-FOKUS FIX: Entfernt jegliche visuelle Markierung nach dem Mausklick */
+        /* WICHTIG: Wir entfernen die Hintergrund-Überschreibung, damit der Browser nicht mit seinen hellen Defaults überschreibt. */
+        .test-button:focus {
             outline: none !important;
             box-shadow: none !important;
-            /* Wichtig: Nutze die BASIS-Farbe, um die Aufhellung zu eliminieren! */
-            background-color: #4b5563 !important; 
-            border-color: #6b7280 !important;
+            /* Der Button behält seine Basis-Farbe #4b5563, da kein 'background-color' hier definiert ist. */
         }
 
-        /* Hover-Effekt (optional): Nur wenn man NICHT klickt oder den Fokus hat */
-        .test-button:hover:not(:active):not(:focus) {
-            background-color: #6b7280 !important; 
+        /* 3. TASTUR-FOKUS: Definiert einen sichtbaren Fokus nur für Barrierefreiheit (Tab-Taste) */
+        .test-button:focus-visible {
+             /* Fügt nur für die Tastatur einen blauen Rahmen hinzu, was die Accessibility verbessert */
+            outline: 2px solid #3b82f6;
+            outline-offset: 2px;
+        }
+
+        /* Hover-Effekt (optional): */
+        .test-button:hover:not(:active) {
+            background-color: #6b7280; 
         }
     </style>
 </head>
@@ -67,21 +72,12 @@
         const testButton = document.getElementById('single-test-button');
         let counter = 0;
 
-        // FIX 3: Verhindert Fokus bei MOUSE-DOWN
-        testButton.addEventListener('mousedown', (e) => {
-            e.preventDefault(); 
-        });
-
-        // FIX 4: Entfernt Fokus MANUELL nach Klick
+        // Wir entfernen alle e.preventDefault() und blur() Workarounds.
+        // Der Clean-CSS-Ansatz macht diese überflüssig und oft störend.
+        
         testButton.addEventListener('click', () => {
-            // 🚀 Dieser Aufruf muss den Fokus sofort nach dem Klick entfernen.
-            testButton.blur(); 
-            
             counter++;
-            testButton.textContent = `Geklickt: ${counter} Mal (Sollte SOFORT dunkel werden)`;
-            
-            // Debug-Prüfung: Sollte "false" ausgeben, wenn der Fokus entfernt wurde
-            console.log('Hat der Button Fokus?', document.activeElement === testButton);
+            testButton.textContent = `Geklickt: ${counter} Mal (SOFORT normal)`;
         });
     </script>
 </body>
