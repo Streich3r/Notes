@@ -38,40 +38,44 @@
             outline: none !important;
         }
 
-        /* --- DEBUG: Aggressive ROTE Fokus-Markierung (Zum Testen der Selektoren) --- */
-        .toolbar-btn, .dropdown-item, #sort-dropdown-btn, #save-note-btn {
+        /* --- FOKUS-KORREKTUREN: Verhindert die graue Markierung --- */
+        .toolbar-btn, .dropdown-item, #sort-dropdown-btn, #save-note-btn, #export-btn, .import-label {
             background-color: #4b5563; /* bg-gray-600 */
-            -webkit-tap-highlight-color: transparent; /* Entfernt den grauen Flash auf mobilen Geräten */
+            /* Wichtig: Entfernt den grauen Tap-Highlight auf Touch-Geräten (mobile) */
+            -webkit-tap-highlight-color: transparent; 
             transition: background-color 0.15s;
         }
         
-        /* TEST: Hinzufügung eines ROTTEN Fokus-Rings */
-        .toolbar-btn:focus, .dropdown-item:focus, #sort-dropdown-btn:focus, #save-note-btn:focus,
-        .toolbar-btn:focus-visible, .dropdown-item:focus-visible, #sort-dropdown-btn:focus-visible, #save-note-btn:focus-visible {
-            /* DIESE REGEL MUSS JETZT SICHTBAR SEIN, DA JS-Fokus-Unterdrückung DEAKTIVIERT WURDE! */
-            outline: 2px solid red !important;        /* Zeigt eine rote Outline */
-            box-shadow: 0 0 0 4px rgba(255, 0, 0, 0.7) !important; /* Fügt einen roten Schatten hinzu */
+        /* WICHTIG: Überschreibt alle potenziellen Browser-Fokus- und Active-Styles mit dem Standard-Hintergrund, um die graue Markierung zu eliminieren. */
+        .toolbar-btn:focus, .dropdown-item:focus, #sort-dropdown-btn:focus, #save-note-btn:focus, #export-btn:focus, .import-label:focus,
+        .toolbar-btn:focus-visible, .dropdown-item:focus-visible, #sort-dropdown-btn:focus-visible, #save-note-btn:focus-visible, #export-btn:focus-visible, .import-label:focus-visible,
+        .toolbar-btn:active, .dropdown-item:active, #sort-dropdown-btn:active, #save-note-btn:active, #export-btn:active, .import-label:active {
+            outline: none !important;
+            box-shadow: none !important;
+            /* Stellt den normalen Hintergrund wieder her, verhindert grauen Flash */
             background-color: #4b5563 !important; 
         }
-        
-        /* Active-Zustand (Blaue Markierung) muss über allen anderen stehen */
+
+        /* Active-Zustand (Blaue Markierung), muss über allen anderen stehen */
         .toolbar-btn.active, .dropdown-item.active {
             background-color: #2563eb !important; 
             color: #ffffff !important;
         }
 
-        /* Hover-Zustand (muss über Focus stehen) */
-        .toolbar-btn:hover:not(.active), .dropdown-item:hover:not(.active), #sort-dropdown-btn:hover {
+        /* Hover-Zustand */
+        .toolbar-btn:hover:not(.active), .dropdown-item:hover:not(.active), #sort-dropdown-btn:hover, #export-btn:hover {
             background-color: #6b7280 !important; 
         }
 
         /* Spezial-Override für den Save-Button (blau) */
         #save-note-btn { background-color: #2563eb; }
-        #save-note-btn:focus, #save-note-btn:focus-visible { 
-            background-color: #2563eb !important; 
-        }
         #save-note-btn:hover { background-color: #1d4ed8; }
+        /* Active-Zustand des Save-Buttons muss manuell überschrieben werden */
         #save-note-btn:active { background-color: #1e40af !important; }
+        /* Import-Button Spezial-Override (gelb) */
+        .import-label { background-color: #d97706; } /* bg-yellow-600 */
+        .import-label:hover { background-color: #b45309; } /* hover:bg-yellow-700 */
+        .import-label:active { background-color: #92400e !important; }
 
         #note-editor:empty:before {
             content: attr(placeholder);
@@ -81,14 +85,6 @@
         }
         
         /* --- STABILISIERTE LISTE-STYLES --- */
-        #note-editor li, .note-card li {
-            color: #ffffff !important;
-        }
-
-        #note-editor li::marker, .note-card li::marker {
-            color: #ffffff !important;
-        }
-        
         #note-editor ul, #note-editor ol, .note-card ul, .note-card ol {
             margin-left: 1.5rem;
         }
@@ -99,6 +95,7 @@
         }
         
         /* Punkte (Gefüllte Scheiben/Discs) */
+        /* FIX: explizit disc, da leere style-Zeichenkette ignoriert wird */
         #note-editor ul[style*="list-style-type: disc"], .note-card ul[style*="list-style-type: disc"] {
             list-style-type: disc !important;
         }
@@ -159,7 +156,7 @@
                         Export 💾
                     </button>
                     <label for="import-file-input" 
-                        class="w-1/2 p-3 rounded-xl border border-gray-600 bg-yellow-600 text-white font-medium hover:bg-yellow-700 transition-colors cursor-pointer text-center flex items-center justify-center focus:outline-none">
+                        class="import-label w-1/2 p-3 rounded-xl border border-gray-600 bg-yellow-600 text-white font-medium hover:bg-yellow-700 transition-colors cursor-pointer text-center flex items-center justify-center focus:outline-none">
                         Import 📥
                     </label>
                     <input type="file" id="import-file-input" accept="application/json" style="display: none;">
@@ -317,6 +314,7 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors focus:out
         // KONSTANTEN FÜR IMPORT/EXPORT
         const exportBtn = document.getElementById('export-btn');
         const importFileInput = document.getElementById('import-file-input');
+        const importLabel = document.querySelector('label[for="import-file-input"]');
         
         // Modal-Elemente
         const modalBackdrop = document.getElementById('modal-backdrop');
@@ -563,7 +561,8 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors focus:out
                 const parentList = currentBlock.parentNode;
                 currentListType = parentList.tagName; // 'UL' or 'OL'
                 currentListStyle = currentListType === 'OL' ? 'decimal' : (parentList.style.listStyleType || 'disc');
-                if (currentListStyle === '') currentListStyle = 'disc';
+                // FIX: Fallback auf 'disc', wenn der Browser den Style leert
+                if (currentListStyle === '') currentListStyle = 'disc'; 
             }
 
             // ------------------------------------
@@ -881,14 +880,14 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors focus:out
                 renderNotes();
             }
         };
-        // *************** DEBUG: FOKUS-LÖSUNG FÜR EINFACHE BUTTONS *******************
+        
+        // *************** FOKUS-LÖSUNG FÜR EINFACHE BUTTONS *******************
         const setupToolbarButton = (button, command, value = null) => {
+            // WICHTIG: Verhindert, dass der Button Fokus erhält (eliminiert die graue Markierung)
             button.addEventListener('mousedown', (e) => { 
-                // e.preventDefault(); // ZUM DEBUGGEN DEAKTIVIERT: Erlaubt dem Button, Fokus zu erhalten und den roten Rahmen zu zeigen
+                e.preventDefault(); 
             });
         button.addEventListener('click', (e) => {
-                // Wichtig: Blur sofort vor der Ausführung
-                e.currentTarget.blur();
                 
                 applyFormat(command, value); 
                 
@@ -905,10 +904,11 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors focus:out
         setupToolbarButton(underlineBtn, 'underline');
         setupToolbarButton(indentBtn, 'indent');
         setupToolbarButton(outdentBtn, 'outdent');
+        
         // Link-Pop-up
+        linkBtn.addEventListener('mousedown', (e) => { e.preventDefault(); }); // Fokus-Unterdrückung
         linkBtn.addEventListener('click', async (e) => {
             e.preventDefault(); 
-            e.currentTarget.blur(); 
             const selection = window.getSelection();
             let rangeToUse = null;
 
@@ -940,9 +940,8 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors focus:out
                 noteEditor.focus();
         }, 1);
         });
-        // linkBtn.addEventListener('mousedown', (e) => { e.preventDefault(); }); // ZUM DEBUGGEN DEAKTIVIERT
-
-        // *************** ENDE DEBUG: FOKUS-LÖSUNG FÜR EINFACHE BUTTONS *******************
+        
+        // *************** ENDE FOKUS-LÖSUNG FÜR EINFACHE BUTTONS *******************
 
 
         // --- Dropdown-Funktionalität ---
@@ -957,10 +956,9 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors focus:out
             const btn = container.querySelector('button');
             const menu = container.querySelector('.dropdown-menu');
             if (btn && menu) {
-                // ZUM DEBUGGEN DEAKTIVIERT: Erlaubt dem Button, Fokus zu erhalten und den roten Rahmen zu zeigen
-                // btn.addEventListener('mousedown', (e) => { e.preventDefault(); });
+                // WICHTIG: Verhindert, dass der Button Fokus erhält
+                btn.addEventListener('mousedown', (e) => { e.preventDefault(); });
 
-   
                 btn.addEventListener('click', (e) => {
                     e.stopPropagation();
                     const wasActive = menu.classList.contains('active');
@@ -974,13 +972,12 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors focus:out
         }
                     
                     if (wasActive) { 
-                        setTimeout(() => {
-                           btn.blur();
-        // Nur Fokus zum Editor, wenn es KEIN Sortier-Button ist.
-        if (btn.id !== 'sort-dropdown-btn') {
+                        // Nur Fokus zum Editor, wenn es KEIN Sortier-Button ist.
+                        if (btn.id !== 'sort-dropdown-btn') {
+                            setTimeout(() => {
                                noteEditor.focus();
-        }
-                        }, 1);
+                            }, 1);
+                        }
         }
                 });
         }
@@ -1035,6 +1032,9 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors focus:out
         };
         // Event-Listener für Sortier-Items
         sortDropdownItems.forEach(item => {
+            // WICHTIG: Verhindert Fokus-Ablenkung durch Dropdown-Items
+            item.addEventListener('mousedown', (e) => { e.preventDefault(); });
+            
             item.addEventListener('click', (e) => {
                 e.preventDefault();
                 e.stopPropagation(); 
@@ -1043,11 +1043,6 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors focus:out
     
                 document.getElementById('sort-dropdown-menu').classList.remove('active');
                 
-                // Expliziter Blur für Sortier-Dropdown-Button (kein Fokus auf Editor hier!)
-                setTimeout(() => {
-                   sortDropdownBtn.blur();
-          
-        }, 1);
             });
         });
         // *************** ENDE SORTIERFUNKTION *******************
@@ -1055,97 +1050,57 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors focus:out
         // ******************************************************
         // ** KORRIGIERTE LOGIK FÜR AUFZÄHLUNGSZEICHEN (3 TYPEN) **
         // ******************************************************
-        listDropdownItems.forEach(item => {
+        const setupDropdownItem = (item, action) => {
+            // WICHTIG: Verhindert, dass das Item Fokus erhält
+            item.addEventListener('mousedown', (e) => { e.preventDefault(); });
+            
             item.addEventListener('click', (e) => {
                 e.preventDefault();
                 e.stopPropagation();
                 
-                const listStyle = e.target.getAttribute('data-value'); 
-                const selection = window.getSelection();
-                
-                if (!selection.rangeCount) return;
-         
-                listDropdownMenu.classList.remove('active');
-                
-                // WICHTIG: 1. Den Fokus sofort vom Item und dem Haupt-Button entfernen.
-                e.currentTarget.blur(); 
-                listDropdownBtn.blur(); 
-                
-                // NEU & WICHTIG: Sofortiger Versuch, den Fokus zurückzuholen.
-                noteEditor.focus();
-                
-                // styleWithCSS muss aktiv sein
-                document.execCommand('styleWithCSS', false, true); 
-                
-                // Führe die unabhängige Listenaktion aus
-                toggleCustomList(listStyle);
-                
-                // WICHTIG: 2. Nach der DOM-Manipulation den Editor erneut fokussieren.
+                action(e); // Führe die spezifische Aktion aus
+
+                // Schließe Dropdown
+                e.target.closest('.dropdown-menu').classList.remove('active');
+
+                // WICHTIG: Nach der DOM-Manipulation den Editor erneut fokussieren.
                 setTimeout(() => {
                     noteEditor.focus(); 
                     document.execCommand('styleWithCSS', false, false);
                     updateToolbarState(); 
                 }, 1);
             });
+        };
+
+        // Listen-Logik
+        listDropdownItems.forEach(item => {
+            setupDropdownItem(item, (e) => {
+                const listStyle = e.target.getAttribute('data-value'); 
+                document.execCommand('styleWithCSS', false, true); 
+                toggleCustomList(listStyle);
+            });
         });
-        // ******************************************************
-        // ** ENDE KORRIGIERTE LOGIK FÜR AUFZÄHLUNGSZEICHEN **
-        // ******************************************************
         
-        // Event-Listener für Dropdown-Items (Größe)
+        // Größe-Logik
         sizeDropdownItems.forEach(item => {
-            item.addEventListener('click', (e) => {
-                e.preventDefault();
-              
-                e.stopPropagation();
-                
+            setupDropdownItem(item, (e) => {
                 const sizeValue = e.target.getAttribute('data-value');
-                
-                // Schließe Dropdown und entferne Fokus von Button
-                sizeDropdownMenu.classList.remove('active');
-        
-                sizeDropdownBtn.blur();
-                
-                // Fokus auf Editor und dann Formatierung
-                noteEditor.focus();
                 applyFormat('fontSize', sizeValue);
-                
-     
-                setTimeout(() => {
-                    updateToolbarState(); 
-                }, 1);
             });
         });
 
-        // Event-Listener für Dropdown-Items (Farbe)
+        // Farbe-Logik
         colorDropdownItems.forEach(item => {
-            item.addEventListener('click', (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                
+            setupDropdownItem(item, (e) => {
                 const colorValue = e.target.getAttribute('data-value');
-   
-                const selection = window.getSelection();
-                if (!selection.rangeCount) return;
-                
-                // Schließe Dropdown und entferne Fokus von Button
-                colorDropdownMenu.classList.remove('active');
-           
-                colorDropdownBtn.blur();
-                
-                // Fokus auf Editor und dann Formatierung
-                noteEditor.focus();
-                
                 document.execCommand('styleWithCSS', false, true);
-       
                 applyFormat('foreColor', colorMap[colorValue]);
-                document.execCommand('styleWithCSS', false, false);
-                
-                setTimeout(() => {
-                    updateToolbarState();
-        }, 1);
             });
           });
+        // ******************************************************
+        // ** ENDE KORRIGIERTE LOGIK FÜR AUFZÄHLUNGSZEICHEN **
+        // ******************************************************
+
 
         /**
          * Erstellt ein HTML-Element für eine einzelne Notiz.
@@ -1181,8 +1136,16 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors focus:out
                      </button>
                  </div>
              `;
-        div.querySelector('.edit-btn').addEventListener('click', () => editNote(note.id, note.title, note.content));
-             div.querySelector('.delete-btn').addEventListener('click', () => deleteNote(note.id));
+        // Hinzufügen der Fokus-Unterdrückung zu den neuen Buttons im Note-Card
+        const editBtn = div.querySelector('.edit-btn');
+        const deleteBtn = div.querySelector('.delete-btn');
+        
+        editBtn.addEventListener('mousedown', (e) => { e.preventDefault(); });
+        deleteBtn.addEventListener('mousedown', (e) => { e.preventDefault(); });
+        
+        editBtn.addEventListener('click', () => editNote(note.id, note.title, note.content));
+        deleteBtn.addEventListener('click', () => deleteNote(note.id));
+
         // Nur Drag-Listener hinzufügen, wenn Drag erlaubt ist
              if (currentSortMethod === 'unsorted') {
                  div.addEventListener('dragstart', handleDragStart);
@@ -1194,6 +1157,12 @@ font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors focus:out
         };
 
 
+        // *************** ZUSÄTZLICHE FOKUS-UNTERDRÜCKUNG FÜR HAUPT-ELEMENTE *******************
+        saveNoteBtn.addEventListener('mousedown', (e) => { e.preventDefault(); });
+        exportBtn.addEventListener('mousedown', (e) => { e.preventDefault(); });
+        importLabel.addEventListener('mousedown', (e) => { e.preventDefault(); });
+        // *************** ENDE ZUSÄTZLICHE FOKUS-UNTERDRÜCKUNG *******************
+        
         saveNoteBtn.addEventListener('click', saveNote);
         searchInput.addEventListener('input', (e) => renderNotes(e.target.value));
         
