@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Minimaler Fokus-Test V5 (Clean Fix)</title>
+    <title>Minimaler Fokus-Test V6 (Finaler JS Fix)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body {
@@ -15,15 +15,14 @@
         }
 
         .test-button {
-            /* Basis-Farbe: bg-gray-600 */
-            background-color: #4b5563; 
+            background-color: #4b5563; /* Basis-Farbe: bg-gray-600 */
             color: #ffffff;
             padding: 15px 30px;
             border-radius: 12px;
             border: 2px solid #6b7280;
             cursor: pointer;
             
-            /* Übergänge für den visuellen Effekt */
+            /* Übergänge für den Klick-Effekt */
             transition: background-color 0.15s, transform 0.06s ease;
             font-size: 1.2rem;
             
@@ -31,32 +30,30 @@
             -webkit-tap-highlight-color: transparent; 
             touch-action: manipulation;
         }
-
+        
         /* ----------------------------------------------------- */
-        /* --- DIESER FIX SOLLTE DAS PROBLEM BEHEBEN --- */
+        /* --- CSS: Nur Klick- und Tastatur-Fokus definieren --- */
         /* ----------------------------------------------------- */
         
-        /* 1. Klick-Effekt: Wird nur beim Drücken kurz kleiner */
+        /* 1. Klick-Effekt (wie im Rechner) */
         .test-button:active {
             transform: scale(0.96); 
         }
 
         /* 2. MAUS-FOKUS FIX: Entfernt jegliche visuelle Markierung nach dem Mausklick */
-        /* WICHTIG: Wir entfernen die Hintergrund-Überschreibung, damit der Browser nicht mit seinen hellen Defaults überschreibt. */
+        /* WICHTIG: Nur outline/shadow entfernen, KEINE Hintergrundfarbe überschreiben. */
         .test-button:focus {
             outline: none !important;
             box-shadow: none !important;
-            /* Der Button behält seine Basis-Farbe #4b5563, da kein 'background-color' hier definiert ist. */
         }
 
-        /* 3. TASTUR-FOKUS: Definiert einen sichtbaren Fokus nur für Barrierefreiheit (Tab-Taste) */
+        /* 3. TASTUR-FOKUS: Fügt einen sichtbaren Fokus nur für Barrierefreiheit (Tab-Taste) hinzu */
         .test-button:focus-visible {
-             /* Fügt nur für die Tastatur einen blauen Rahmen hinzu, was die Accessibility verbessert */
             outline: 2px solid #3b82f6;
             outline-offset: 2px;
         }
 
-        /* Hover-Effekt (optional): */
+        /* Hover-Effekt */
         .test-button:hover:not(:active) {
             background-color: #6b7280; 
         }
@@ -71,13 +68,17 @@
     <script>
         const testButton = document.getElementById('single-test-button');
         let counter = 0;
-
-        // Wir entfernen alle e.preventDefault() und blur() Workarounds.
-        // Der Clean-CSS-Ansatz macht diese überflüssig und oft störend.
         
         testButton.addEventListener('click', () => {
             counter++;
-            testButton.textContent = `Geklickt: ${counter} Mal (SOFORT normal)`;
+            testButton.textContent = `Geklickt: ${counter} Mal (Sollte SOFORT normal sein)`;
+            
+            // 🚀 DER FINALE JS-FIX:
+            // Verschiebt den blur()-Befehl in die nächste Event-Schleife,
+            // um sicherzustellen, dass er NACH dem Browser-eigenen Fokus-Setzen ausgeführt wird.
+            setTimeout(() => {
+                 testButton.blur(); 
+            }, 0);
         });
     </script>
 </body>
