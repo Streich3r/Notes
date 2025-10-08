@@ -635,13 +635,20 @@ const executeFormatAndRestore = (command, value = null) => {
     // 2. Führe den Formatierungsbefehl aus
     document.execCommand(command, false, value);
     
-    // FIX 1 (ULTIMATIV): Setzt den Fokus und aktualisiert den Zustand nach einem Timeout.
-    // Dies ist die robusteste Methode, um Toggling-Probleme in contenteditable zu beheben.
+    // AGGRESSIVER FIX: Erzwingt einen HTML-Block (wie <p>), um den Zustand zu stabilisieren, 
+    // falls der Editor leer ist und keine Auswahl existiert. Dies ist notwendig,
+    // damit der Browser den Umschalt-Status (Toggle) korrekt registriert.
+    if (command === 'bold' || command === 'italic' || command === 'underline') {
+        document.execCommand('formatBlock', false, 'p'); 
+    }
+    
+    // 3. Statusaktualisierung mit minimaler Verzögerung (Timeout-Fix)
+    // Dies löst alle restlichen Timing-Probleme.
     setTimeout(() => {
-        noteEditor.focus(); // Fokus zurücksetzen, damit der Cursor sichtbar bleibt
+        noteEditor.focus(); 
         saveSelection();
-        updateToolbarState(); // Aktualisiert den Zustand der Buttons
-    }, 0); // Wichtig!
+        updateToolbarState(); 
+    }, 0); 
 };
 
         const executeLinkCommand = async () => {
@@ -839,6 +846,8 @@ node.parentNode : node;
 
 // Innerhalb der Funktion updateToolbarState()
 
+// Innerhalb der Funktion updateToolbarState()
+
 // BOLD
 if (document.queryCommandState('bold')) {
     boldBtn.classList.add('active'); 
@@ -859,6 +868,7 @@ if (document.queryCommandState('underline')) {
 } else {
     underlineBtn.classList.remove('active');
 }
+// ...
 
 // Link kann die toggle-Funktion beibehalten
 linkBtn.classList.toggle('active', document.queryCommandState('createLink'));
