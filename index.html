@@ -64,9 +64,11 @@
             border: none;
         }
 
-        .calculator-btn:active,
-        .calculator-btn.toolbar-btn:active,
-        label[for="import-file-input"]:active {
+        .calculator-btn:active, 
+        label[for="import-file-input"]:active,
+        #indent-btn:active,  /* HÖCHSTE SPEZIFITÄT FÜR EINRÜCKEN */
+        #outdent-btn:active   /* HÖCHSTE SPEZIFITÄT FÜR AUSRÜCKEN */
+        {
             transform: scale(0.96);
         }
 
