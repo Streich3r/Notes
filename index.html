@@ -48,7 +48,9 @@
             color: #ffffff;
             outline: none; 
             transition: all 0.3s;
-            overflow-x: hidden !important;
+            overflow-x: hidden !important; /* 1. HINDERT DEN INHALT DARAN, HORIZONTAL HERAUSZURAGEN */
+            word-break: break-word; /* Standardmäßig guter Umbruch */
+            overflow-wrap: break-word; /* Alternative/Ergänzung für besseren Support */
         }
         
         #note-editor:focus {
