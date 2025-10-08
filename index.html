@@ -819,7 +819,7 @@ node.parentNode : node;
 
             if (selection.rangeCount === 0 || !noteEditor.contains(selection.anchorNode)) {
                 // Alle Buttons/Dropdowns de-aktivieren, wenn der Fokus nicht im Editor ist
-                document.querySelectorAll('.toolbar-btn').forEach(btn => btn.classList.remove('active'));
+                //document.querySelectorAll('.toolbar-btn').forEach(btn => btn.classList.remove('active'));
                 document.querySelectorAll('.dropdown-item').forEach(item => item.classList.remove('active'));
                 
                 // Reset Dropdown Button Text
