@@ -635,12 +635,17 @@ const executeFormatAndRestore = (command, value = null) => {
     // 2. Führe den Formatierungsbefehl aus
     document.execCommand(command, false, value);
     
-    // FIX 1 (Timeout): Die robusteste Lösung für Toggling-Probleme.
-    // Stellt den Fokus und den Status erst nach einer minimalen Verzögerung wieder her.
+    // FIX 2 (AGGRESSIV): Erzwingt einen HTML-Block (<p>), wenn der Editor leer ist,
+    // damit der Zustand des Buttons stabilisiert wird und der nächste Klick funktioniert.
+    if (!noteEditor.textContent.trim() && (command === 'bold' || command === 'italic' || command === 'underline')) {
+         document.execCommand('formatBlock', false, 'p'); 
+    }
+    
+    // 3. Statusaktualisierung mit minimaler Verzögerung (Timeout-Fix)
     setTimeout(() => {
-        noteEditor.focus(); // Fokus zurücksetzen
+        noteEditor.focus(); 
         saveSelection();
-        updateToolbarState(); // Aktualisiert den Zustand
+        updateToolbarState(); 
     }, 0); 
 };
 
