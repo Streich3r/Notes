@@ -1346,68 +1346,93 @@ node.parentNode : node;
             URL.revokeObjectURL(url);
             
             //showModal("Notizen wurden erfolgreich als JSON-Datei exportiert.");
+            catch (error) {
+            showModal("Fehler beim exportieren");
+            console.error("Export error:", error);
+        }
         };
 
-      const importNotes = (event) => {
-    const file = event.target.files[0];
-    if (!file) return;
+const importNotes = (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
 
-    const reader = new FileReader();
-    reader.onload = (e) => {
-        try {
-            const importedNotes = JSON.parse(e.target.result);
-            
-            if (!Array.isArray(importedNotes) || importedNotes.some(n => !n.id || !n.content)) {
-                showModal("Ungültiges Dateiformat. Die Datei muss ein Array von Notizobjekten enthalten.");
-                return;
-            }
-            
-            showModal(`Es wurden ${importedNotes.length} Notizen in der Datei gefunden. Möchten Sie diese importieren? (Vorhandene Notizen werden NICHT überschrieben.)`, true)
-                .then(confirmed => {
-                    if (confirmed) {
-                        
-                        const existingIds = new Set(notesData.map(n => n.id));
-                        
-                        // KORRIGIERTER BEREICH: Filtern und Konvertieren
-                        const newNotes = importedNotes
-                            .filter(n => !existingIds.has(n.id))
-                            .map(note => {
-                                // Konvertieren des Datums-Strings in einen numerischen Timestamp
-                                let parsedUpdatedAt = new Date(note.updatedAt).getTime();
-                                note.updatedAt = isNaN(parsedUpdatedAt) ? Date.now() : parsedUpdatedAt; 
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        try {
+            const importedNotes = JSON.parse(e.target.result);
+            
+            if (!Array.isArray(importedNotes) || importedNotes.some(n => !n.id || !n.content)) {
+                showModal("Ungültiges Dateiformat. Die Datei muss ein Array von Notizobjekten enthalten.");
+                return;
+            }
+            
+            showModal(`Es wurden ${importedNotes.length} Notizen in der Datei gefunden. Möchten Sie diese importieren? (Vorhandene Notizen werden NICHT überschrieben.)`, true)
+                .then(confirmed => {
+                    if (confirmed) {
+                        
+                        const existingIds = new Set(notesData.map(n => n.id));
+                        // Timestamp für 1. Januar 2000 00:00:00 UTC (Sicherer, alter Fallback)
+                        const defaultOldDate = 946684800000; 
+                        let errorCount = 0; // Zähler für fehlerhafte Datumsangaben
+                        
+                        // ******************************************************
+                        // ** KORRIGIERTER BEREICH: Filtern und Konvertieren **
+                        // ******************************************************
+                        const newNotes = importedNotes
+                            .filter(n => !existingIds.has(n.id))
+                            .map(note => {
+                                note.id = String(note.id); // Typ-Sicherheit
+                                
+                                // 1. UpdatedAt-Datum konvertieren
+                                let parsedUpdatedAt = new Date(note.updatedAt).getTime();
+                                
+                                if (isNaN(parsedUpdatedAt)) {
+                                    // NEUE FEHLERMELDUNG IN DER KONSOLE
+                                    console.error(`DATUMSFEHLER (ID ${note.id}): Das Datum "${note.updatedAt}" konnte nicht geparst werden. Bitte stellen Sie sicher, dass das Export-Format ISO-konform ist. Fallback: 01.01.2000.`);
+                                    errorCount++;
+                                    note.updatedAt = defaultOldDate; // Sicherer Fallback
+                                } else {
+                                    // ORIGINAL DATUM WIRD BEIBEHALTEN
+                                    note.updatedAt = parsedUpdatedAt;
+                                }
+                                
+                                // 2. CreatedAt-Datum konvertieren
+                                let parsedCreatedAt = new Date(note.createdAt).getTime();
+                                note.createdAt = isNaN(parsedCreatedAt) ? note.updatedAt : parsedCreatedAt;
+                                
+                                return note;
+                            });
+                        // ENDE KORRIGIERTER BEREICH
+                        
+                        notesData = [...notesData, ...newNotes];
+                        
+                        // Setze die Import-Reihenfolge auf das Ende der unsortierten Liste
+                        const importedIds = newNotes.map(note => note.id);
+                        const currentOrderStr = localStorage.getItem('notes-order');
+                        let currentOrder = currentOrderStr ? JSON.parse(currentOrderStr) : notesData.map(n => n.id);
+                        currentOrder = [...currentOrder.filter(id => !importedIds.includes(id)), ...importedIds];
+                        localStorage.setItem('notes-order', JSON.stringify(currentOrder));
 
-                                let parsedCreatedAt = new Date(note.createdAt).getTime();
-                                note.createdAt = isNaN(parsedCreatedAt) ? note.updatedAt : parsedCreatedAt;
-                                
-                                note.id = String(note.id); // Typ-Sicherheit
-                                return note;
-                            });
-                        // ENDE KORRIGIERTER BEREICH
+                        saveNotesToLocal();
+                        renderNotes(searchInput.value);
+                        
+                        let successMessage = `Import abgeschlossen! ${newNotes.length} neue Notizen wurden hinzugefügt.`;
+                        if (errorCount > 0) {
+                            // Füge die Warnung zur sichtbaren Modal-Meldung hinzu
+                            successMessage += ` ⚠️ ACHTUNG: ${errorCount} Notizen hatten ein fehlerhaftes Datum und wurden auf 01.01.2000 zurückgesetzt. Sehen Sie in der Browser-Konsole nach Details!`;
+                        }
+                        showModal(successMessage);
+                    }
+                });
+            
+        } catch (error) {
+            showModal("Fehler beim Lesen oder Parsen der Datei. Stellen Sie sicher, dass es eine gültige JSON-Datei ist.");
+            console.error("Import error:", error);
+        }
+    };
 
-                        notesData = [...notesData, ...newNotes];
-                        
-                        // Setze die Import-Reihenfolge auf das Ende der unsortierten Liste
-                        const importedIds = newNotes.map(note => note.id);
-                        const currentOrderStr = localStorage.getItem('notes-order');
-                        let currentOrder = currentOrderStr ? JSON.parse(currentOrderStr) : notesData.map(n => n.id);
-                        currentOrder = [...currentOrder.filter(id => !importedIds.includes(id)), ...importedIds];
-                        localStorage.setItem('notes-order', JSON.stringify(currentOrder));
-
-                        saveNotesToLocal();
-                        renderNotes(searchInput.value);
-                        
-                        showModal(`Import abgeschlossen! ${newNotes.length} neue Notizen wurden hinzugefügt.`);
-                    }
-                });
-            
-        } catch (error) {
-            showModal("Fehler beim Lesen oder Parsen der Datei. Stellen Sie sicher, dass es eine gültige JSON-Datei ist.");
-            console.error("Import error:", error);
-        }
-    };
-
-    reader.readAsText(file);
-    event.target.value = '';
+    reader.readAsText(file);
+    event.target.value = '';
 };
         
         // ******************************************************
