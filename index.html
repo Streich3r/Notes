@@ -61,9 +61,12 @@
         /* ----------------------------------------------------- */
         /* --- RECHNER-PRINZIP CSS-REGELN FÜR ALLE BUTTONS --- */
         /* ----------------------------------------------------- */
-        .calculator-btn, label[for="import-file-input"] {
+        .calculator-btn, label[for="import-file-input"],
+        #indent-btn,
+        #outdent-btn
+        {
             -webkit-tap-highlight-color: transparent;
- touch-action: manipulation;
+            touch-action: manipulation;
             transition: transform .06s ease, background-color 0.2s ease;
             border: none;
         }
