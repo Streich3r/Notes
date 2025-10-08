@@ -893,51 +893,76 @@ node.parentNode : node;
         // ** STORAGE UND RENDERING LOGIK **
         // ******************************************************
         
-        const saveNotesToLocal = () => {
-            try {
-                // Nur die Reihenfolge in der unsortierten Ansicht speichern
-                if (currentSortMethod === 'unsorted') {
-                    const unsortedOrder = notesData.map(note => note.id);
-                    localStorage.setItem('notes-order', JSON.stringify(unsortedOrder));
-                }
-                localStorage.setItem(NOTES_STORAGE_KEY, JSON.stringify(notesData));
-            } catch (e) {
-                console.error("Fehler beim Speichern der Notizen im lokalen Speicher:", e);
-                showModal("Ihre Notizen konnten nicht gespeichert werden. Der lokale Speicher ist möglicherweise voll.");
-            }
-        };
+const saveNotesToLocal = () => {
+    try {
+        // Nur die Reihenfolge in der unsortierten Ansicht speichern
+        if (currentSortMethod === 'unsorted') {
+            // WICHTIG: Stelle sicher, dass ALLE IDs Strings sind, bevor sie gespeichert werden.
+            const unsortedOrder = notesData.map(note => String(note.id));
+            localStorage.setItem('notes-order', JSON.stringify(unsortedOrder));
+        }
+        localStorage.setItem(NOTES_STORAGE_KEY, JSON.stringify(notesData));
+    } catch (e) {
+        console.error("Fehler beim Speichern der Notizen im lokalen Speicher:", e);
+        showModal("Ihre Notizen konnten nicht gespeichert werden. Der lokale Speicher ist möglicherweise voll.");
+    }
+};
 
-        const loadNotesFromLocal = () => {
-            try {
-                const storedNotes = localStorage.getItem(NOTES_STORAGE_KEY);
-                notesData = storedNotes ? JSON.parse(storedNotes) : [];
+     const loadNotesFromLocal = () => {
+    try {
+        const storedNotes = localStorage.getItem(NOTES_STORAGE_KEY);
+        notesData = storedNotes ? JSON.parse(storedNotes) : [];
+
+        // KORREKTUR 1: Alle Notiz-IDs beim Laden in Strings konvertieren (und Timestamps in Zahlen)
+        notesData = notesData.map(note => ({
+            ...note,
+            id: String(note.id),
+            createdAt: Number(note.createdAt),
+            updatedAt: Number(note.updatedAt),
+        }));
+        
+        // Lade die gespeicherte Reihenfolge für 'unsorted'
+        const storedOrder = localStorage.getItem('notes-order');
+        if (storedOrder && storedOrder.length > 0) {
+            
+            // KORREKTUR 2: Stelle sicher, dass alle IDs in orderArray Strings sind.
+            let orderArray = JSON.parse(storedOrder).map(id => String(id));
+            
+            // Sortiere notesData basierend auf der gespeicherten ID-Liste
+            notesData.sort((a, b) => {
+                // IDs sind jetzt Strings, indexOf funktioniert korrekt.
+                const indexA = orderArray.indexOf(a.id);
+                const indexB = orderArray.indexOf(b.id);
                 
-                // Lade die gespeicherte Reihenfolge für 'unsorted'
-                const storedOrder = localStorage.getItem('notes-order');
-                if (storedOrder && storedOrder.length > 0) {
-                    const orderArray = JSON.parse(storedOrder);
-                    
-                    // Sortiere notesData basierend auf der gespeicherten ID-Liste
-                    notesData.sort((a, b) => {
-                        const indexA = orderArray.indexOf(a.id);
-                        const indexB = orderArray.indexOf(b.id);
-                        if (indexA === -1 || indexB === -1) {
-                            // Neue Notizen ans Ende
-                            return a.id - b.id;
-                        }
-                        return indexA - indexB;
-                    });
-                } else {
-                    // Fallback: Neueste zuerst nach ID (dem ursprünglichen Standard)
-                    notesData.sort((a, b) => b.id - a.id);
+                // Behandle neue/fehlende Notizen korrekt
+                if (indexA === -1 && indexB === -1) {
+                    // KORREKTUR 3: String-Vergleich für neue Notizen verwenden
+                    return b.id.localeCompare(a.id);
                 }
                 
-                sortNotes(currentSortMethod, true); // Stellt die Sortierung ein und rendert
-            } catch (e) {
-                console.error("Fehler beim Laden der Notizen aus dem lokalen Speicher:", e);
-                showModal("Ihre Notizen konnten nicht geladen werden.");
-            }
-        };
+                if (indexA === -1) return 1; 
+                if (indexB === -1) return -1;
+                
+                return indexA - indexB;
+            });
+            
+            // OPTIMIERUNG: Bereinige die gespeicherte Reihenfolge von IDs gelöschter Notizen
+            const currentIds = new Set(notesData.map(n => n.id));
+            const cleanedOrder = orderArray.filter(id => currentIds.has(id));
+            localStorage.setItem('notes-order', JSON.stringify(cleanedOrder));
+            
+        } else {
+            // Fallback: Neueste zuerst nach ID 
+            // KORREKTUR 4: String-Vergleich verwenden
+            notesData.sort((a, b) => b.id.localeCompare(a.id));
+        }
+        
+        sortNotes(currentSortMethod, true); // Stellt die Sortierung ein und rendert
+    } catch (e) {
+        console.error("Fehler beim Laden der Notizen aus dem lokalen Speicher:", e);
+        showModal("Ihre Notizen konnten nicht geladen werden. Ein unerwarteter Fehler ist aufgetreten (Details in der Konsole).");
+    }
+};
 
         /**
          * Erzeugt eine eindeutige ID (z.B. basierend auf Zeitstempel und Zufall).
@@ -1013,64 +1038,74 @@ node.parentNode : node;
             return cleanedHtml;
         };
 
-        const saveNote = () => {
-            // Aktuelle Auswahl verwerfen, damit der Fokus im Editor bleibt, falls er dort war
-            if (document.activeElement === noteEditor) {
-                noteEditor.blur();
-            }
+      const saveNote = () => {
+    // Aktuelle Auswahl verwerfen, damit der Fokus im Editor bleibt, falls er dort war
+    if (document.activeElement === noteEditor) {
+        noteEditor.blur();
+    }
 
-            const title = noteTitleInput.value.trim();
-            const content = sanitizeHtml(noteEditor.innerHTML);
+    const title = noteTitleInput.value.trim();
+    const content = sanitizeHtml(noteEditor.innerHTML);
 
-            if (!title && !content) {
-                showModal("Die Notiz ist leer. Bitte geben Sie einen Titel oder Inhalt ein.");
-                return;
-            }
+    if (!title && !content) {
+        showModal("Die Notiz ist leer. Bitte geben Sie einen Titel oder Inhalt ein.");
+        return;
+    }
 
-            if (editingNoteId) {
-                // Notiz bearbeiten (Edit-Modus)
-                const index = notesData.findIndex(note => note.id === editingNoteId);
-                if (index !== -1) {
-                    notesData[index].title = title;
-                    notesData[index].content = content;
-                    notesData[index].updatedAt = Date.now();
-                }
-                editingNoteId = null;
-            } else {
-                // Neue Notiz erstellen
-                const newNote = {
-                    id: generateUniqueId(),
-                    title: title,
-                    content: content,
-                    createdAt: Date.now(),
-                    updatedAt: Date.now(),
-                    color: 'default' // Kann später erweitert werden
-                };
-                notesData.push(newNote);
-                
-                // Bei einer neuen Notiz muss die ungerendert-Reihenfolge aktualisiert werden
-                if (currentSortMethod === 'unsorted') {
-                    // Fügen Sie die neue ID am Ende der gespeicherten Reihenfolge hinzu (oder passen Sie es an, wenn Sie möchten, dass neue Notizen oben erscheinen)
-                    const currentOrderStr = localStorage.getItem('notes-order');
-                    let currentOrder = currentOrderStr ? JSON.parse(currentOrderStr) : notesData.map(n => n.id);
-                    currentOrder.push(newNote.id);
-                    localStorage.setItem('notes-order', JSON.stringify(currentOrder));
-                }
-            }
-
-            // Felder zurücksetzen
-            noteTitleInput.value = '';
-            noteEditor.innerHTML = '';
-            
-            // Toolbar-Buttons zurücksetzen
-            document.querySelectorAll('.toolbar-btn').forEach(btn => btn.classList.remove('active'));
-            document.querySelectorAll('.dropdown-item').forEach(item => item.classList.remove('active'));
-
-            saveNotesToLocal();
-            // Notizen neu rendern (mit Suchfilter, falls aktiv)
-            renderNotes(searchInput.value);
-            showModal(editingNoteId ? "Notiz erfolgreich aktualisiert!" : "Neue Notiz erfolgreich gespeichert!");
+    if (editingNoteId) {
+        // Notiz bearbeiten (Edit-Modus)
+        const index = notesData.findIndex(note => note.id === editingNoteId);
+        if (index !== -1) {
+            notesData[index].title = title;
+            notesData[index].content = content;
+            notesData[index].updatedAt = Date.now();
+        }
+        editingNoteId = null;
+    } else {
+        // Neue Notiz erstellen
+        const newNote = {
+            id: generateUniqueId(),
+            title: title,
+            content: content,
+            createdAt: Date.now(),
+            updatedAt: Date.now(),
+            color: 'default' 
         };
+        notesData.push(newNote);
+        
+        // Bei einer neuen Notiz muss die ungerendert-Reihenfolge aktualisiert werden
+        if (currentSortMethod === 'unsorted') {
+            const currentOrderStr = localStorage.getItem('notes-order');
+            
+            // KORREKTUR: Sicherstellen, dass alle IDs im Order-Array Strings sind.
+            let currentOrder;
+            if (currentOrderStr) {
+                // Konvertiere alle IDs aus dem Speicher explizit zu Strings
+                currentOrder = JSON.parse(currentOrderStr).map(id => String(id));
+            } else {
+                // Fallback: Nutze alle aktuellen IDs, ebenfalls als Strings
+                currentOrder = notesData.map(n => String(n.id));
+            }
+
+            // Füge die neue (als String erzeugte) ID hinzu
+            currentOrder.push(newNote.id); 
+            localStorage.setItem('notes-order', JSON.stringify(currentOrder));
+        }
+    }
+
+    // Felder zurücksetzen
+    noteTitleInput.value = '';
+    noteEditor.innerHTML = '';
+    
+    // Toolbar-Buttons zurücksetzen
+    document.querySelectorAll('.toolbar-btn').forEach(btn => btn.classList.remove('active'));
+    document.querySelectorAll('.dropdown-item').forEach(item => item.classList.remove('active'));
+
+    saveNotesToLocal();
+    // Notizen neu rendern (mit Suchfilter, falls aktiv)
+    renderNotes(searchInput.value);
+    showModal(editingNoteId ? "Notiz erfolgreich aktualisiert!" : "Neue Notiz erfolgreich gespeichert!");
+};
 
         const editNote = (id, title, content) => {
             noteTitleInput.value = title;
