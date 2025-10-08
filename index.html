@@ -632,18 +632,22 @@ class="text-gray-300 mb-4 text-center">Geben Sie die URL für den Link ein.</p>
          * @param {string} command - Der execCommand-Befehl.
          * @param {string} value - Der Wert für den execCommand-Befehl.
          */
-        const executeFormatAndRestore = (command, value = null) => {
-            // WICHTIG: Auswahl wiederherstellen und Fokus setzen VOR execCommand
-            restoreSelection();
-            noteEditor.focus(); 
-
-            // Führe den Formatierungsbefehl aus
-            document.execCommand(command, false, value);
-            // Auswahl/Range erneut speichern, falls sich die Auswahl geändert hat
-            saveSelection();
-            // Toolbar-Status aktualisieren
-            updateToolbarState();
-        };
+const executeFormatAndRestore = (command, value = null) => {
+    // 1. Auswahl wiederherstellen (um Formatierung auf markierten Text anzuwenden)
+    restoreSelection(); 
+    
+    // 2. Führe den Formatierungsbefehl aus
+    document.execCommand(command, false, value);
+    
+    // FIX 1 (Doppelklick-Problem): Erzwingt den Fokus sofort zurück in den Editor.
+    // Dies ist entscheidend, damit der Browser den Umschaltbefehl (zweiter Klick)
+    // im leeren Editor korrekt als Deaktivierung erkennt.
+    noteEditor.focus();
+    
+    // 3. Auswahl/Range erneut speichern und Toolbar aktualisieren
+    saveSelection();
+    updateToolbarState();
+};
 
         const executeLinkCommand = async () => {
             // 1. Auswahl speichern
@@ -830,11 +834,35 @@ node.parentNode : node;
                 return;
             }
 
-            // Text-Formate (B/I/U/Link)
-            boldBtn.classList.toggle('active', document.queryCommandState('bold'));
-            italicBtn.classList.toggle('active', document.queryCommandState('italic'));
-            underlineBtn.classList.toggle('active', document.queryCommandState('underline'));
-            linkBtn.classList.toggle('active', document.queryCommandState('createLink'));
+          // *********************************************************
+// FIX 2: Separate Abfrage für B/I/U, um gleichzeitige Aktivierung im leeren Editor zu ermöglichen.
+// *********************************************************
+
+// BOLD
+if (document.queryCommandState('bold')) {
+    boldBtn.classList.add('active'); 
+} else {
+    boldBtn.classList.remove('active');
+}
+
+// ITALIC
+if (document.queryCommandState('italic')) {
+    italicBtn.classList.add('active'); 
+} else {
+    italicBtn.classList.remove('active');
+}
+
+// UNDERLINE
+if (document.queryCommandState('underline')) {
+    underlineBtn.classList.add('active'); 
+} else {
+    underlineBtn.classList.remove('active');
+}
+
+// Link kann die toggle-Funktion beibehalten, da es meist ein isolierter Zustand ist.
+linkBtn.classList.toggle('active', document.queryCommandState('createLink'));
+
+// 1. Listen-Formate (Dropdown Active Marker FIX)
 
             // 1. Listen-Formate (Dropdown Active Marker FIX)
             listDropdownItems.forEach(item => item.classList.remove('active'));
@@ -1399,13 +1427,15 @@ node.parentNode : node;
         // ** EVENT LISTENER **
         // ******************************************************
 
-        // Toolbar-Befehle
+         // Toolbar-Befehle
         boldBtn.addEventListener('click', () => executeFormatAndRestore('bold'));
         italicBtn.addEventListener('click', () => executeFormatAndRestore('italic'));
         underlineBtn.addEventListener('click', () => executeFormatAndRestore('underline'));
         indentBtn.addEventListener('click', () => executeFormatAndRestore('indent'));
         outdentBtn.addEventListener('click', () => executeFormatAndRestore('outdent'));
         linkBtn.addEventListener('click', executeLinkCommand);
+
+
 
         // Dropdown-Toggle (mit event.stopPropagation, um Klick-Bug zu vermeiden)
         const toggleDropdown = (btn, menu) => {
