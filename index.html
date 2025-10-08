@@ -121,12 +121,6 @@
              transform: scale(0.96); 
         }
 
-        #indent-btn:active, 
-        #outdent-btn:active 
-        {
-        background-color: #374151 !important; 
-        transform: scale(0.96); 
-        }
 
         /* WICHTIG: Blauer Hintergrund für aktive Toolbar-Buttons und Dropdown-Elemente */
         .toolbar-btn.active, .dropdown-item.active {
@@ -254,6 +248,16 @@
             font-size: 1.25rem; /* Für die Icons */
             border-radius: 9999px; /* Rund */
         }
+
+        /* Dies ist der ABSOLUT LETZTE BLOCK im <style> Tag */
+button#indent-btn:active, 
+button#outdent-btn:active {
+    /* Die gewünschte Hintergrundfarbe wird hier gnadenlos erzwungen */
+    background-color: #374151 !important; 
+    
+    /* Der Transform-Effekt wird auch hier explizit gesetzt, um Konflikte zu vermeiden */
+    transform: scale(0.96); 
+}
     </style>
 </head>
 <body class="bg-black min-h-screen p-4 flex items-center justify-center">
