@@ -890,9 +890,9 @@ node.parentNode : node;
         };
 
  // ******************************************************
-// ** STORAGE UND RENDERING LOGIK (KORRIGIERT) **
+// ** STORAGE UND RENDERING LOGIK (FINALE KORREKTUR) **
 // ******************************************************
-        
+
 const saveNotesToLocal = () => {
     try {
         // Nur die Reihenfolge in der unsortierten Ansicht speichern
@@ -911,32 +911,50 @@ const saveNotesToLocal = () => {
 const loadNotesFromLocal = () => {
     try {
         const storedNotes = localStorage.getItem(NOTES_STORAGE_KEY);
-        notesData = storedNotes ? JSON.parse(storedNotes) : [];
+        // SICHERUNG 1: Robustes Parsen der Notizen (Fallback auf leeres Array bei Fehler)
+        let rawNotes = [];
+        try {
+            rawNotes = storedNotes ? JSON.parse(storedNotes) : [];
+        } catch (e) {
+            console.error("Fehler beim Parsen der gespeicherten Notizen. Daten werden verworfen.", e);
+            // Wenn das Parsen der Hauptdaten fehlschlägt, setzen wir notesData leer.
+        }
 
-        // KORREKTUR 1: Alle Notiz-IDs beim Laden in Strings konvertieren (und Timestamps in Zahlen)
-        notesData = notesData.map(note => ({
-            ...note,
-            id: String(note.id), // ALLE IDs MÜSSEN STRINGS SEIN
-            createdAt: Number(note.createdAt),
-            updatedAt: Number(note.updatedAt),
-        }));
+        // SICHERUNG 2: Filtern nach gültigen Notizen und Konvertierung der Typen
+        notesData = rawNotes
+            .filter(note => note && note.id) // Nur Objekte mit ID behalten
+            .map(note => ({
+                ...note,
+                id: String(note.id), // ALLE IDs MÜSSEN STRINGS SEIN
+                // Timestamps sicher in Zahlen konvertieren
+                createdAt: Number(note.createdAt) || Date.now(), 
+                updatedAt: Number(note.updatedAt) || Date.now(),
+            }));
         
         // Lade die gespeicherte Reihenfolge für 'unsorted'
         const storedOrder = localStorage.getItem('notes-order');
+        let orderArray = [];
+
+        // SICHERUNG 3: Robustes Parsen der Sortierreihenfolge
         if (storedOrder && storedOrder.length > 0) {
-            
-            // KORREKTUR 2: Stelle sicher, dass alle IDs in orderArray Strings sind.
-            let orderArray = JSON.parse(storedOrder).map(id => String(id));
-            
-            // Sortiere notesData basierend auf der gespeicherten ID-Liste
+            try {
+                // Stelle sicher, dass alle IDs in orderArray Strings sind.
+                orderArray = JSON.parse(storedOrder).map(id => String(id));
+            } catch (e) {
+                console.warn("Fehler beim Parsen der 'notes-order'. Erzeuge neue Reihenfolge.", e);
+                // Wenn das Parsen fehlschlägt (korrupte Daten), erstellen wir eine neue Reihenfolge
+                orderArray = notesData.map(n => n.id);
+                localStorage.setItem('notes-order', JSON.stringify(orderArray));
+            }
+        }
+        
+        // Sortiere notesData basierend auf der gespeicherten ID-Liste
+        if (orderArray.length > 0) { 
             notesData.sort((a, b) => {
-                // IDs sind jetzt Strings, indexOf funktioniert korrekt.
                 const indexA = orderArray.indexOf(a.id);
                 const indexB = orderArray.indexOf(b.id);
                 
-                // Behandle neue/fehlende Notizen korrekt
                 if (indexA === -1 && indexB === -1) {
-                    // KORREKTUR 3: String-Vergleich für neue Notizen verwenden
                     return b.id.localeCompare(a.id);
                 }
                 
@@ -949,34 +967,33 @@ const loadNotesFromLocal = () => {
             // OPTIMIERUNG: Bereinige die gespeicherte Reihenfolge von IDs gelöschter Notizen
             const currentIds = new Set(notesData.map(n => n.id));
             const cleanedOrder = orderArray.filter(id => currentIds.has(id));
-            localStorage.setItem('notes-order', JSON.stringify(cleanedOrder));
+            if (cleanedOrder.length !== orderArray.length) {
+                localStorage.setItem('notes-order', JSON.stringify(cleanedOrder));
+            }
             
         } else {
             // Fallback: Neueste zuerst nach ID 
-            // KORREKTUR 4: String-Vergleich verwenden
             notesData.sort((a, b) => b.id.localeCompare(a.id));
         }
         
         sortNotes(currentSortMethod, true); // Stellt die Sortierung ein und rendert
     } catch (e) {
-        console.error("Fehler beim Laden der Notizen aus dem lokalen Speicher:", e);
+        // Dieser catch-Block sollte jetzt nur noch bei wirklich fatalen JavaScript-Fehlern erreicht werden.
+        console.error("Fehler beim Laden der Notizen aus dem lokalen Speicher (FATAL):", e);
         showModal("Ihre Notizen konnten nicht geladen werden. Ein unerwarteter Fehler ist aufgetreten (Details in der Konsole).");
     }
 };
-
-// ... (Hier folgen generateUniqueId und sanitizeHtml, die keine Korrektur benötigen)
 
 /**
  * Erzeugt eine eindeutige ID (z.B. basierend auf Zeitstempel und Zufall).
  */
 const generateUniqueId = () => {
+    // Liefert einen String (wichtig)
     return Date.now().toString(36) + Math.random().toString(36).substring(2, 7);
 };
         
 /**
  * Bereinigt den HTML-Inhalt des Editors, indem unnötige Attribute entfernt werden.
- * Behält nur die erlaubten Formatierungen.
- * @param {string} html - Der unbereinigte HTML-String.
  */
 const sanitizeHtml = (html) => {
     const tempDiv = document.createElement('div');
@@ -1002,7 +1019,7 @@ const sanitizeHtml = (html) => {
                     parent.insertBefore(node.firstChild, node);
                 }
                 parent.removeChild(node);
-                return; // Weiter mit dem nächsten Geschwisterknoten
+                return;
             }
 
             // 2. Unerlaubte Attribute entfernen
