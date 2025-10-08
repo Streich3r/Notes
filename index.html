@@ -117,7 +117,7 @@
         #outdent-btn:active, /* Fügt den Ausrück-Button hier hinzu */
         .note-action-btn:active 
         {
-             background-color: #374151 !important; /* bg-gray-700 */
+             background-color: var(--btn-gray) !important;
              transform: scale(0.96); 
         }
 
@@ -250,15 +250,6 @@
             border-radius: 9999px; /* Rund */
         }
 
-        /* Dies ist der ABSOLUT LETZTE BLOCK im <style> Tag */
-button#indent-btn:active, 
-button#outdent-btn:active {
-    /* Die gewünschte Hintergrundfarbe wird hier gnadenlos erzwungen */
-    background-color: #374151 !important; 
-    
-    /* Der Transform-Effekt wird auch hier explizit gesetzt, um Konflikte zu vermeiden */
-    transform: scale(0.96); 
-}
     </style>
 </head>
 <body class="bg-black min-h-screen p-4 flex items-center justify-center">
