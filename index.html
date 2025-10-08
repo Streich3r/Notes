@@ -627,20 +627,21 @@ class="text-gray-300 mb-4 text-center">Geben Sie die URL für den Link ein.</p>
             }
         };
 
-  const executeFormatAndRestore = (command, value = null) => {
+        // work2
+const executeFormatAndRestore = (command, value = null) => {
     // 1. Auswahl wiederherstellen
     restoreSelection(); 
     
     // 2. Führe den Formatierungsbefehl aus
     document.execCommand(command, false, value);
     
-    // FIX 1: Erzwingt die Statusaktualisierung mit einem minimalen Timeout.
-    // Dies löst das hartnäckige Toggling-Problem.
+    // FIX 1 (ULTIMATIV): Setzt den Fokus und aktualisiert den Zustand nach einem Timeout.
+    // Dies ist die robusteste Methode, um Toggling-Probleme in contenteditable zu beheben.
     setTimeout(() => {
-        noteEditor.focus(); // Fokus zurücksetzen
+        noteEditor.focus(); // Fokus zurücksetzen, damit der Cursor sichtbar bleibt
         saveSelection();
-        updateToolbarState(); 
-    }, 0); // Wichtig: 0 ms Timeout ist die Lösung!
+        updateToolbarState(); // Aktualisiert den Zustand der Buttons
+    }, 0); // Wichtig!
 };
 
         const executeLinkCommand = async () => {
@@ -833,8 +834,10 @@ node.parentNode : node;
 // *********************************************************
 
 // *********************************************************
-// FIX 2: Separate Abfrage für B/I/U, um gleichzeitige Aktivierung zu ermöglichen.
+// FIX 2: Separate Abfrage für B/I/U, um gleichzeitige Aktivierung zu ermöglichen.(work1)
 // *********************************************************
+
+// Innerhalb der Funktion updateToolbarState()
 
 // BOLD
 if (document.queryCommandState('bold')) {
@@ -857,8 +860,10 @@ if (document.queryCommandState('underline')) {
     underlineBtn.classList.remove('active');
 }
 
-// Link kann die toggle-Funktion beibehalten, da es meist ein isolierter Zustand ist.
+// Link kann die toggle-Funktion beibehalten
 linkBtn.classList.toggle('active', document.queryCommandState('createLink'));
+
+// ... (Rest der Funktion folgt)
 
 // 1. Listen-Formate (Dropdown Active Marker FIX)
 listDropdownItems.forEach(item => item.classList.remove('active'));
