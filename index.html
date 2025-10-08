@@ -570,7 +570,7 @@
                     if (method === 'newest') {
                         return new Date(b.createdAt) - new Date(a.createdAt);
                     } else if (method === 'oldest') {
-                        return new Date(a.createdAt) - new Date(b.createdAt);
+                        return new Date(a.createdAt) - new Date(a.createdAt);
                     } else if (method === 'title-asc') {
                         return a.title.localeCompare(b.title);
                     } else if (method === 'title-desc') {
@@ -582,23 +582,6 @@
                  filteredNotes.sort((a, b) => a.order - b.order);
             }
 
-            // Die sortierte Liste verwenden, um die notesData (in der richtigen Reihenfolge) zu aktualisieren, 
-            // wenn es sich um eine Sortierung handelt, die die Reihenfolge dauerhaft ändern soll (alle außer 'unsorted' nach dem Initialisieren).
-            if (method !== 'unsorted' && shouldSaveOrder) {
-                // Wir stellen sicher, dass die Reihenfolge der notesData der Sortierung entspricht
-                // Nur die gefilterten Notizen werden sortiert, die ursprüngliche notesData wird beibehalten, 
-                // aber die gerenderte Liste spiegelt die Sortierung wider.
-                // Wir müssen hier die order-Eigenschaft nur dann setzen, wenn wir eine dauerhafte Speicherung wollen,
-                // was bei 'newest', 'oldest', 'title-...' nicht der Fall ist, da die Ordnung nur temporär für die Ansicht ist.
-                // Die 'order'-Eigenschaft wird nur bei manuellem Drag/Drop oder Initialisierung verwendet.
-                
-                // Da Sortierung temporär ist, überspringen wir das Speichern der 'order' und verwenden nur filteredNotes für das Rendern.
-            }
-            
-            // Nur wenn es sich um die unsortierte Ansicht handelt UND eine Reihenfolge geändert wurde (z.B. durch Drag/Drop), 
-            // aktualisieren wir die notesData und speichern sie. (Wird im Drag/Drop-Handler gemacht)
-
-
             // Aktualisiere den Button-Text
             const activeItem = sortDropdownMenu.querySelector(`.dropdown-item[data-value="${method}"]`);
             if (activeItem) {
@@ -609,10 +592,6 @@
 
             // Neu rendern
             renderNotes();
-            
-            // Speichern der Sortiermethode (optional, falls sie über Sessions hinweg beibehalten werden soll)
-            // localStorage.setItem('currentSortMethod', method);
-
         };
 
         // ******************************************************
@@ -774,17 +753,19 @@
                         return;
                     }
 
-                    // Wir weisen allen importierten Notizen eine neue ID zu, um Kollisionen zu vermeiden.
+                    // Wir weisen allen importierten Notizen eine neue ID zu, um Kollisionen zu vermeiden, 
+                    // ABER wir behalten die ursprünglichen Zeitstempel bei.
                     let newNotes = importedData.map(note => ({
                         id: crypto.randomUUID(), 
                         title: note.title || '',
                         content: note.content || '',
-                        createdAt: new Date().toISOString(),
-                        updatedAt: new Date().toISOString(),
+                        // ** KORREKTUR: Behalte die ursprünglichen Datumsangaben **
+                        createdAt: note.createdAt && new Date(note.createdAt).toISOString() !== 'Invalid Date' ? note.createdAt : new Date().toISOString(),
+                        updatedAt: note.updatedAt && new Date(note.updatedAt).toISOString() !== 'Invalid Date' ? note.updatedAt : new Date().toISOString(),
                         order: -1 
                     }));
 
-                    // NEU: Import soll immer HINZUFÜGEN (alte Notizen bleiben erhalten, auch wenn doppelt)
+                    // NEU: Import soll immer HINZUFÜGEN
                     notesData = [...notesData, ...newNotes];
                     
                     // Stelle sicher, dass 'order' für alle Notizen im unsortierten Zustand korrekt ist
@@ -833,11 +814,9 @@
                 });
                 
             // Schritt 2: Sortieren (Verwendet die in sortNotes() festgelegte Reihenfolge/Sortierung)
-            // Da sortNotes() bereits die filteredNotes sortiert, müssen wir nur sicherstellen, 
-            // dass die richtige Liste (notesData oder die temporär sortierte) verwendet wird.
             const notesToRender = currentSortMethod === 'unsorted' 
                 ? filteredAndSortedNotes.sort((a, b) => a.order - b.order) // Nur 'unsorted' verwendet die manuelle Reihenfolge
-                : filteredAndSortedNotes; // Die anderen Sortierungen sind bereits im Array vorhanden
+                : filteredAndSortedNotes;
                 
             // Das Rendern der gefilterten und sortierten Liste.
             notesList.innerHTML = ''; // Liste leeren
