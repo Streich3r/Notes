@@ -889,10 +889,10 @@ node.parentNode : node;
             colorDropdownBtn.textContent = 'Schriftfarbe'; // FIX: Button-Text statisch halten
         };
 
-        // ******************************************************
-        // ** STORAGE UND RENDERING LOGIK **
-        // ******************************************************
-        
+ // ******************************************************
+// ** STORAGE UND RENDERING LOGIK (KORRIGIERT) **
+// ******************************************************
+        
 const saveNotesToLocal = () => {
     try {
         // Nur die Reihenfolge in der unsortierten Ansicht speichern
@@ -908,7 +908,7 @@ const saveNotesToLocal = () => {
     }
 };
 
-     const loadNotesFromLocal = () => {
+const loadNotesFromLocal = () => {
     try {
         const storedNotes = localStorage.getItem(NOTES_STORAGE_KEY);
         notesData = storedNotes ? JSON.parse(storedNotes) : [];
@@ -916,7 +916,7 @@ const saveNotesToLocal = () => {
         // KORREKTUR 1: Alle Notiz-IDs beim Laden in Strings konvertieren (und Timestamps in Zahlen)
         notesData = notesData.map(note => ({
             ...note,
-            id: String(note.id),
+            id: String(note.id), // ALLE IDs MÜSSEN STRINGS SEIN
             createdAt: Number(note.createdAt),
             updatedAt: Number(note.updatedAt),
         }));
@@ -964,81 +964,83 @@ const saveNotesToLocal = () => {
     }
 };
 
-        /**
-         * Erzeugt eine eindeutige ID (z.B. basierend auf Zeitstempel und Zufall).
-         */
-        const generateUniqueId = () => {
-            return Date.now().toString(36) + Math.random().toString(36).substring(2, 7);
-        };
+// ... (Hier folgen generateUniqueId und sanitizeHtml, die keine Korrektur benötigen)
+
+/**
+ * Erzeugt eine eindeutige ID (z.B. basierend auf Zeitstempel und Zufall).
+ */
+const generateUniqueId = () => {
+    return Date.now().toString(36) + Math.random().toString(36).substring(2, 7);
+};
         
-        /**
-         * Bereinigt den HTML-Inhalt des Editors, indem unnötige Attribute entfernt werden.
-         * Behält nur die erlaubten Formatierungen.
-         * @param {string} html - Der unbereinigte HTML-String.
-         */
-        const sanitizeHtml = (html) => {
-            const tempDiv = document.createElement('div');
-            tempDiv.innerHTML = html;
+/**
+ * Bereinigt den HTML-Inhalt des Editors, indem unnötige Attribute entfernt werden.
+ * Behält nur die erlaubten Formatierungen.
+ * @param {string} html - Der unbereinigte HTML-String.
+ */
+const sanitizeHtml = (html) => {
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = html;
+    
+    // Erlaubte Tags und Attribute
+    const allowedTags = ['b', 'i', 'u', 'a', 'p', 'div', 'ul', 'ol', 'li', 'font'];
+    const allowedAttributes = {
+        'a': ['href', 'target'],
+        'font': ['size', 'color'],
+        'ul': ['style'],
+        'ol': ['style'],
+    };
+
+    const traverse = (node) => {
+        if (node.nodeType === Node.ELEMENT_NODE) {
+            const tagName = node.tagName.toLowerCase();
             
-            // Erlaubte Tags und Attribute
-            const allowedTags = ['b', 'i', 'u', 'a', 'p', 'div', 'ul', 'ol', 'li', 'font'];
-            const allowedAttributes = {
-                'a': ['href', 'target'],
-                'font': ['size', 'color'],
-                'ul': ['style'],
-                'ol': ['style'],
-            };
-
-            const traverse = (node) => {
-                if (node.nodeType === Node.ELEMENT_NODE) {
-                    const tagName = node.tagName.toLowerCase();
-                    
-                    // 1. Unerlaubte Tags entfernen (oder durch ihren Inhalt ersetzen)
-                    if (!allowedTags.includes(tagName)) {
-                        let parent = node.parentNode;
-                        while (node.firstChild) {
-                            parent.insertBefore(node.firstChild, node);
-                        }
-                        parent.removeChild(node);
-                        return; // Weiter mit dem nächsten Geschwisterknoten
-                    }
-
-                    // 2. Unerlaubte Attribute entfernen
-                    const attributesToRemove = [];
-                    for (let i = 0; i < node.attributes.length; i++) {
-                        const attr = node.attributes[i];
-                        const allowedForTag = allowedAttributes[tagName] || [];
-                        if (!allowedForTag.includes(attr.name)) {
-                            attributesToRemove.push(attr.name);
-                        }
-                    }
-                    attributesToRemove.forEach(name => node.removeAttribute(name));
-                    
-                    // 3. Rekursive Verarbeitung der Kinder
-                    let child = node.firstChild;
-                    while (child) {
-                        const nextChild = child.nextSibling;
-                        traverse(child);
-                        child = nextChild;
-                    }
-                } else if (node.nodeType === Node.TEXT_NODE) {
-                    // Textknoten behalten
-                } else {
-                    // Alle anderen Knotentypen (Kommentare, etc.) entfernen
-                    node.parentNode.removeChild(node);
+            // 1. Unerlaubte Tags entfernen (oder durch ihren Inhalt ersetzen)
+            if (!allowedTags.includes(tagName)) {
+                let parent = node.parentNode;
+                while (node.firstChild) {
+                    parent.insertBefore(node.firstChild, node);
                 }
-            };
+                parent.removeChild(node);
+                return; // Weiter mit dem nächsten Geschwisterknoten
+            }
 
-            traverse(tempDiv);
+            // 2. Unerlaubte Attribute entfernen
+            const attributesToRemove = [];
+            for (let i = 0; i < node.attributes.length; i++) {
+                const attr = node.attributes[i];
+                const allowedForTag = allowedAttributes[tagName] || [];
+                if (!allowedForTag.includes(attr.name)) {
+                    attributesToRemove.push(attr.name);
+                }
+            }
+            attributesToRemove.forEach(name => node.removeAttribute(name));
             
-            // Spezialbehandlung: Wenn nur <br> übrig bleiben, ersetze durch leeren String
-            let cleanedHtml = tempDiv.innerHTML.trim();
-            if (cleanedHtml === '<br>') return '';
+            // 3. Rekursive Verarbeitung der Kinder
+            let child = node.firstChild;
+            while (child) {
+                const nextChild = child.nextSibling;
+                traverse(child);
+                child = nextChild;
+            }
+        } else if (node.nodeType === Node.TEXT_NODE) {
+            // Textknoten behalten
+        } else {
+            // Alle anderen Knotentypen (Kommentare, etc.) entfernen
+            node.parentNode.removeChild(node);
+        }
+    };
 
-            return cleanedHtml;
-        };
+    traverse(tempDiv);
+    
+    // Spezialbehandlung: Wenn nur <br> übrig bleiben, ersetze durch leeren String
+    let cleanedHtml = tempDiv.innerHTML.trim();
+    if (cleanedHtml === '<br>') return '';
 
-      const saveNote = () => {
+    return cleanedHtml;
+};
+
+const saveNote = () => {
     // Aktuelle Auswahl verwerfen, damit der Fokus im Editor bleibt, falls er dort war
     if (document.activeElement === noteEditor) {
         noteEditor.blur();
