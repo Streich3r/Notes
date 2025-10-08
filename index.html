@@ -60,9 +60,12 @@
             border: none;
         }
 
-        /* FIX 1: Klick-Animation (Scale-Down) für alle Buttons */
-        .calculator-btn:active, label[for="import-file-input"]:active {
-            transform: scale(0.96); 
+        /* FIX 1: Klick-Animation (Scale-Down) mit !important für maximale Priorität */
+        .calculator-btn:active, 
+        label[for="import-file-input"]:active,
+        #indent-btn:active, /* Explizit hinzugefügt, falls die generische Regel nicht ausreicht */
+        #outdent-btn:active {
+            transform: scale(0.96) !important; 
         }
 
         .calculator-btn:focus, label[for="import-file-input"]:focus {
@@ -81,7 +84,7 @@
         }
         
         .toolbar-btn:hover:not(.active), .dropdown-item:hover:not(.active), #sort-dropdown-btn:hover, #modal-cancel-btn:hover, #link-cancel-btn:hover {
-            background-color: var(--btn-gray) !important;
+            background-color: #55606e !important; /* Etwas dunkler als 4b5563, aber heller als active */
         }
         
         .toolbar-btn:active, .dropdown-item:active, #sort-dropdown-btn:active, #modal-cancel-btn:active, #link-cancel-btn:active {
@@ -176,6 +179,7 @@
         }
         
         /* Wichtig für List-Style-Type */
+        /* Diese Regeln stellen sicher, dass die manuell gesetzten Stile angezeigt werden */
         #note-editor ul[style*="list-style-type: circle"], .note-card ul[style*="list-style-type: circle"] {
             list-style-type: circle !important;
         }
@@ -515,50 +519,23 @@ class="text-gray-300 mb-4 text-center">Geben Sie die URL für den Link ein.</p>
         
         /**
          * Führt einen Formatierungsbefehl aus und stellt den Fokus in den Editor zurück.
-         * Mit Workaround für gleichzeitiges Formatieren bei collapsed selection (Punkt 3 FIX).
+         * FIX 2 & 3: Entfernung der fehlerhaften ZWNB-Logik für B/I/U.
          * @param {string} command - Der execCommand-Befehl.
          * @param {string} value - Der Wert für den execCommand-Befehl.
          */
         const executeFormatAndRestore = (command, value = null) => {
+            // 1. Auswahl wiederherstellen
             restoreSelection();
+            // 2. Fokus setzen (wichtig für Android/Mobile)
             noteEditor.focus(); 
             
-            const selection = window.getSelection();
-            const rangeIsCollapsed = selection.rangeCount > 0 ? selection.getRangeAt(0).collapsed : true;
-            
-            // FIX 3: Workaround für gleichzeitiges Formatieren bei leerer Auswahl (z.B. B+I+U)
-            if (rangeIsCollapsed && ['bold', 'italic', 'underline', 'createLink'].includes(command)) {
-                 
-                // 1. Führe den Befehl aus. 
-                const isActive = document.queryCommandState(command);
-                document.execCommand(command, false, value);
-                
-                // 2. Wenn der Befehl gerade aktiviert wurde UND die Auswahl collapsed ist,
-                if (!isActive && document.queryCommandState(command)) {
-                    // Temporären Platzhalter (Zero Width No-Break Space) einfügen
-                    document.execCommand('insertText', false, '\uFEFF'); 
-                    
-                    // Auswahl um diesen Platzhalter erweitern (selektieren)
-                    const range = selection.getRangeAt(0);
-                    // Verschiebe den Startpunkt um 1 Zeichen nach hinten (das eingefügte Zeichen)
-                    range.setStart(range.startContainer, range.startOffset - 1); 
-                    
-                    // Befehl erneut ausführen, um den Platzhalter im aktuellen Stil zu formatieren
-                    document.execCommand(command, false, value);
-                    
-                    // Den Platzhalter löschen (Caret bleibt im formatierten Bereich)
-                    document.execCommand('delete', false, null);
-                }
+            // 3. Befehl ausführen (Für B/I/U wird hier der Schreib-Modus getoggelt)
+            document.execCommand(command, false, value);
 
-            } else {
-                 // Standardausführung für Textauswahl, Listen, Größe, etc.
-                 document.execCommand(command, false, value);
-            }
-
-            // Auswahl/Range erneut speichern
+            // 4. Auswahl erneut speichern (nach der Ausführung)
             saveSelection();
-
-            // Toolbar-Status aktualisieren
+            
+            // 5. Toolbar-Status aktualisieren
             updateToolbarState();
         };
 
@@ -602,7 +579,7 @@ class="text-gray-300 mb-4 text-center">Geben Sie die URL für den Link ein.</p>
         // ******************************************************
         
         /**
-         * FIX 2: Stabilere Listenfunktion (Schaltet zwischen OL/UL und setzt dann den Stil)
+         * FIX 2: Vereinfachte und stabilere Listenfunktion.
          */
         const toggleList = (targetStyle) => {
             restoreSelection();
@@ -616,19 +593,16 @@ class="text-gray-300 mb-4 text-center">Geben Sie die URL für den Link ein.</p>
 
             // 2. Suche das umgebende Listen-Element (UL oder OL)
             const selection = window.getSelection();
-            let node = selection.getRangeAt(0).startContainer;
-            if (node.nodeType === Node.TEXT_NODE) node = node.parentNode;
+            // Verwenden Sie range.startContainer, um den Startpunkt der Auswahl zu erhalten.
+            let node = selection.rangeCount > 0 ? selection.getRangeAt(0).startContainer : null;
+            if (node && node.nodeType === Node.TEXT_NODE) node = node.parentNode;
             
-            let list = node.closest('UL, OL');
+            let list = node ? node.closest('UL, OL') : null;
 
-            if (list) {
+            if (list && list.tagName === 'UL') {
                 // 3. Wenn es eine UL ist, setze den spezifischen Stil (disc oder circle)
-                if (list.tagName === 'UL') {
-                    list.style.listStyleType = targetStyle;
-                }
-                // 4. Bei OL lassen wir den Stil auf 'decimal' (ist Default oder wird durch execCommand gesetzt)
+                list.style.listStyleType = targetStyle;
             }
-
 
             saveSelection();
             updateToolbarState();
@@ -1142,11 +1116,12 @@ class="text-gray-300 mb-4 text-center">Geben Sie die URL für den Link ein.</p>
         noteEditor.addEventListener('keyup', updateToolbarState); 
         
         // Stellt sicher, dass die Auswahl gespeichert wird, bevor der Button gedrückt wird (für Touch/Click)
-        document.querySelectorAll('.toolbar-btn, .dropdown-item, #indent-btn, #outdent-btn').forEach(btn => {
+        document.querySelectorAll('.calculator-btn').forEach(btn => {
+             // Wichtig: Mousedown event feuert vor dem Blur/Click-Verlust
             btn.addEventListener('mousedown', saveSelection);
         });
 
-        // WICHTIG: Die Toolbar-Buttons rufen executeFormatAndRestore auf.
+        // WICHTIG: Alle Formatierungs- und Einrückbefehle verwenden nun die vereinfachte, robuste executeFormatAndRestore
         boldBtn.addEventListener('click', () => executeFormatAndRestore('bold'));
         italicBtn.addEventListener('click', () => executeFormatAndRestore('italic'));
         underlineBtn.addEventListener('click', () => executeFormatAndRestore('underline'));
