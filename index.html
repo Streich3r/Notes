@@ -1348,52 +1348,67 @@ node.parentNode : node;
             //showModal("Notizen wurden erfolgreich als JSON-Datei exportiert.");
         };
 
-        const importNotes = (event) => {
-            const file = event.target.files[0];
-            if (!file) return;
+      const importNotes = (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
 
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                try {
-                    const importedNotes = JSON.parse(e.target.result);
-                    
-                    if (!Array.isArray(importedNotes) || importedNotes.some(n => !n.id || !n.content)) {
-                        showModal("Ungültiges Dateiformat. Die Datei muss ein Array von Notizobjekten enthalten.");
-                        return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        try {
+            const importedNotes = JSON.parse(e.target.result);
+            
+            if (!Array.isArray(importedNotes) || importedNotes.some(n => !n.id || !n.content)) {
+                showModal("Ungültiges Dateiformat. Die Datei muss ein Array von Notizobjekten enthalten.");
+                return;
+            }
+            
+            showModal(`Es wurden ${importedNotes.length} Notizen in der Datei gefunden. Möchten Sie diese importieren? (Vorhandene Notizen werden NICHT überschrieben.)`, true)
+                .then(confirmed => {
+                    if (confirmed) {
+                        
+                        const existingIds = new Set(notesData.map(n => n.id));
+                        
+                        // KORRIGIERTER BEREICH: Filtern und Konvertieren
+                        const newNotes = importedNotes
+                            .filter(n => !existingIds.has(n.id))
+                            .map(note => {
+                                // Konvertieren des Datums-Strings in einen numerischen Timestamp
+                                let parsedUpdatedAt = new Date(note.updatedAt).getTime();
+                                note.updatedAt = isNaN(parsedUpdatedAt) ? Date.now() : parsedUpdatedAt; 
+
+                                let parsedCreatedAt = new Date(note.createdAt).getTime();
+                                note.createdAt = isNaN(parsedCreatedAt) ? note.updatedAt : parsedCreatedAt;
+                                
+                                note.id = String(note.id); // Typ-Sicherheit
+                                return note;
+                            });
+                        // ENDE KORRIGIERTER BEREICH
+
+                        notesData = [...notesData, ...newNotes];
+                        
+                        // Setze die Import-Reihenfolge auf das Ende der unsortierten Liste
+                        const importedIds = newNotes.map(note => note.id);
+                        const currentOrderStr = localStorage.getItem('notes-order');
+                        let currentOrder = currentOrderStr ? JSON.parse(currentOrderStr) : notesData.map(n => n.id);
+                        currentOrder = [...currentOrder.filter(id => !importedIds.includes(id)), ...importedIds];
+                        localStorage.setItem('notes-order', JSON.stringify(currentOrder));
+
+                        saveNotesToLocal();
+                        renderNotes(searchInput.value);
+                        
+                        showModal(`Import abgeschlossen! ${newNotes.length} neue Notizen wurden hinzugefügt.`);
                     }
-                    
-                    showModal(`Es wurden ${importedNotes.length} Notizen in der Datei gefunden. Möchten Sie diese importieren? (Vorhandene Notizen werden NICHT überschrieben.)`, true)
-                        .then(confirmed => {
-                            if (confirmed) {
-                                // Filtere doppelte IDs (falls vorhanden) und füge neue Notizen hinzu
-                                const existingIds = new Set(notesData.map(n => n.id));
-                                const newNotes = importedNotes.filter(n => !existingIds.has(n.id));
-                                
-                                notesData = [...notesData, ...newNotes];
-                                
-                                // Setze die Import-Reihenfolge auf das Ende der unsortierten Liste
-                                const importedIds = newNotes.map(note => note.id);
-                                const currentOrderStr = localStorage.getItem('notes-order');
-                                let currentOrder = currentOrderStr ? JSON.parse(currentOrderStr) : notesData.map(n => n.id);
-                                currentOrder = [...currentOrder.filter(id => !importedIds.includes(id)), ...importedIds];
-                                localStorage.setItem('notes-order', JSON.stringify(currentOrder));
+                });
+            
+        } catch (error) {
+            showModal("Fehler beim Lesen oder Parsen der Datei. Stellen Sie sicher, dass es eine gültige JSON-Datei ist.");
+            console.error("Import error:", error);
+        }
+    };
 
-                                saveNotesToLocal();
-                                renderNotes(searchInput.value);
-                                
-                                showModal(`Import abgeschlossen! ${newNotes.length} neue Notizen wurden hinzugefügt.`);
-                            }
-                        });
-                    
-                } catch (error) {
-                    showModal("Fehler beim Lesen oder Parsen der Datei. Stellen Sie sicher, dass es eine gültige JSON-Datei ist.");
-                    console.error("Import error:", error);
-                }
-            };
-
-            reader.readAsText(file);
-            event.target.value = ''; // Setze das File-Input zurück, damit das gleiche File erneut importiert werden kann
-        };
+    reader.readAsText(file);
+    event.target.value = '';
+};
         
         // ******************************************************
         // ** EVENT LISTENER **
