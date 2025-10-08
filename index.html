@@ -79,15 +79,15 @@
         }
         
         /* Graue Buttons (Toolbar, Sort, Modal-Cancel) */
-        .toolbar-btn, .dropdown-item, #sort-dropdown-btn, #modal-cancel-btn, #link-cancel-btn {
+        .toolbar-btn, .dropdown-item, #sort-dropdown-btn, #modal-cancel-btn, #link-cancel-btn, .note-action-btn {
             background-color: var(--btn-gray) !important;
         }
         
-        .toolbar-btn:hover:not(.active), .dropdown-item:hover:not(.active), #sort-dropdown-btn:hover, #modal-cancel-btn:hover, #link-cancel-btn:hover {
+        .toolbar-btn:hover:not(.active), .dropdown-item:hover:not(.active), #sort-dropdown-btn:hover, #modal-cancel-btn:hover, #link-cancel-btn:hover, .note-action-btn:hover {
             background-color: var(--btn-gray) !important;
         }
         
-        .toolbar-btn:active, .dropdown-item:active, #sort-dropdown-btn:active, #modal-cancel-btn:active, #link-cancel-btn:active {
+        .toolbar-btn:active, .dropdown-item:active, #sort-dropdown-btn:active, #modal-cancel-btn:active, #link-cancel-btn:active, .note-action-btn:active {
              background-color: #374151 !important;
  /* bg-gray-700 */
         }
@@ -205,6 +205,18 @@
         
         #note-editor ol, .note-card ol {
             list-style-type: decimal;
+        }
+        
+        /* Stil für die neuen Icon-Buttons */
+        .note-action-btn {
+            width: 38px;
+            height: 38px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0; /* Entfernt internes Padding, da wir feste Größe haben */
+            font-size: 1.25rem; /* Für die Icons */
+            border-radius: 9999px; /* Rund */
         }
     </style>
 </head>
@@ -1156,18 +1168,24 @@ node.parentNode : node;
              div.dataset.id = note.id;
              div.draggable = (currentSortMethod === 'unsorted');
              
-             // Entferne die Zeit-Information in der Karte, da sie nur für die Sortierung gebraucht wird
-             // const formattedDate = new Date(note.updatedAt).toLocaleDateString('de-DE');
+             // Titel nur anzeigen, wenn er vorhanden ist
+             const titleHtml = note.title.trim() ? 
+                `<h3 class="text-xl font-semibold text-gray-100 mr-4">${note.title}</h3>` : 
+                '';
 
              div.innerHTML = `
                  <div class="flex justify-between items-start mb-2">
-                     <h3 class="text-xl font-semibold text-gray-100 mr-4">${note.title || 'Ohne Titel'}</h3>
+                     ${titleHtml}
+                     <div class="flex space-x-2 ml-auto">
+                        <button class="edit-btn calculator-btn note-action-btn text-gray-200">
+                            ✏️
+                        </button>
+                        <button class="delete-btn calculator-btn note-action-btn text-gray-200">
+                            🗑️
+                        </button>
+                    </div>
                  </div>
                  <div class="text-gray-300 mb-4" style="font-size: 1rem;">${note.content}</div>
-                 <div class="flex justify-end space-x-2">
-                     <button class="edit-btn calculator-btn text-sm p-2 rounded-lg bg-gray-600 hover:bg-gray-700 transition duration-150">Bearbeiten</button>
-                     <button class="delete-btn calculator-btn text-sm p-2 rounded-lg bg-red-600 hover:bg-red-700 transition duration-150 text-white">Löschen</button>
-                 </div>
              `;
              
              div.querySelector('.edit-btn').addEventListener('click', () => editNote(note.id, note.title, note.content));
