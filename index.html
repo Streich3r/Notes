@@ -60,6 +60,7 @@
             border: none;
         }
 
+        /* FIX 1: Klick-Animation (Scale-Down) für alle Buttons */
         .calculator-btn:active, label[for="import-file-input"]:active {
             transform: scale(0.96); 
         }
@@ -172,6 +173,14 @@
 
         #note-editor li::marker, .note-card li::marker {
             color: #ffffff !important;
+        }
+        
+        /* Wichtig für List-Style-Type */
+        #note-editor ul[style*="list-style-type: circle"], .note-card ul[style*="list-style-type: circle"] {
+            list-style-type: circle !important;
+        }
+        #note-editor ul[style*="list-style-type: disc"], .note-card ul[style*="list-style-type: disc"] {
+            list-style-type: disc !important;
         }
     </style>
 </head>
@@ -517,24 +526,22 @@ class="text-gray-300 mb-4 text-center">Geben Sie die URL für den Link ein.</p>
             const selection = window.getSelection();
             const rangeIsCollapsed = selection.rangeCount > 0 ? selection.getRangeAt(0).collapsed : true;
             
-            // FIX: Workaround für gleichzeitiges Formatieren bei leerer Auswahl (z.B. B+I+U)
+            // FIX 3: Workaround für gleichzeitiges Formatieren bei leerer Auswahl (z.B. B+I+U)
             if (rangeIsCollapsed && ['bold', 'italic', 'underline', 'createLink'].includes(command)) {
                  
-                // 1. Führe den Befehl aus. Wenn der Befehl aktiv ist, ignoriere den Workaround.
+                // 1. Führe den Befehl aus. 
                 const isActive = document.queryCommandState(command);
                 document.execCommand(command, false, value);
                 
                 // 2. Wenn der Befehl gerade aktiviert wurde UND die Auswahl collapsed ist,
-                // muss man einen Platzhalter setzen und ihn wieder löschen, um das Format zu "halten"
-                // und die Verschachtelung zu erzwingen.
-                if (!isActive) {
+                if (!isActive && document.queryCommandState(command)) {
                     // Temporären Platzhalter (Zero Width No-Break Space) einfügen
                     document.execCommand('insertText', false, '\uFEFF'); 
                     
                     // Auswahl um diesen Platzhalter erweitern (selektieren)
                     const range = selection.getRangeAt(0);
-                    range.setStart(range.startContainer, range.startOffset - 1);
-                    range.setEnd(range.startContainer, range.startOffset + 1);
+                    // Verschiebe den Startpunkt um 1 Zeichen nach hinten (das eingefügte Zeichen)
+                    range.setStart(range.startContainer, range.startOffset - 1); 
                     
                     // Befehl erneut ausführen, um den Platzhalter im aktuellen Stil zu formatieren
                     document.execCommand(command, false, value);
@@ -595,52 +602,33 @@ class="text-gray-300 mb-4 text-center">Geben Sie die URL für den Link ein.</p>
         // ******************************************************
         
         /**
-         * Führt die Listenaktion durch (native execCommand + manuelle Stil-Anpassung).
-         * (Punkt 2 FIX: Stellt sicher, dass UL-Stile nur manuell geändert werden, wenn die Liste bereits existiert)
+         * FIX 2: Stabilere Listenfunktion (Schaltet zwischen OL/UL und setzt dann den Stil)
          */
         const toggleList = (targetStyle) => {
             restoreSelection();
             noteEditor.focus();
 
             const isOrdered = targetStyle === 'decimal';
-            const selection = window.getSelection();
-            
-            if (selection.rangeCount === 0) return;
+            const command = isOrdered ? 'insertOrderedList' : 'insertUnorderedList';
 
+            // 1. Führe den execCommand aus (erstellt die Liste oder toggelt sie)
+            document.execCommand(command, false, null);
+
+            // 2. Suche das umgebende Listen-Element (UL oder OL)
+            const selection = window.getSelection();
             let node = selection.getRangeAt(0).startContainer;
             if (node.nodeType === Node.TEXT_NODE) node = node.parentNode;
             
             let list = node.closest('UL, OL');
 
-            // Wenn bereits eine Liste aktiv ist
             if (list) {
-                // Wenn es der gleiche Listentyp ist (z.B. UL zu UL)
-                if ((isOrdered && list.tagName === 'OL') || (!isOrdered && list.tagName === 'UL')) {
-                    // Nur den Stil ändern (FIX für Punkte zu Kreise oder umgekehrt)
+                // 3. Wenn es eine UL ist, setze den spezifischen Stil (disc oder circle)
+                if (list.tagName === 'UL') {
                     list.style.listStyleType = targetStyle;
-                } else {
-                    // Wenn der Typ gewechselt werden soll (UL zu OL oder umgekehrt), 
-                    // dann execCommand ausführen
-                    const command = isOrdered ? 'insertOrderedList' : 'insertUnorderedList';
-                    document.execCommand(command, false, null); 
-                    
-                    // Manuell den Stil setzen, falls execCommand den Stil nicht übernommen hat
-                    list = node.closest('UL, OL'); // Liste neu suchen
-                    if (list) {
-                         list.style.listStyleType = targetStyle;
-                    }
                 }
-            } else {
-                // Keine Liste aktiv: Neue Liste erstellen
-                const command = isOrdered ? 'insertOrderedList' : 'insertUnorderedList';
-                document.execCommand(command, false, null); 
-                
-                 // Manuell den Stil setzen (falls UL gewünscht ist)
-                 list = node.closest('UL, OL');
-                 if (list && !isOrdered) {
-                    list.style.listStyleType = targetStyle; 
-                 }
+                // 4. Bei OL lassen wir den Stil auf 'decimal' (ist Default oder wird durch execCommand gesetzt)
             }
+
 
             saveSelection();
             updateToolbarState();
@@ -714,7 +702,12 @@ class="text-gray-300 mb-4 text-center">Geben Sie die URL für den Link ein.</p>
                     if (parentList.tagName === 'OL') {
                         activeListStyle = parentList.style.listStyleType || 'decimal'; // 'decimal' als Fallback
                     } else if (parentList.tagName === 'UL') {
+                        // Liest den manuell gesetzten Stil aus
                         activeListStyle = parentList.style.listStyleType || 'disc';
+                        // Korrigiere für den Fall, dass style-type leer ist, aber der Browser disc verwendet (z.B. nach execCommand)
+                        if (parentList.style.listStyleType === '' || parentList.style.listStyleType === 'unset') {
+                            activeListStyle = 'disc'; 
+                        }
                     }
 
                     const activeItem = Array.from(listDropdownItems).find(item => item.dataset.value === activeListStyle);
@@ -724,7 +717,7 @@ class="text-gray-300 mb-4 text-center">Geben Sie die URL für den Link ein.</p>
                     } 
                 } 
             }
-            listDropdownBtn.textContent = 'Aufzählung'; // FIX: Button-Text statisch halten
+            listDropdownBtn.textContent = 'Aufzählung'; 
             
             // 2. Schriftgröße (Dropdown Active Marker FIX)
             sizeDropdownItems.forEach(item => item.classList.remove('active'));
@@ -736,7 +729,7 @@ class="text-gray-300 mb-4 text-center">Geben Sie die URL für den Link ein.</p>
                     activeItem.classList.add('active');
                 } 
             } 
-            sizeDropdownBtn.textContent = 'Schriftgröße'; // FIX: Button-Text statisch halten
+            sizeDropdownBtn.textContent = 'Schriftgröße'; 
 
 
             // 3. Schriftfarbe (Dropdown Active Marker FIX)
@@ -759,7 +752,7 @@ class="text-gray-300 mb-4 text-center">Geben Sie die URL für den Link ein.</p>
                     } 
                 } 
             }
-            colorDropdownBtn.textContent = 'Schriftfarbe'; // FIX: Button-Text statisch halten
+            colorDropdownBtn.textContent = 'Schriftfarbe'; 
         };
 
 
@@ -1149,7 +1142,7 @@ class="text-gray-300 mb-4 text-center">Geben Sie die URL für den Link ein.</p>
         noteEditor.addEventListener('keyup', updateToolbarState); 
         
         // Stellt sicher, dass die Auswahl gespeichert wird, bevor der Button gedrückt wird (für Touch/Click)
-        document.querySelectorAll('.toolbar-btn, .dropdown-item').forEach(btn => {
+        document.querySelectorAll('.toolbar-btn, .dropdown-item, #indent-btn, #outdent-btn').forEach(btn => {
             btn.addEventListener('mousedown', saveSelection);
         });
 
