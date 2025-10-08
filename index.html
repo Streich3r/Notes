@@ -1370,16 +1370,16 @@ const importNotes = (event) => {
                 .then(confirmed => {
                     if (confirmed) {
                         
-                        const existingIds = new Set(notesData.map(n => n.id));
-                        // Timestamp für 1. Januar 2000 00:00:00 UTC (Sicherer, alter Fallback)
-                        const defaultOldDate = 946684800000; 
-                        let errorCount = 0; // Zähler für fehlerhafte Datumsangaben
+                        // FIX #2: Konvertiere alle existierenden IDs zu Strings für einen sicheren Vergleich
+                        const existingIds = new Set(notesData.map(n => String(n.id)));
                         
-                        // ******************************************************
-                        // ** KORRIGIERTER BEREICH: Filtern und Konvertieren **
-                        // ******************************************************
+                        // FIX #1 & #3: Variablen für Datumsfehler-Behandlung
+                        const defaultOldDate = 946684800000; // 1. Januar 2000
+                        let errorCount = 0;
+                        
                         const newNotes = importedNotes
-                            .filter(n => !existingIds.has(n.id))
+                            // FIX #2: Konvertiere die importierte ID ebenfalls zu einem String VOR dem Filtern
+                            .filter(n => !existingIds.has(String(n.id)))
                             .map(note => {
                                 note.id = String(note.id); // Typ-Sicherheit
                                 
@@ -1387,13 +1387,12 @@ const importNotes = (event) => {
                                 let parsedUpdatedAt = new Date(note.updatedAt).getTime();
                                 
                                 if (isNaN(parsedUpdatedAt)) {
-                                    // NEUE FEHLERMELDUNG IN DER KONSOLE
-                                    console.error(`DATUMSFEHLER (ID ${note.id}): Das Datum "${note.updatedAt}" konnte nicht geparst werden. Bitte stellen Sie sicher, dass das Export-Format ISO-konform ist. Fallback: 01.01.2000.`);
+                                    // FIX #3: Fehlermeldung, wenn das Parsen fehlschlägt
+                                    console.error(`DATUMSFEHLER (ID ${note.id}): Das Datum "${note.updatedAt}" konnte nicht geparst werden. Fallback: 01.01.2000.`);
                                     errorCount++;
-                                    note.updatedAt = defaultOldDate; // Sicherer Fallback
+                                    note.updatedAt = defaultOldDate; // FIX #1: Sicherer, alter Fallback
                                 } else {
-                                    // ORIGINAL DATUM WIRD BEIBEHALTEN
-                                    note.updatedAt = parsedUpdatedAt;
+                                    note.updatedAt = parsedUpdatedAt; // ORIGINAL DATUM WIRD BEIBEHALTEN
                                 }
                                 
                                 // 2. CreatedAt-Datum konvertieren
@@ -1402,7 +1401,7 @@ const importNotes = (event) => {
                                 
                                 return note;
                             });
-                        // ENDE KORRIGIERTER BEREICH
+                        // ******************************************************
                         
                         notesData = [...notesData, ...newNotes];
                         
@@ -1418,7 +1417,6 @@ const importNotes = (event) => {
                         
                         let successMessage = `Import abgeschlossen! ${newNotes.length} neue Notizen wurden hinzugefügt.`;
                         if (errorCount > 0) {
-                            // Füge die Warnung zur sichtbaren Modal-Meldung hinzu
                             successMessage += ` ⚠️ ACHTUNG: ${errorCount} Notizen hatten ein fehlerhaftes Datum und wurden auf 01.01.2000 zurückgesetzt. Sehen Sie in der Browser-Konsole nach Details!`;
                         }
                         showModal(successMessage);
