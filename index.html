@@ -627,26 +627,20 @@ class="text-gray-300 mb-4 text-center">Geben Sie die URL für den Link ein.</p>
             }
         };
 
-        /**
-         * Führt einen Formatierungsbefehl aus und stellt den Fokus in den Editor zurück.
-         * @param {string} command - Der execCommand-Befehl.
-         * @param {string} value - Der Wert für den execCommand-Befehl.
-         */
-const executeFormatAndRestore = (command, value = null) => {
-    // 1. Auswahl wiederherstellen (um Formatierung auf markierten Text anzuwenden)
+  const executeFormatAndRestore = (command, value = null) => {
+    // 1. Auswahl wiederherstellen
     restoreSelection(); 
     
     // 2. Führe den Formatierungsbefehl aus
     document.execCommand(command, false, value);
     
-    // FIX 1 (Doppelklick-Problem): Erzwingt den Fokus sofort zurück in den Editor.
-    // Dies ist entscheidend, damit der Browser den Umschaltbefehl (zweiter Klick)
-    // im leeren Editor korrekt als Deaktivierung erkennt.
-    noteEditor.focus();
-    
-    // 3. Auswahl/Range erneut speichern und Toolbar aktualisieren
-    saveSelection();
-    updateToolbarState();
+    // FIX 1: Erzwingt die Statusaktualisierung mit einem minimalen Timeout.
+    // Dies löst das hartnäckige Toggling-Problem.
+    setTimeout(() => {
+        noteEditor.focus(); // Fokus zurücksetzen
+        saveSelection();
+        updateToolbarState(); 
+    }, 0); // Wichtig: 0 ms Timeout ist die Lösung!
 };
 
         const executeLinkCommand = async () => {
@@ -838,6 +832,10 @@ node.parentNode : node;
 // FIX 2: Separate Abfrage für B/I/U, um gleichzeitige Aktivierung im leeren Editor zu ermöglichen.
 // *********************************************************
 
+// *********************************************************
+// FIX 2: Separate Abfrage für B/I/U, um gleichzeitige Aktivierung zu ermöglichen.
+// *********************************************************
+
 // BOLD
 if (document.queryCommandState('bold')) {
     boldBtn.classList.add('active'); 
@@ -861,6 +859,9 @@ if (document.queryCommandState('underline')) {
 
 // Link kann die toggle-Funktion beibehalten, da es meist ein isolierter Zustand ist.
 linkBtn.classList.toggle('active', document.queryCommandState('createLink'));
+
+// 1. Listen-Formate (Dropdown Active Marker FIX)
+listDropdownItems.forEach(item => item.classList.remove('active'));
 
 // 1. Listen-Formate (Dropdown Active Marker FIX)
 
