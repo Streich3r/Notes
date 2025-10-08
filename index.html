@@ -2,265 +2,172 @@
 <html lang="de">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Meine Offline-Notizen</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap');
-        
-        :root{
-            /* BASICS */
-            --btn-gray: #4b5563;
- /* bg-gray-600 */
-            --btn-blue: #2563eb;
- /* bg-blue-600 */
-            --btn-green: #10b981;
- /* bg-green-600 */
-            --btn-yellow: #fbbf24;
- /* bg-yellow-600 */
-            --accent: #6aa1ff;
-        }
-
         body {
             font-family: 'Inter', sans-serif;
             background-color: #000000;
             color: #e2e8f0;
-            -webkit-tap-highlight-color: transparent;
         }
-
         .note-card {
             background-color: #1a202c;
- border-color: #2d3748;
+            border-color: #2d3748;
             cursor: grab;
+            /* FIX: Verhindert Text-Überlauf */
             word-break: break-word;
             overflow-wrap: break-word;
         }
         .note-card.dragging {
             opacity: 0.5;
- transform: scale(0.95);
+            transform: scale(0.95);
         }
         #note-editor {
             min-height: 100px;
             padding: 1rem;
             border-radius: 0.75rem;
-            border: 1px solid #4a5568; 
+            border: 1px solid #4a5568;
             background-color: #1a202c;
-            color: #ffffff;
-            outline: none; 
+            /* Textfarbe auf reines Weiß setzen */
+            color: #ffffff; 
+            outline: none; /* WICHTIG: Entfernt den Browser-Standard-Fokus-Ring */
             transition: all 0.3s;
-            overflow-x: hidden !important; /* 1. HINDERT DEN INHALT DARAN, HORIZONTAL HERAUSZURAGEN */
-            white-space: pre-wrap;
-            word-break: normal;
-            overflow-wrap: break-word; /* Alternative/Ergänzung für besseren Support */
         }
-        
-        #note-editor:focus {
-            outline: none !important;
+        /* FIX: Entfernt jegliche visuelle Änderung beim Fokus (WICHTIG!) */
+        #note-editor:focus,
+        .toolbar-btn:focus, 
+        .dropdown-item:focus, 
+        #sort-dropdown-btn:focus,
+        #save-note-btn:focus,
+        .focus:outline-none {
+            border-color: #4a5568 !important; /* Kein blauer Rand */
+            box-shadow: none !important; /* Keine Box-Shadow */
+            outline: none !important; /* Kein Standard-Outline */
         }
-
-        /* ----------------------------------------------------- */
-        /* --- RECHNER-PRINZIP CSS-REGELN FÜR ALLE BUTTONS --- */
-        /* ----------------------------------------------------- */
-        .calculator-btn, label[for="import-file-input"],
-        #indent-btn,
-        #outdent-btn
-        {
-            -webkit-tap-highlight-color: transparent;
-            touch-action: manipulation;
-            transition: transform .06s ease, background-color 0.2s ease;
-            border: none;
-        }
-
-     
-
-        .calculator-btn:focus, label[for="import-file-input"]:focus {
-            outline: none !important;
- box-shadow: none !important;
-        }
-
-        .calculator-btn:focus-visible, label[for="import-file-input"]:focus-visible {
-            outline: 2px solid var(--accent);
- outline-offset: 2px;
-        }
-        
-        /* Graue Buttons (Toolbar, Sort, Modal-Cancel) */
-        .toolbar-btn, 
-        .dropdown-item,
-        #sort-dropdown-btn,
-        #modal-cancel-btn, 
-        #link-cancel-btn, 
-        .note-action-btn,
-        #indent-btn, /* Fügt den Einrück-Button hier hinzu */
-        #outdent-btn /* Fügt den Ausrück-Button hier hinzu */
-        {
-            background-color: var(--btn-gray) !important;
-        }
-        
-        .toolbar-btn:hover:not(.active),
-        .dropdown-item:hover:not(.active),
-        #sort-dropdown-btn:hover, 
-        #modal-cancel-btn:hover, 
-        #link-cancel-btn:hover, 
-        .note-action-btn:hover,
-        #indent-btn:hover, /* Fügt den Einrück-Button hier hinzu */
-        #outdent-btn:hover /* Fügt den Ausrück-Button hier hinzu */
-        {
-            background-color: var(--btn-gray) !important;
-        }
-        
-        .toolbar-btn:active, 
-        .dropdown-item:active,
-        #sort-dropdown-btn:active,
-        #modal-cancel-btn:active,
-        #link-cancel-btn:active, 
-        #indent-btn:active, /* Fügt den Einrück-Button hier hinzu */
-        #outdent-btn:active, /* Fügt den Ausrück-Button hier hinzu */
-        .note-action-btn:active 
-        {
-             background-color: var(--btn-gray) !important;
-             transform: scale(0.96); 
-        }
-
-
-        /* WICHTIG: Blauer Hintergrund für aktive Toolbar-Buttons und Dropdown-Elemente */
-        .toolbar-btn.active, .dropdown-item.active {
-            background-color: var(--btn-blue) !important;
- color: #ffffff !important;
-        }
-
-        /* Blaue Buttons (Save, Modal-Confirm, Link-Insert) */
-        #save-note-btn, #modal-confirm-btn, #link-insert-btn {
-            background-color: var(--btn-blue) !important;
-        }
-        #save-note-btn:hover, #modal-confirm-btn:hover, #link-insert-btn:hover {
-            background-color: #1d4ed8 !important;
- /* bg-blue-700 */
-        }
-        #save-note-btn:active, #modal-confirm-btn:active, #link-insert-btn:active {
-            background-color: #1e40af !important;
- /* bg-blue-800 */
-        }
-
-        /* Grüne Buttons (Export) */
-        #export-btn {
-            background-color: var(--btn-green) !important;
-        }
-        #export-btn:hover {
-            background-color: #059669 !important;
- /* bg-green-700 */
-        }
-        #export-btn:active {
-            background-color: #047857 !important;
- /* bg-green-800 */
-        }
-        
-        /* Gelbe Buttons (Import) */
-        label[for="import-file-input"] {
-            background-color: var(--btn-green) !important;
-        }
-        label[for="import-file-input"]:hover {
-             background-color: #059669 !important;
- /* bg-yellow-600/700 */
-        }
-        label[for="import-file-input"]:active {
-            background-color: #047857 !important;
- /* bg-yellow-800 */
-        }
-        
-        /* Dropdown Menü Styling */
-        .dropdown-menu {
-            position: absolute;
- z-index: 10;
-            top: 100%;
-            left: 0;
-            margin-top: 0.5rem;
-            background-color: #374151;
- /* bg-gray-700 */
-            border-radius: 0.5rem;
-            padding: 0.25rem;
- box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
-            display: none;
-            flex-direction: column;
-            width: max-content;
-            min-width: 100%;
-        }
-
-        .dropdown-menu.active {
-            display: flex;
-        }
-
         #note-editor:empty:before {
             content: attr(placeholder);
- color: #718096;
+            color: #718096;
             pointer-events: none;
             display: block;
         }
         
-        /* Spezielle Regel für Link-Färbung im Editor */
-        #note-editor a, 
-        .note-card a  {
-            color: #3b82f6 !important; 
- /* Tailwind blue-500 */
-            text-decoration: underline !important; 
+        /* Stil für den aktiven Zustand (sofort blau) */
+        .toolbar-btn.active {
+            background-color: #2563eb;
+            color: #ffffff;
         }
-        
+        .dropdown-item.active {
+            background-color: #2563eb !important;
+            color: #ffffff !important; 
+        }
+
         /* --- STABILISIERTE LISTE-STYLES --- */
-        #note-editor ul, #note-editor ol, .note-card ul, .note-card ol {
-            margin: 0;
- padding-left: 1.5rem; 
-        }
-        
         #note-editor li, .note-card li {
             color: #ffffff !important;
         }
 
+        /* Setzt die Marker (Punkte/Kreise/Zahlen) auf Weiß */
         #note-editor li::marker, .note-card li::marker {
-            color: #ffffff !important;
+            color: #ffffff !important; 
         }
         
-        /* ERGÄNZUNG: Spezielle CSS-Regeln für die Listentypen (aus besser2.txt) */
+        /* Allgemeine Listen-Einrückung */
+        #note-editor ul, #note-editor ol, .note-card ul, .note-card ol {
+            margin-left: 1.5rem;
+        }
+
         /* Kreise (Hohle Kreise) */
         #note-editor ul[style*="list-style-type: circle"], .note-card ul[style*="list-style-type: circle"] {
-            list-style-type: circle !important;
+            list-style-type: circle !important; 
         }
         
-        /* Punkte (Gefüllte Scheiben/Discs) */
+        /* Punkte (Gefüllte Scheiben/Discs - der Standard) */
+        #note-editor ul:not([style]), .note-card ul:not([style]),
         #note-editor ul[style*="list-style-type: disc"], .note-card ul[style*="list-style-type: disc"] {
             list-style-type: disc !important;
         }
         
-        /* Fallback für ul ohne Stil */
-        #note-editor ul:not([style]), .note-card ul:not([style]) {
-             list-style-type: disc !important;
+        #note-editor h2 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-top: 1.5rem;
+            margin-bottom: 0.5rem;
+        }
+        #note-editor h3 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-top: 1rem;
+            margin-bottom: 0.5rem;
         }
         
         #note-editor ol, .note-card ol {
             list-style-type: decimal;
         }
-        
-        /* Stil für die neuen Icon-Buttons */
-        .note-action-btn {
-            width: 38px;
-            height: 38px;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            padding: 0; /* Entfernt internes Padding, da wir feste Größe haben */
-            font-size: 1.25rem; /* Für die Icons */
-            border-radius: 9999px; /* Rund */
+
+        #note-editor blockquote {
+            margin-left: 2rem;
         }
 
+        .dropdown-menu {
+            display: none;
+            position: absolute;
+            z-index: 10;
+            background-color: #2d3748;
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .dropdown-menu.active {
+            display: block;
+        }
     </style>
 </head>
 <body class="bg-black min-h-screen p-4 flex items-center justify-center">
 
     <div class="bg-gray-900 p-6 rounded-3xl shadow-2xl w-full max-w-4xl transition-all duration-300 transform scale-100">
-        
         <header class="mb-6 border-b pb-4 border-gray-700">
             <h1 class="text-4xl font-extrabold text-gray-100 text-center">
                 Meine Offline-Notizen
             </h1>
         </header>
+
+        <div class="mb-6 flex 
+flex-col sm:flex-row gap-4">
+            <input type="text" id="search-input" placeholder="Notizen durchsuchen..." class="w-full sm:w-1/3 p-3 rounded-xl border border-gray-600 bg-gray-800 text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300 focus:outline-none">
+            
+            <div class="flex gap-4 w-full sm:w-2/3">
+                <div class="relative w-full sm:w-1/2">
+                    <button id="sort-dropdown-btn" 
+class="w-full p-3 rounded-xl border border-gray-600 bg-gray-800 text-gray-100 text-left hover:bg-gray-700 transition-colors focus:outline-none">
+                        Sortieren nach: Unsortiert
+                    </button>
+                    <div id="sort-dropdown-menu" class="dropdown-menu mt-2 w-full">
+                     
+    <button class="dropdown-item w-full text-left px-4 py-2 hover:bg-gray-600 rounded-lg active" data-value="unsorted">Unsortiert</button>
+                        <button class="dropdown-item w-full text-left px-4 py-2 hover:bg-gray-600 rounded-lg" data-value="newest">Datum (neueste zuerst)</button>
+                        <button class="dropdown-item w-full text-left px-4 py-2 hover:bg-gray-600 rounded-lg" data-value="oldest">Datum (älteste zuerst)</button>
+                    
+    <button class="dropdown-item w-full text-left px-4 py-2 hover:bg-gray-600 rounded-lg" data-value="title-asc">Titel (A-Z)</button>
+                        <button class="dropdown-item w-full text-left px-4 py-2 hover:bg-gray-600 rounded-lg" data-value="title-desc">Titel (Z-A)</button>
+                    </div>
+                </div>
+
+                <div class="flex 
+gap-2 w-full sm:w-1/2">
+                    <button id="export-btn" class="w-1/2 p-3 rounded-xl border border-gray-600 bg-green-600 text-white font-medium hover:bg-green-700 transition-colors focus:outline-none">
+                        Export 💾
+                    </button>
+                    <label for="import-file-input" 
+class="w-1/2 p-3 rounded-xl border border-gray-600 bg-yellow-600 text-white font-medium hover:bg-yellow-700 transition-colors cursor-pointer text-center flex items-center justify-center focus:outline-none">
+                        Import 📥
+                    </label>
+                    <input type="file" id="import-file-input" accept="application/json" style="display: none;">
+                
+</div>
+                </div>
+        </div>
 
         <div class="mb-6 p-4 bg-gray-800 rounded-2xl shadow-inner">
             <h2 class="text-2xl font-bold text-gray-200 mb-4">Neue Notiz erstellen</h2>
@@ -268,146 +175,92 @@
             <input type="text" id="note-title-input" placeholder="Titel der Notiz (optional)" class="w-full p-3 mb-4 rounded-xl border border-gray-600 bg-gray-800 text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300 focus:outline-none">
   
           
-      
-       <div class="flex flex-wrap gap-2 mb-4 p-2 bg-gray-700 rounded-xl">
-                <button id="bold-btn" class="calculator-btn toolbar-btn p-2 rounded-lg text-gray-200 font-bold">B</button>
-                <button id="italic-btn" class="calculator-btn toolbar-btn p-2 rounded-lg text-gray-200 italic">I</button>
-                <button id="underline-btn" class="calculator-btn toolbar-btn p-2 rounded-lg text-gray-200 underline">U</button>
+            <div class="flex flex-wrap gap-2 mb-4 p-2 bg-gray-700 rounded-xl">
+                <button id="bold-btn" class="toolbar-btn p-2 rounded-lg bg-gray-600 text-gray-200 hover:bg-gray-500 transition-colors font-bold focus:outline-none">B</button>
+                <button id="italic-btn" class="toolbar-btn p-2 rounded-lg bg-gray-600 text-gray-200 hover:bg-gray-500 transition-colors italic focus:outline-none">I</button>
+                <button id="underline-btn" class="toolbar-btn p-2 rounded-lg 
+bg-gray-600 text-gray-200 hover:bg-gray-500 transition-colors underline focus:outline-none">U</button>
                 
-  
-   
                 <div class="relative inline-block">
-                    <button id="list-dropdown-btn" class="calculator-btn toolbar-btn p-2 rounded-lg text-gray-200">
+                    <button id="list-dropdown-btn" class="toolbar-btn p-2 rounded-lg bg-gray-600 text-gray-200 hover:bg-gray-500 transition-colors focus:outline-none">
                         Aufzählung
-                    </button>
           
-           
+          </button>
                     <div id="list-dropdown-menu" class="dropdown-menu">
-                        <button class="calculator-btn dropdown-item w-full text-left px-4 py-2 rounded-lg" data-value="decimal">Nummerierung</button>
-                        <button class="calculator-btn dropdown-item w-full text-left px-4 py-2 rounded-lg" data-value="disc">Punkte</button>
-           
-              <button class="calculator-btn dropdown-item w-full text-left px-4 py-2 rounded-lg" data-value="circle">Kreise</button>
+                        <button class="dropdown-item w-full text-left px-4 py-2 hover:bg-gray-600 rounded-lg" data-value="decimal">Nummerierung</button>
+                        <button class="dropdown-item w-full text-left px-4 py-2 hover:bg-gray-600 rounded-lg" data-value="disc">Punkte</button>
+    
+                        <button class="dropdown-item w-full text-left px-4 py-2 hover:bg-gray-600 rounded-lg" data-value="circle">Kreise</button>
                     </div>
                 </div>
 
+    
                 <div class="relative inline-block">
-                    <button id="size-dropdown-btn" class="calculator-btn toolbar-btn p-2 
- rounded-lg text-gray-200">
+                    <button id="size-dropdown-btn" class="toolbar-btn p-2 rounded-lg bg-gray-600 text-gray-200 hover:bg-gray-500 transition-colors focus:outline-none">
                         Schriftgröße
                     </button>
-                    <div id="size-dropdown-menu" class="dropdown-menu">
-                        <button class="calculator-btn dropdown-item w-full text-left px-4 py-2 rounded-lg" data-value="1">Klein</button>
- 
               
-                        <button class="calculator-btn dropdown-item w-full text-left px-4 py-2 rounded-lg" data-value="3">Mittel</button>
-                        <button class="calculator-btn dropdown-item w-full text-left px-4 py-2 rounded-lg" data-value="5">Groß</button>
+              <div id="size-dropdown-menu" class="dropdown-menu">
+                        <button class="dropdown-item w-full text-left px-4 py-2 hover:bg-gray-600 rounded-lg" data-value="1">Klein</button>
+                        <button class="dropdown-item w-full text-left px-4 py-2 hover:bg-gray-600 rounded-lg" data-value="3">Mittel</button>
+                        <button class="dropdown-item w-full text-left 
+px-4 py-2 hover:bg-gray-600 rounded-lg" data-value="5">Groß</button>
                     </div>
-   
-                 </div>
-
-              
-                <div class="relative inline-block">
-                    <button id="color-dropdown-btn" class="calculator-btn toolbar-btn p-2 rounded-lg text-gray-200">
-                        Schriftfarbe
-     
-                 </button>
-                    <div id="color-dropdown-menu" class="dropdown-menu">
- 
-                        <button class="calculator-btn dropdown-item w-full text-left px-4 py-2 rounded-lg text-white" data-value="white">Weiß</button>
-                        <button class="calculator-btn dropdown-item w-full text-left 
- px-4 py-2 rounded-lg text-red-500" data-value="red">Rot</button>
-                        <button class="calculator-btn dropdown-item w-full text-left px-4 py-2 rounded-lg text-green-500" data-value="green">Grün</button>
-  
-                        <button class="calculator-btn dropdown-item w-full text-left px-4 py-2 rounded-lg text-blue-500" data-value="blue">Blau</button>
-                        <button class="calculator-btn dropdown-item w-full 
- text-left px-4 py-2 rounded-lg text-yellow-500" data-value="yellow">Gelb</button>
-                    </div>
-                
                 </div>
 
-                <button id="link-btn" class="calculator-btn toolbar-btn p-2 rounded-lg text-gray-200">
+                <div class="relative inline-block">
+                    <button id="color-dropdown-btn" class="toolbar-btn p-2 rounded-lg bg-gray-600 text-gray-200 hover:bg-gray-500 transition-colors focus:outline-none">
+              
+                      Schriftfarbe
+                    </button>
+                    <div id="color-dropdown-menu" class="dropdown-menu">
+                        <button class="dropdown-item w-full text-left px-4 py-2 hover:bg-gray-600 rounded-lg text-white" data-value="white">Weiß</button>
+               
+                        <button class="dropdown-item w-full text-left px-4 py-2 hover:bg-gray-600 rounded-lg text-red-500" data-value="red">Rot</button>
+                        <button class="dropdown-item w-full text-left px-4 py-2 hover:bg-gray-600 rounded-lg text-green-500" data-value="green">Grün</button>
+                        <button class="dropdown-item w-full text-left px-4 py-2 hover:bg-gray-600 rounded-lg text-blue-500" data-value="blue">Blau</button>
+                
+                        <button class="dropdown-item w-full text-left px-4 py-2 hover:bg-gray-600 rounded-lg text-yellow-500" data-value="yellow">Gelb</button>
+                        </div>
+                </div>
+
+              
+                <button id="link-btn" class="toolbar-btn p-2 rounded-lg bg-gray-600 text-gray-200 hover:bg-gray-500 transition-colors focus:outline-none">
                     Link
- 
                 </button>
 
-                <button id="indent-btn" class="calculator-btn toolbar-btn p-2 rounded-lg text-gray-200">
+                <button id="indent-btn" class="toolbar-btn p-2 rounded-lg bg-gray-600 text-gray-200 hover:bg-gray-500 transition-colors focus:outline-none">
                     Einrücken
+          
                 </button>
-                <button id="outdent-btn" class="calculator-btn toolbar-btn p-2 rounded-lg text-gray-200">
-     
-                Ausrücken
+                <button id="outdent-btn" class="toolbar-btn p-2 rounded-lg bg-gray-600 text-gray-200 hover:bg-gray-500 transition-colors focus:outline-none">
+                    Ausrücken
                 </button>
             </div>
-     
-        
+            
           
             <div id="note-editor" class="w-full rounded-xl border border-gray-600 bg-gray-800 text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none transition-all duration-300" contenteditable="true" placeholder="Schreiben Sie hier Ihre neue Notiz..."></div>
-  
-           
+            
             <div class="mt-4 flex justify-end space-x-2">
-                <button id="save-note-btn" class="calculator-btn text-white font-medium py-2 px-5 
-rounded-full shadow-lg transform">
+                <button id="save-note-btn" class="bg-blue-600 text-white font-medium py-2 px-5 rounded-full shadow-lg hover:bg-blue-700 transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50">
+                 
                     Notiz speichern
                 </button>
-            
- </div>
-    
-        </div>
-
-        <div class="mb-6 flex 
- flex-col md:flex-row gap-4">
-            <input type="text" id="search-input" placeholder="Notizen durchsuchen..." class="w-full md:w-1/3 p-3 rounded-xl border border-gray-600 bg-gray-800 text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300 focus:outline-none">
-            
-            <div class="flex flex-col sm:flex-row gap-4 w-full md:w-2/3">
-                
-                <div class="relative w-full sm:w-1/2">
-   
-                  <button 
-                        id="sort-dropdown-btn" 
-                        class="calculator-btn w-full p-3 rounded-xl border border-gray-600 bg-gray-800 text-gray-100 text-left">
-                        Sortieren 
- nach: Unsortiert
-                    </button>
-                    <div id="sort-dropdown-menu" class="dropdown-menu">
-                        <button class="calculator-btn dropdown-item w-full text-left px-4 py-2 rounded-lg active" data-value="unsorted">Unsortiert</button>
-                        
- <button class="calculator-btn dropdown-item w-full text-left px-4 py-2 rounded-lg" data-value="newest">Datum (neueste zuerst)</button>
-                        <button class="calculator-btn dropdown-item w-full text-left px-4 py-2 rounded-lg" data-value="oldest">Datum (älteste zuerst)</button>
-                        <button class="calculator-btn dropdown-item w-full text-left px-4 py-2 rounded-lg" data-value="title-asc">Titel (A-Z)</button>
-                       
-  <button class="calculator-btn dropdown-item w-full text-left px-4 py-2 rounded-lg" data-value="title-desc">Titel (Z-A)</button>
-                    </div>
-                </div>
-
-                <div class="flex gap-2 w-full sm:w-1/2">
-                    <button id="export-btn" class="calculator-btn w-1/2 p-3 rounded-xl border border-gray-600 text-white font-medium">
-     
-                    Export 💾
-                    </button>
-                    <label for="import-file-input" 
-                        class="w-1/2 p-3 rounded-xl border border-gray-600 text-white font-medium cursor-pointer text-center flex items-center justify-center">
-   
-                      Import 📥
-                    </label>
-                    <input type="file" id="import-file-input" accept="application/json" style="display: none;">
-                </div>
             </div>
-     
-    </div>
+        </div>
 
         <div id="notes-list" class="space-y-4">
-        </div>
+            </div>
 
-        <div id="loading-indicator" class="text-center 
-text-gray-400 mt-8 hidden">
+        <div id="loading-indicator" class="text-center text-gray-400 mt-8 hidden">
             <div class="animate-spin inline-block w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full"></div>
-            <p class="mt-2">Notizen werden geladen...</p>
+     
+               <p class="mt-2">Notizen werden geladen...</p>
         </div>
 
         <div id="no-notes-message" class="text-center text-gray-400 mt-8 hidden">
- 
             <p>Sie haben noch keine Notizen.
- Fügen Sie eine neue hinzu, um zu beginnen!</p>
+Fügen Sie eine neue hinzu, um zu beginnen!</p>
         </div>
     </div>
 
@@ -415,16 +268,14 @@ text-gray-400 mt-8 hidden">
         <div class="bg-gray-800 p-6 rounded-2xl shadow-xl max-w-sm w-full">
             <p id="modal-text" class="text-lg font-semibold text-gray-200 text-center mb-4"></p>
             <div class="flex justify-center space-x-4">
-                <button id="modal-confirm-btn" class="calculator-btn text-white 
- 
-font-medium py-2 px-5 rounded-full">
+                <button id="modal-confirm-btn" class="bg-blue-600 text-white 
+font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors focus:outline-none">
                     OK
                 </button>
-                <button id="modal-cancel-btn" class="calculator-btn text-gray-200 font-medium py-2 px-5 rounded-full hidden">
+                <button id="modal-cancel-btn" class="bg-gray-600 text-gray-200 font-medium py-2 px-5 rounded-full hover:bg-gray-500 transition-colors hidden focus:outline-none">
                     Abbrechen
-           
-      
-           </button>
+             
+                </button>
             </div>
         </div>
     </div>
@@ -432,24 +283,19 @@ font-medium py-2 px-5 rounded-full">
     <div id="link-modal-backdrop" class="fixed inset-0 bg-gray-950 bg-opacity-75 hidden z-50 flex items-center justify-center">
         <div class="bg-gray-800 p-6 rounded-2xl shadow-xl max-w-lg w-full">
             <h3 class="text-xl font-bold text-gray-200 mb-4 text-center">Link einfügen</h3>
-            
-        
-     <p 
-class="text-gray-300 mb-4 text-center">Geben Sie die URL für den Link ein.</p>
-            <input type="text" id="link-url-input" placeholder="https://beispiel.de" class="w-full p-3 rounded-xl border border-gray-600 bg-gray-900 text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300 focus:outline-none">
+            <p class="text-gray-300 mb-4 text-center">Geben Sie die URL für den Link ein.</p>
+     
+               <input type="text" id="link-url-input" placeholder="https://beispiel.de" class="w-full p-3 rounded-xl border border-gray-600 bg-gray-900 text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300 focus:outline-none">
             <div class="mt-6 flex justify-end space-x-4">
-                <button id="link-cancel-btn" class="calculator-btn text-gray-200 font-medium py-2 px-5 rounded-full">
-                   
-  Abbrechen
- 
+                <button id="link-cancel-btn" class="bg-gray-600 text-gray-200 font-medium py-2 px-5 rounded-full hover:bg-gray-500 transition-colors focus:outline-none">
+                    Abbrechen
                 </button>
-                <button id="link-insert-btn" class="calculator-btn text-white font-medium py-2 px-5 rounded-full">
+ 
+                <button id="link-insert-btn" class="bg-blue-600 text-white font-medium py-2 px-5 rounded-full hover:bg-blue-700 transition-colors focus:outline-none">
                     Einfügen
                 </button>
             </div>
         </div>
-   
- 
     </div>
 
     <script>
@@ -468,11 +314,9 @@ class="text-gray-300 mb-4 text-center">Geben Sie die URL für den Link ein.</p>
         const indentBtn = document.getElementById('indent-btn');
         const outdentBtn = document.getElementById('outdent-btn');
         const linkBtn = document.getElementById('link-btn');
-
         const listDropdownMenu = document.getElementById('list-dropdown-menu');
         const listDropdownBtn = document.getElementById('list-dropdown-btn');
         const listDropdownItems = listDropdownMenu.querySelectorAll('.dropdown-item');
-
         const sizeDropdownMenu = document.getElementById('size-dropdown-menu');
         const sizeDropdownBtn = document.getElementById('size-dropdown-btn');
         const sizeDropdownItems = sizeDropdownMenu.querySelectorAll('.dropdown-item');
@@ -485,17 +329,16 @@ class="text-gray-300 mb-4 text-center">Geben Sie die URL für den Link ein.</p>
         const sortDropdownBtn = document.getElementById('sort-dropdown-btn');
         const sortDropdownMenu = document.getElementById('sort-dropdown-menu');
         const sortDropdownItems = sortDropdownMenu.querySelectorAll('.dropdown-item');
-
+        
         // KONSTANTEN FÜR IMPORT/EXPORT
         const exportBtn = document.getElementById('export-btn');
         const importFileInput = document.getElementById('import-file-input');
-
+        
         // Modal-Elemente
         const modalBackdrop = document.getElementById('modal-backdrop');
         const modalText = document.getElementById('modal-text');
         const modalConfirmBtn = document.getElementById('modal-confirm-btn');
         const modalCancelBtn = document.getElementById('modal-cancel-btn');
-        
         // Link-Modal-Elemente
         const linkModalBackdrop = document.getElementById('link-modal-backdrop');
         const linkUrlInput = document.getElementById('link-url-input');
@@ -504,446 +347,83 @@ class="text-gray-300 mb-4 text-center">Geben Sie die URL für den Link ein.</p>
 
         let notesData = [];
         let editingNoteId = null;
-        let savedRange; // Zum Speichern der Auswahl
+        let savedRange;
+        // Zum Speichern der Auswahl
         let currentSortMethod = 'unsorted';
-        
         // Speicherschlüssel als Konstante definieren
         const NOTES_STORAGE_KEY = 'notes';
-
+        
+        // ** GEÄNDERT: 'black' ENTFERNT **
         const colorMap = {
             'red': '#ff0000',
             'green': '#008000',
-            'blue': '#3b82f6', // Etwas helleres Blau, das gut auf dem dunklen Hintergrund sichtbar ist
+            'blue': '#3b82f6', 
             'yellow': '#ffff00',
             'white': '#ffffff'
         };
-
         const sizeMap = {
-            '1': 'Klein',
-            '3': 'Mittel',
-            '5': 'Groß'
+            '1': '12px',
+            '3': '16px',
+            '5': '24px'
         };
-
         // Drag-and-Drop-Variablen
         let draggedItem = null;
 
-        // ******************************************************
-        // ** HELPER FUNKTIONEN **
-        // ******************************************************
-
         /**
-         * Konvertiert einen RGB-Farbstring in einen Hex-String.
-         * Nötig, da document.queryCommandValue('foreColor') oft RGB zurückgibt.
+         * Zeigt ein benutzerdefiniertes Modal anstelle von alert().
          */
-        const rgbToHex = (rgb) => {
-            const matches = rgb.match(/^rgb\((\d+),\s*(\d+),\s*(\d+)\)$/);
-            if (!matches) return rgb; // Wenn keine RGB-Daten, gib den ursprünglichen Wert zurück
-            const hex = (x) => ("0" + parseInt(x).toString(16)).slice(-2);
-            return "#" + hex(matches[1]) + hex(matches[2]) + hex(matches[3]);
-        };
-
-        // ******************************************************
-        // ** MODAL LOGIK **
-        // ******************************************************
-
         const showModal = (message, showCancelButton = false) => {
             return new Promise(resolve => {
                 modalText.textContent = message;
                 modalCancelBtn.style.display = showCancelButton ? 'inline-block' : 'none';
                 modalBackdrop.classList.remove('hidden');
-
                 const confirmHandler = () => {
                     modalBackdrop.classList.add('hidden');
                     resolve(true);
                 };
-
                 const cancelHandler = () => {
                     modalBackdrop.classList.add('hidden');
                     resolve(false);
                 };
-
                 modalConfirmBtn.onclick = confirmHandler;
                 modalCancelBtn.onclick = cancelHandler;
             });
         };
 
+        /**
+         * Zeigt ein Link-Modal an.
+         */
         const showLinkModal = () => {
             return new Promise(resolve => {
                 linkUrlInput.value = '';
                 linkModalBackdrop.classList.remove('hidden');
-
                 const insertHandler = () => {
                     linkModalBackdrop.classList.add('hidden');
                     resolve(linkUrlInput.value);
                 };
-
                 const cancelHandler = () => {
                     linkModalBackdrop.classList.add('hidden');
                     resolve(null);
                 };
-
-                // Einmalige Event Listener, um Konflikte zu vermeiden
                 linkInsertBtn.onclick = insertHandler;
                 linkCancelBtn.onclick = cancelHandler;
-                
-                // Fokus auf das Eingabefeld, sobald das Modal geöffnet wird
-                linkUrlInput.focus();
             });
         };
-
-        // ******************************************************
-        // ** SELECTION/FOCUS LOGIK (WICHTIG für Toolbar) **
-        // ******************************************************
-
-        const getSelectionRange = () => {
-            const selection = window.getSelection();
-            if (selection.rangeCount > 0) {
-                return selection.getRangeAt(0);
-            }
-            return null;
-        };
-
-        const saveSelection = () => {
-            savedRange = getSelectionRange();
-        };
-
-        const restoreSelection = () => {
-            if (savedRange) {
-                const selection = window.getSelection();
-                selection.removeAllRanges();
-                selection.addRange(savedRange);
-                savedRange = null; 
-            }
-        };
-
+        
+        // ** NEU: Auswahl aufheben (simuliert Touch-Klick) **
         const collapseSelection = () => {
             const selection = window.getSelection();
             if (selection.rangeCount > 0) {
-                const range = selection.getRangeAt(0);
-                // collapse auf das Ende, um den Cursor zu positionieren
-                range.collapse(false); 
-                selection.removeAllRanges();
-                selection.addRange(range);
+                // Hebt die aktive Textmarkierung auf und lässt nur den Cursor stehen
+                selection.collapseToEnd(); 
             }
-        };
-
-        // work2
-const executeFormatAndRestore = (command, value = null) => {
-    // 1. Auswahl wiederherstellen
-    restoreSelection(); 
-    
-    // 2. Führe den Formatierungsbefehl aus
-    document.execCommand(command, false, value);
-    
-    // AGGRESSIVER FIX: Erzwingt einen HTML-Block (wie <p>), um den Zustand zu stabilisieren, 
-    // falls der Editor leer ist und keine Auswahl existiert. Dies ist notwendig,
-    // damit der Browser den Umschalt-Status (Toggle) korrekt registriert.
-    if (command === 'bold' || command === 'italic' || command === 'underline') {
-        document.execCommand('formatBlock', false, 'p'); 
-    }
-    
-    // 3. Statusaktualisierung mit minimaler Verzögerung (Timeout-Fix)
-    // Dies löst alle restlichen Timing-Probleme.
-    setTimeout(() => {
-        noteEditor.focus(); 
-        saveSelection();
-        updateToolbarState(); 
-    }, 0); 
-};
-
-        const executeLinkCommand = async () => {
-            // 1. Auswahl speichern
-            saveSelection();
-            // 2. Modal anzeigen und auf URL warten
-            const url = await showLinkModal();
-            // 3. Auswahl wiederherstellen 
-            restoreSelection();
-            if (url) {
-                // Führt den Link-Befehl aus und ersetzt die aktuelle Auswahl
-                document.execCommand('createLink', false, url);
-                // Manuelle Korrektur für target="_blank"
-                const selection = window.getSelection();
-                const node = selection.anchorNode;
-                
-                // Versuche, das umgebende A-Tag zu finden
-                let linkElement = node.nodeType === Node.TEXT_NODE ?
-node.parentNode : node;
-                while (linkElement && linkElement !== noteEditor && linkElement.tagName !== 'A') {
-                    linkElement = linkElement.parentNode;
-                }
-                
-                if (linkElement && linkElement.tagName === 'A') {
-                    linkElement.setAttribute('target', '_blank');
-                }
-            }
-            
-            // 4. Fokus in den Editor zurücksetzen
-            noteEditor.focus();
-            updateToolbarState(); 
-        };
-        
-
-        // ******************************************************
-        // ** AUFZÄHLUNGSLOGIK **
-        // ******************************************************
-
-        /**
-         * Findet das nächste Block-Level-Element (p, div, li, hx)
-         * in Bezug auf den aktuellen Cursor innerhalb des noteEditor.
-         */
-        const getCurrentBlockElement = (selection) => {
-            if (!selection.rangeCount) return null;
-            let node = selection.getRangeAt(0).startContainer;
-            
-            // Wenn es ein Textknoten ist, gehe zum übergeordneten Element
-            if (node.nodeType === Node.TEXT_NODE) {
-                node = node.parentNode;
-            }
-            
-            // Finde den nächsten Block-Level-Elternteil (P, DIV, LI)
-            while (node && node !== noteEditor) {
-                const tagName = node.tagName;
-                // Füge DIV hinzu, falls der Editor ein leeres DIV erstellt (z.B. bei Enter)
-                if (['P', 'DIV', 'LI', 'H1', 'H2', 'H3'].includes(tagName)) {
-                    return node;
-                }
-                node = node.parentNode;
-            }
-            
-            return null;
         };
 
         /**
-         * Wendet eine benutzerdefinierte Listenformatierung (ul/ol mit Stil) an.
-         * @param {string} targetStyle - 'decimal', 'disc', 'circle'
+         * Speichert Notizen im lokalen Speicher des Browsers.
          */
-        const toggleCustomList = (targetStyle) => {
-            restoreSelection(); // Auswahl wiederherstellen
-            noteEditor.focus(); // Fokus setzen
-            
-            const selection = window.getSelection();
-            if (!selection || !noteEditor.contains(selection.anchorNode)) return;
-
-            const currentBlock = getCurrentBlockElement(selection);
-            
-            // Ermittle den aktuellen Listentyp (UL oder OL), falls vorhanden
-            const isCurrentlyLi = currentBlock && currentBlock.tagName === 'LI';
-            const currentListType = isCurrentlyLi ? currentBlock.parentNode.tagName : null;
-
-            // 1. ANFANG: KEINE LISTE VORHANDEN ODER WIRKLICH EIN NEUES BLOCK-ELEMENT (P/DIV)
-            if (!currentBlock || currentBlock.tagName !== 'LI') {
-                const command = targetStyle === 'decimal' ? 'insertOrderedList' : 'insertUnorderedList';
-                document.execCommand(command);
-
-                // Nach execCommand befindet sich der Cursor wahrscheinlich in einem LI.
-                // Wir müssen den Stil sofort anwenden.
-                const newBlock = getCurrentBlockElement(selection); 
-                if (newBlock && newBlock.tagName === 'LI') {
-                    const parentList = newBlock.parentNode;
-                    if (parentList.tagName === 'UL') {
-                        parentList.style.listStyleType = targetStyle;
-                    }
-                }
-                saveSelection();
-                return; // Aktion beendet
-            } 
-            
-            // 2. ZIEL: LISTE AUFHEBEN (LI -> P/DIV)
-            if ((targetStyle === 'disc' && currentListType === 'UL' && currentBlock.parentNode.style.listStyleType === 'disc') ||
-                (targetStyle === 'circle' && currentListType === 'UL' && currentBlock.parentNode.style.listStyleType === 'circle') ||
-                (targetStyle === 'decimal' && currentListType === 'OL')
-            ) {
-                // Führt Outdent aus, was die Liste auflösen kann
-                document.execCommand('outdent'); 
-                saveSelection();
-                return;
-            }
-
-            // 3. ZIEL: STIL-WECHSEL INNERHALB UL (disc <-> circle)
-            if (isCurrentlyLi && currentListType === 'UL' && targetStyle !== 'decimal') {
-                const parentList = currentBlock.parentNode;
-                const targetMarkerStyle = targetStyle === 'disc' ? 'disc' : targetStyle; 
-                // Ändere nur den Stil der Elternliste
-                parentList.style.listStyleType = targetMarkerStyle;
-                
-                // Cursor wiederherstellen
-                collapseSelection();
-                saveSelection();
-                return; // Aktion beendet
-            }
-            
-            // 4. ZIEL: AKTUELL UL ODER OL, ABER ZU ANDERER LISTE WECHSELN (z.B. UL zu OL)
-            if (isCurrentlyLi) {
-                let command = '';
-                if (targetStyle === 'decimal' && currentListType === 'UL') {
-                    command = 'insertOrderedList';
-                } else if ((targetStyle === 'disc' || targetStyle === 'circle') && currentListType === 'OL') {
-                    command = 'insertUnorderedList';
-                }
-
-                if (command) {
-                    document.execCommand(command);
-                    
-                    // Wende den Stil nach dem Wechsel an, da der Browser den Standardstil verwendet
-                    const newBlock = getCurrentBlockElement(selection);
-                    if (newBlock && newBlock.tagName === 'LI') {
-                        const parentList = newBlock.parentNode;
-                        if (parentList.tagName === 'UL') {
-                            parentList.style.listStyleType = targetStyle; // Wende den Stil an
-                        }
-                    }
-                }
-            }
-            saveSelection();
-        };
-
-        // ******************************************************
-        // ** FORMATIERUNGSLOGIK **
-        // ******************************************************
-
-        const applyFormat = (command, value = null) => {
-            noteEditor.focus();
-            try {
-                document.execCommand(command, false, value);
-            } catch (e) {
-                // Ignoriere Fehler wie 'applyFormat("foreColor", "white")'
-            }
-            collapseSelection();
-            updateToolbarState(); // Aktualisiert den Status nach der Anwendung
-        };
-
-        // ******************************************************
-        // ** TOOLBAR AKTUALISIERUNG (ACTIVE MARKER) LOGIK **
-        // ******************************************************
-        
-        const updateToolbarState = () => {
-            const selection = window.getSelection();
-
-            // FÜR FOKUS/CURSOR RÜCKKEHR: Speichere die Auswahl bei MouseUp oder KeyUp
-            if (document.activeElement === noteEditor) {
-                saveSelection();
-            }
-
-            if (selection.rangeCount === 0 || !noteEditor.contains(selection.anchorNode)) {
-                // Alle Buttons/Dropdowns de-aktivieren, wenn der Fokus nicht im Editor ist
-                document.querySelectorAll('.toolbar-btn').forEach(btn => btn.classList.remove('active'));
-                document.querySelectorAll('.dropdown-item').forEach(item => item.classList.remove('active'));
-                
-                // Reset Dropdown Button Text
-                listDropdownBtn.textContent = 'Aufzählung';
-                sizeDropdownBtn.textContent = 'Schriftgröße';
-                colorDropdownBtn.textContent = 'Schriftfarbe';
-                return;
-            }
-
-          // *********************************************************
-// FIX 2: Separate Abfrage für B/I/U, um gleichzeitige Aktivierung im leeren Editor zu ermöglichen.
-// *********************************************************
-
-// *********************************************************
-// FIX 2: Separate Abfrage für B/I/U, um gleichzeitige Aktivierung zu ermöglichen.(work1)
-// *********************************************************
-
-// Innerhalb der Funktion updateToolbarState()
-
-// Innerhalb der Funktion updateToolbarState()
-
-// BOLD
-if (document.queryCommandState('bold')) {
-    boldBtn.classList.add('active'); 
-} else {
-    boldBtn.classList.remove('active');
-}
-
-// ITALIC
-if (document.queryCommandState('italic')) {
-    italicBtn.classList.add('active'); 
-} else {
-    italicBtn.classList.remove('active');
-}
-
-// UNDERLINE
-if (document.queryCommandState('underline')) {
-    underlineBtn.classList.add('active'); 
-} else {
-    underlineBtn.classList.remove('active');
-}
-// ...
-
-// Link kann die toggle-Funktion beibehalten
-linkBtn.classList.toggle('active', document.queryCommandState('createLink'));
-
-// ... (Rest der Funktion folgt)
-
-// 1. Listen-Formate (Dropdown Active Marker FIX)
-listDropdownItems.forEach(item => item.classList.remove('active'));
-
-// 1. Listen-Formate (Dropdown Active Marker FIX)
-
-            // 1. Listen-Formate (Dropdown Active Marker FIX)
-            listDropdownItems.forEach(item => item.classList.remove('active'));
-            const currentBlock = getCurrentBlockElement(selection);
-            if (currentBlock) {
-                let parentList = currentBlock.closest('UL, OL'); // Finde die Liste, selbst wenn LI ausgewählt ist
-                if (parentList) {
-                    let activeListStyle = 'disc'; // Default for UL
-                    if (parentList.tagName === 'OL') {
-                        activeListStyle = parentList.style.listStyleType || 'decimal'; // 'decimal' als Fallback
-                    } else if (parentList.tagName === 'UL') {
-                        activeListStyle = parentList.style.listStyleType || 'disc';
-                    }
-                    const activeItem = Array.from(listDropdownItems).find(item => item.dataset.value === activeListStyle);
-                    if (activeItem) {
-                        activeItem.classList.add('active'); 
-                    }
-                }
-            }
-            listDropdownBtn.textContent = 'Aufzählung'; // FIX: Button-Text statisch halten
-
-            // 2. Schriftgröße (Dropdown Active Marker FIX)
-            sizeDropdownItems.forEach(item => item.classList.remove('active'));
-            // queryCommandValue gibt die numerische Größe (1-7) zurück
-            let currentSize = document.queryCommandValue('fontSize');
-            if (currentSize) {
-                const activeItem = Array.from(sizeDropdownItems).find(item => item.dataset.value === currentSize);
-                if (activeItem) {
-                    activeItem.classList.add('active'); 
-                }
-            }
-            sizeDropdownBtn.textContent = 'Schriftgröße'; // FIX: Button-Text statisch halten
-
-            // 3. Schriftfarbe (Dropdown Active Marker FIX)
-            colorDropdownItems.forEach(item => item.classList.remove('active'));
-            let currentColor = document.queryCommandValue('foreColor');
-            if (currentColor) {
-                // Farbe in Hex konvertieren, falls RGB
-                if (currentColor.startsWith('rgb')) {
-                    currentColor = rgbToHex(currentColor);
-                }
-
-                // Finde den passenden Key in colorMap
-                const colorKey = Object.keys(colorMap).find(key => colorMap[key].toLowerCase() === currentColor.toLowerCase());
-                if (colorKey) {
-                    const activeItem = Array.from(colorDropdownItems).find(item => item.dataset.value === colorKey);
-                    if (activeItem) {
-                        activeItem.classList.add('active'); 
-                    }
-                }
-            }
-            colorDropdownBtn.textContent = 'Schriftfarbe'; // FIX: Button-Text statisch halten
-        };
-
-        // ******************************************************
-        // ** STORAGE UND RENDERING LOGIK **
-        // ******************************************************
-        
         const saveNotesToLocal = () => {
             try {
-                // Nur die Reihenfolge in der unsortierten Ansicht speichern
-                if (currentSortMethod === 'unsorted') {
-                    const unsortedOrder = notesData.map(note => note.id);
-                    localStorage.setItem('notes-order', JSON.stringify(unsortedOrder));
-                }
                 localStorage.setItem(NOTES_STORAGE_KEY, JSON.stringify(notesData));
             } catch (e) {
                 console.error("Fehler beim Speichern der Notizen im lokalen Speicher:", e);
@@ -951,319 +431,616 @@ listDropdownItems.forEach(item => item.classList.remove('active'));
             }
         };
 
+        /**
+         * Lädt Notizen aus dem lokalen Speicher des Browsers und wendet die Sortierung an.
+         */
         const loadNotesFromLocal = () => {
             try {
                 const storedNotes = localStorage.getItem(NOTES_STORAGE_KEY);
                 notesData = storedNotes ? JSON.parse(storedNotes) : [];
                 
-                // Lade die gespeicherte Reihenfolge für 'unsorted'
-                const storedOrder = localStorage.getItem('notes-order');
-                if (storedOrder && storedOrder.length > 0) {
-                    const orderArray = JSON.parse(storedOrder);
-                    
-                    // Sortiere notesData basierend auf der gespeicherten ID-Liste
-                    notesData.sort((a, b) => {
-                        const indexA = orderArray.indexOf(a.id);
-                        const indexB = orderArray.indexOf(b.id);
-                        if (indexA === -1 || indexB === -1) {
-                            // Neue Notizen ans Ende
-                            return a.id - b.id;
-                        }
-                        return indexA - indexB;
-                    });
-                } else {
-                    // Fallback: Neueste zuerst nach ID (dem ursprünglichen Standard)
-                    notesData.sort((a, b) => b.id - a.id);
-                }
-                
-                sortNotes(currentSortMethod, true); // Stellt die Sortierung ein und rendert
+                // Wende die Standard-Sortierung an, um die UI zu initialisieren und zu rendern
+                sortNotes(currentSortMethod);
             } catch (e) {
                 console.error("Fehler beim Laden der Notizen aus dem lokalen Speicher:", e);
-                showModal("Ihre Notizen konnten nicht geladen werden.");
+                notesData = [];
+                showModal("Ihre Notizen konnten nicht geladen werden. Möglicherweise ist die Datenstruktur beschädigt.");
+                renderNotes();
             }
-        };
-
-        /**
-         * Erzeugt eine eindeutige ID (z.B. basierend auf Zeitstempel und Zufall).
-         */
-        const generateUniqueId = () => {
-            return Date.now().toString(36) + Math.random().toString(36).substring(2, 7);
         };
         
-        /**
-         * Bereinigt den HTML-Inhalt des Editors, indem unnötige Attribute entfernt werden.
-         * Behält nur die erlaubten Formatierungen.
-         * @param {string} html - Der unbereinigte HTML-String.
-         */
-        const sanitizeHtml = (html) => {
-            const tempDiv = document.createElement('div');
-            tempDiv.innerHTML = html;
-            
-            // Erlaubte Tags und Attribute
-            const allowedTags = ['b', 'i', 'u', 'a', 'p', 'div', 'ul', 'ol', 'li', 'font'];
-            const allowedAttributes = {
-                'a': ['href', 'target'],
-                'font': ['size', 'color'],
-                'ul': ['style'],
-                'ol': ['style'],
-            };
-
-            const traverse = (node) => {
-                if (node.nodeType === Node.ELEMENT_NODE) {
-                    const tagName = node.tagName.toLowerCase();
-                    
-                    // 1. Unerlaubte Tags entfernen (oder durch ihren Inhalt ersetzen)
-                    if (!allowedTags.includes(tagName)) {
-                        let parent = node.parentNode;
-                        while (node.firstChild) {
-                            parent.insertBefore(node.firstChild, node);
-                        }
-                        parent.removeChild(node);
-                        return; // Weiter mit dem nächsten Geschwisterknoten
-                    }
-
-                    // 2. Unerlaubte Attribute entfernen
-                    const attributesToRemove = [];
-                    for (let i = 0; i < node.attributes.length; i++) {
-                        const attr = node.attributes[i];
-                        const allowedForTag = allowedAttributes[tagName] || [];
-                        if (!allowedForTag.includes(attr.name)) {
-                            attributesToRemove.push(attr.name);
-                        }
-                    }
-                    attributesToRemove.forEach(name => node.removeAttribute(name));
-                    
-                    // 3. Rekursive Verarbeitung der Kinder
-                    let child = node.firstChild;
-                    while (child) {
-                        const nextChild = child.nextSibling;
-                        traverse(child);
-                        child = nextChild;
-                    }
-                } else if (node.nodeType === Node.TEXT_NODE) {
-                    // Textknoten behalten
-                } else {
-                    // Alle anderen Knotentypen (Kommentare, etc.) entfernen
-                    node.parentNode.removeChild(node);
-                }
-            };
-
-            traverse(tempDiv);
-            
-            // Spezialbehandlung: Wenn nur <br> übrig bleiben, ersetze durch leeren String
-            let cleanedHtml = tempDiv.innerHTML.trim();
-            if (cleanedHtml === '<br>') return '';
-
-            return cleanedHtml;
-        };
-
-        const saveNote = () => {
-            // Aktuelle Auswahl verwerfen, damit der Fokus im Editor bleibt, falls er dort war
-            if (document.activeElement === noteEditor) {
-                noteEditor.blur();
+        // --- IMPORT/EXPORT FUNKTIONEN ---
+        const exportNotes = async () => { 
+            const notesJson = localStorage.getItem(NOTES_STORAGE_KEY);
+            if (!notesJson || notesJson === '[]') {
+                await showModal('Keine Notizen zum Exportieren vorhanden.', false);
+                return;
             }
 
-            const title = noteTitleInput.value.trim();
-            const content = sanitizeHtml(noteEditor.innerHTML);
+            const blob = new Blob([notesJson], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
 
-            if (!title && !content) {
-                showModal("Die Notiz ist leer. Bitte geben Sie einen Titel oder Inhalt ein.");
+            a.href = url;
+            a.download = `Meine_Offline_Notizen_${new Date().toISOString().slice(0, 10)}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            await showModal('Notizen erfolgreich exportiert!', false);
+        };
+        const importNotes = (event) => {
+             const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                try {
+                    const importedNotes = JSON.parse(e.target.result);
+                    if (Array.isArray(importedNotes)) {
+                        
+                        // NEUE LOGIK: Kombiniert die bestehenden Notizen mit den importierten Notizen.
+                        notesData = notesData.concat(importedNotes);
+                        
+                        // Speichere die kombinierte Liste in Local Storage
+                        saveNotesToLocal();
+                        
+                        // Lade die Notizen neu und rendere sie (wendet auch die Sortierung an)
+                        loadNotesFromLocal(); 
+                        
+                        await showModal('Notizen erfolgreich importiert und geladen!', false);
+                    } else {
+                        await showModal('Fehler: Die importierte Datei hat kein gültiges Notizformat.', false);
+                    }
+                } catch (error) {
+                    await showModal('Fehler beim Lesen oder Parsen der Datei.', false);
+                    console.error('Import error:', error);
+                }
+            };
+            reader.onerror = () => {
+                showModal('Fehler beim Lesen der Datei.', false);
+            };
+            reader.readAsText(file);
+        };
+        // --- ENDE IMPORT/EXPORT FUNKTIONEN ---
+
+
+        /**
+         * Wendet Formatierung auf den ausgewählten Text im Editor an.
+         */
+        const applyFormat = (command, value = null) => {
+            document.execCommand(command, false, value);
+        };
+
+        /**
+         * Helferfunktion zum Konvertieren von RGB-Strings (wie von Style.color) in Hex-Codes.
+         */
+         const rgbToHex = (rgb) => {
+            if (!rgb || !rgb.startsWith('rgb')) return rgb;
+            if(rgb.trim() === '') return '';
+            
+            const parts = rgb.match(/^rgb\((\d+),\s*(\d+),\s*(\d+)\)$/);
+            if (!parts) return rgb;
+
+            const hex = (x) => {
+                const h = parseInt(x).toString(16);
+                return h.length === 1 ? '0' + h : h;
+            };
+            return '#' + hex(parts[1]) + hex(parts[2]) + hex(parts[3]);
+        };
+
+        /**
+         * Aktualisiert den visuellen Zustand der Werkzeugleistenschaltflächen.
+         */
+        const updateToolbarState = () => {
+            // Alle aktiven Zustände zurücksetzen
+            document.querySelectorAll('.toolbar-btn.active').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.dropdown-item.active').forEach(btn => btn.classList.remove('active'));
+            
+            const selection = window.getSelection();
+            
+            // Wenn keine Auswahl im Editor ist ODER der Fokus verloren ging
+            if (!selection || selection.rangeCount === 0 || !noteEditor.contains(selection.anchorNode)) {
+                // Setze Standardzustände für Farbe/Größe
+                const defaultColorBtn = document.querySelector(`.dropdown-item[data-value="white"]`);
+                if (defaultColorBtn) defaultColorBtn.classList.add('active');
+                
+                const defaultSizeBtn = document.querySelector(`.dropdown-item[data-value="3"]`);
+                if (defaultSizeBtn) defaultSizeBtn.classList.add('active');
+                
+                return;
+            }
+
+            // Status für Bold, Italic, Underline etc.
+            if (document.queryCommandState('bold')) boldBtn.classList.add('active');
+            if (document.queryCommandState('italic')) italicBtn.classList.add('active');
+            if (document.queryCommandState('underline')) underlineBtn.classList.add('active');
+            if (document.queryCommandState('indent')) indentBtn.classList.add('active');
+            if (document.queryCommandState('outdent')) outdentBtn.classList.add('active');
+            if (document.queryCommandState('createLink')) linkBtn.classList.add('active');
+            
+            // Status für Schriftgröße
+            const currentSize = document.queryCommandValue('fontSize');
+            const sizeButton = document.querySelector(`.dropdown-item[data-value="${currentSize || '3'}"]`); 
+            if (sizeButton) sizeButton.classList.add('active');
+
+
+            // Status für Schriftfarbe
+            let colorFound = false;
+            let currentNode = selection.anchorNode.nodeType === Node.TEXT_NODE ? selection.anchorNode.parentNode : selection.anchorNode;
+            
+            // 1. Prüfe commandValue
+            const queryColor = document.queryCommandValue('foreColor');
+            // Hinweis: Farbe Schwarz wird ignoriert, da der Hintergrund dunkel ist.
+            if (queryColor && queryColor !== 'rgb(0, 0, 0)' && queryColor.toLowerCase() !== '#000000') { 
+                const hexColor = rgbToHex(queryColor);
+                const colorKey = Object.keys(colorMap).find(key => colorMap[key].toLowerCase() === hexColor);
+                if (colorKey) {
+                    const colorButton = document.querySelector(`.dropdown-item[data-value="${colorKey}"]`);
+                    if (colorButton) {
+                        colorButton.classList.add('active');
+                        colorFound = true;
+                    }
+                }
+            }
+            
+            // 2. Prüfe den DOM-Baum
+            if (!colorFound) {
+                 while (currentNode && currentNode !== noteEditor) {
+                    const currentColor = currentNode.style.color || currentNode.getAttribute('color');
+                    if (currentColor) {
+                        const normalizedColor = currentColor.toLowerCase().trim();
+                        const hexColor = rgbToHex(normalizedColor);
+                        const colorKey = Object.keys(colorMap).find(key => colorMap[key].toLowerCase() === hexColor || colorMap[key].toLowerCase() === normalizedColor);
+                        
+                        if (colorKey) {
+                            const colorButton = document.querySelector(`.dropdown-item[data-value="${colorKey}"]`);
+                            if (colorButton) {
+                                colorButton.classList.add('active');
+                                colorFound = true;
+                                break; 
+                            }
+                        }
+                    }
+                    currentNode = currentNode.parentElement;
+                }
+            }
+            
+
+            // Wenn keine explizite Farbe gefunden wurde, gehe von der Standardfarbe Weiß aus
+            if (!colorFound) {
+                 const defaultColorBtn = document.querySelector(`.dropdown-item[data-value="white"]`);
+                 if (defaultColorBtn) defaultColorBtn.classList.add('active');
+            }
+
+            // Status für Listen: Nur aktiv, wenn vorhanden
+            if (document.queryCommandState('insertOrderedList')) {
+                // Nummerierte Liste ist aktiv
+                const decimalBtn = document.querySelector(`.dropdown-item[data-value="decimal"]`);
+                if (decimalBtn) decimalBtn.classList.add('active');
+            } else if (document.queryCommandState('insertUnorderedList')) {
+                // Ungeordnete Liste ist aktiv
+                const parentList = selection.anchorNode.closest('ul');
+                if (parentList) {
+                    // Verwenden des Inline-Styles für aktive State-Prüfung
+                    const style = parentList.style.listStyleType || 'disc'; 
+                    // Setze den aktiven Status basierend auf dem erzwungenen Style (oder disc, wenn leer)
+                    const styleButton = document.querySelector(`.dropdown-item[data-value="${style === '' ? 'disc' : style}"]`);
+                    if (styleButton) styleButton.classList.add('active');
+                } else {
+                     // Fallback: Wenn UL aktiv, aber kein Parent gefunden, wähle disc als aktiv
+                    const defaultListBtn = document.querySelector(`.dropdown-item[data-value="disc"]`);
+                    if (defaultListBtn) defaultListBtn.classList.add('active');
+                }
+            } 
+        };
+        
+        function renderNotes() { 
+            notesList.innerHTML = '';
+            const searchTerm = searchInput.value.toLowerCase();
+            const filteredNotes = notesData.filter(note => {
+                return note.title.toLowerCase().includes(searchTerm) || note.content.toLowerCase().includes(searchTerm);
+            });
+            if (filteredNotes.length === 0 && notesData.length > 0) {
+                 noNotesMessage.innerHTML = `<p>Keine Notizen gefunden für "${searchInput.value}".</p>`;
+                 noNotesMessage.classList.remove('hidden');
+            } else if (notesData.length === 0) {
+                 noNotesMessage.innerHTML = `<p>Sie haben noch keine Notizen. Fügen Sie eine neue hinzu, um zu beginnen!</p>`;
+                 noNotesMessage.classList.remove('hidden');
+            } else {
+                 noNotesMessage.classList.add('hidden');
+            }
+
+            filteredNotes.forEach(note => {
+                notesList.appendChild(createNoteElement(note));
+            });
+        }
+        function handleDragStart(e) {
+            draggedItem = e.target;
+            setTimeout(() => e.target.classList.add('dragging'), 0);
+        }
+        function handleDragOver(e) { e.preventDefault(); }
+        function handleDrop(e) { e.preventDefault(); if (e.target.closest('.note-card') !== draggedItem) { const target = e.target.closest('.note-card'); if (!target) return; const targetId = target.dataset.id; const draggedId = draggedItem.dataset.id; const targetIndex = notesData.findIndex(n => n.id == targetId); const draggedIndex = notesData.findIndex(n => n.id == draggedId); if (draggedIndex !== -1 && targetIndex !== -1) { const [removed] = notesData.splice(draggedIndex, 1); notesData.splice(targetIndex, 0, removed); saveNotesToLocal(); renderNotes(); } } }
+        function handleDragEnd(e) { e.target.classList.remove('dragging'); draggedItem = null; }
+        const editNote = (noteId, title, content) => {
+            editingNoteId = noteId;
+            noteTitleInput.value = title;
+            noteEditor.innerHTML = content;
+            saveNoteBtn.textContent = 'Änderungen speichern';
+            noteEditor.focus();
+            updateToolbarState(); 
+        };
+        const saveNote = async () => {
+            const title = noteTitleInput.value.trim();
+            const content = noteEditor.innerHTML.trim();
+
+            if (!content) {
+                await showModal('Die Notiz kann nicht leer sein.', false);
                 return;
             }
 
             if (editingNoteId) {
-                // Notiz bearbeiten (Edit-Modus)
-                const index = notesData.findIndex(note => note.id === editingNoteId);
-                if (index !== -1) {
-                    notesData[index].title = title;
-                    notesData[index].content = content;
-                    notesData[index].updatedAt = Date.now();
+                const noteIndex = notesData.findIndex(n => n.id === editingNoteId);
+                if (noteIndex !== -1) {
+                    notesData[noteIndex].title = title;
+                    notesData[noteIndex].content = content;
+                    noteEditor.innerHTML = ''; // Editor leeren nach Speichern
+                    notesData[noteIndex].dateModified = new Date().toISOString();
                 }
                 editingNoteId = null;
+                saveNoteBtn.textContent = 'Notiz speichern';
             } else {
-                // Neue Notiz erstellen
                 const newNote = {
-                    id: generateUniqueId(),
+                    id: Date.now(), 
                     title: title,
                     content: content,
-                    createdAt: Date.now(),
-                    updatedAt: Date.now(),
-                    color: 'default' // Kann später erweitert werden
+                    dateCreated: new Date().toISOString(),
+                    dateModified: new Date().toISOString()
                 };
-                notesData.push(newNote);
-                
-                // Bei einer neuen Notiz muss die ungerendert-Reihenfolge aktualisiert werden
-                if (currentSortMethod === 'unsorted') {
-                    // Fügen Sie die neue ID am Ende der gespeicherten Reihenfolge hinzu (oder passen Sie es an, wenn Sie möchten, dass neue Notizen oben erscheinen)
-                    const currentOrderStr = localStorage.getItem('notes-order');
-                    let currentOrder = currentOrderStr ? JSON.parse(currentOrderStr) : notesData.map(n => n.id);
-                    currentOrder.push(newNote.id);
-                    localStorage.setItem('notes-order', JSON.stringify(currentOrder));
-                }
+                // Stelle sicher, dass neue Notizen vorne eingefügt werden, um der "unsortierten" Standardreihenfolge zu entsprechen
+                notesData.unshift(newNote); 
             }
 
-            // Felder zurücksetzen
             noteTitleInput.value = '';
             noteEditor.innerHTML = '';
-            
-            // Toolbar-Buttons zurücksetzen
-            document.querySelectorAll('.toolbar-btn').forEach(btn => btn.classList.remove('active'));
-            document.querySelectorAll('.dropdown-item').forEach(item => item.classList.remove('active'));
-
-            saveNotesToLocal();
-            // Notizen neu rendern (mit Suchfilter, falls aktiv)
-            renderNotes(searchInput.value);
-            showModal(editingNoteId ? "Notiz erfolgreich aktualisiert!" : "Neue Notiz erfolgreich gespeichert!");
-        };
-
-        const editNote = (id, title, content) => {
-            noteTitleInput.value = title;
-            noteEditor.innerHTML = content;
-            editingNoteId = id;
             noteEditor.focus();
-            
-            // Scrolle zum Notiz-Erstellungsbereich
-            document.querySelector('.bg-gray-900').scrollIntoView({ behavior: 'smooth', block: 'start' });
-            
-            // Toolbar-Status aktualisieren, da sich der Fokus geändert hat
-            updateToolbarState();
+            updateToolbarState(); 
+            // Nach dem Speichern sofort die aktuelle Sortierung anwenden und speichern
+            sortNotes(currentSortMethod);
+        };
+        const deleteNote = async (noteId) => {
+            const confirmed = await showModal('Sind Sie sicher, dass Sie diese Notiz löschen möchten?', true);
+            if (confirmed) {
+                notesData = notesData.filter(note => note.id !== noteId);
+                saveNotesToLocal();
+                renderNotes();
+            }
         };
 
-        const deleteNote = (id) => {
-            showModal("Sind Sie sicher, dass Sie diese Notiz löschen möchten? Dieser Vorgang kann nicht rückgängig gemacht werden.", true)
-                .then(confirmed => {
-                    if (confirmed) {
-                        notesData = notesData.filter(note => note.id !== id);
-                        saveNotesToLocal();
-                        renderNotes(searchInput.value);
-                        
-                        // Wenn die gerade bearbeitete Notiz gelöscht wurde
-                        if (editingNoteId === id) {
-                            editingNoteId = null;
-                            noteTitleInput.value = '';
-                            noteEditor.innerHTML = '';
-                        }
-                        
-                        showModal("Notiz erfolgreich gelöscht.");
-                    }
-                });
+        // *************** FIX: FOKUS-LÖSUNG FÜR EINFACHE BUTTONS *******************
+        const setupToolbarButton = (button, command, value = null) => {
+            button.addEventListener('mousedown', (e) => { 
+                e.preventDefault(); // Verhindert Fokus
+            });
+            button.addEventListener('click', (e) => {
+                applyFormat(command, value); 
+                // Aggressive blur + Editor Focus
+                e.currentTarget.blur(); 
+                setTimeout(() => {
+                    noteEditor.focus(); 
+                    updateToolbarState();   
+                }, 1);
+            });
+        };
+
+        setupToolbarButton(boldBtn, 'bold');
+        setupToolbarButton(italicBtn, 'italic');
+        setupToolbarButton(underlineBtn, 'underline');
+        setupToolbarButton(indentBtn, 'indent');
+        setupToolbarButton(outdentBtn, 'outdent');
+
+        // Link-Pop-up
+        linkBtn.addEventListener('click', async (e) => {
+            e.preventDefault(); 
+            e.currentTarget.blur(); 
+            const selection = window.getSelection();
+            let rangeToUse = null;
+
+            if (selection.rangeCount > 0) {
+                rangeToUse = selection.getRangeAt(0);
+            }
+            
+            const url = await showLinkModal();
+            
+            if (url) {
+                noteEditor.focus(); 
+                
+                if (rangeToUse) {
+                    selection.removeAllRanges();
+                    selection.addRange(rangeToUse); 
+                } else if (selection.rangeCount === 0) {
+                    noteEditor.focus();
+                }
+                
+                applyFormat('createLink', url);
+            }
+            
+            // Fokus sofort lösen (Auch für Link)
+            setTimeout(() => {
+                updateToolbarState(); 
+                noteEditor.focus();
+            }, 1);
+        });
+        linkBtn.addEventListener('mousedown', (e) => { e.preventDefault(); });
+
+        // *************** ENDE FIX: FOKUS-LÖSUNG FÜR EINFACHE BUTTONS *******************
+
+
+        // --- Dropdown-Funktionalität ---
+        const toggleDropdown = (menu) => {
+            document.querySelectorAll('.dropdown-menu').forEach(m => {
+                if (m !== menu) m.classList.remove('active');
+            });
+            menu.classList.toggle('active');
         };
         
-        // ******************************************************
-        // ** SORTIERLOGIK **
-        // ******************************************************
-        const sortNotes = (method, silent = false) => {
-            currentSortMethod = method;
-            let sortedNotes = [...notesData];
+        document.querySelectorAll('.relative').forEach(container => {
+            const btn = container.querySelector('button');
+            const menu = container.querySelector('.dropdown-menu');
+            if (btn && menu) {
+                // Mousedown verhindert, dass der Button den Fokus erhält (kein Fokusring)
+                btn.addEventListener('mousedown', (e) => { e.preventDefault(); });
 
-            switch (method) {
-                case 'newest':
-                    sortedNotes.sort((a, b) => b.createdAt - a.createdAt);
-                    sortDropdownBtn.textContent = 'Sortieren nach: Neueste';
-                    break;
-                case 'oldest':
-                    sortedNotes.sort((a, b) => a.createdAt - b.createdAt);
-                    sortDropdownBtn.textContent = 'Sortieren nach: Älteste';
-                    break;
-                case 'title-asc':
-                    sortedNotes.sort((a, b) => a.title.localeCompare(b.title));
-                    sortDropdownBtn.textContent = 'Sortieren nach: Titel (A-Z)';
-                    break;
-                case 'title-desc':
-                    sortedNotes.sort((a, b) => b.title.localeCompare(a.title));
-                    sortDropdownBtn.textContent = 'Sortieren nach: Titel (Z-A)';
-                    break;
-                case 'unsorted':
-                default:
-                    // Wenn 'unsorted', laden wir die Reihenfolge aus dem Speicher neu.
-                    loadNotesFromLocal(); 
-                    sortDropdownBtn.textContent = 'Sortieren nach: Unsortiert';
-                    // Der Render-Prozess muss hier abgebrochen und von loadNotesFromLocal übernommen werden, 
-                    // um die Reihenfolge aus dem Speicher zu verwenden.
-                    return; 
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const wasActive = menu.classList.contains('active');
+                    toggleDropdown(menu);
+                    
+                    if (!wasActive && btn.id === 'sort-dropdown-btn') {
+                        // FIX: Wenn das Sortier-Menü geöffnet wird, Editor-Fokus verlieren
+                        noteEditor.blur();
+                    }
+                    
+                    if (wasActive) { 
+                        setTimeout(() => {
+                           btn.blur();
+                           
+                           // Nur Fokus zum Editor, wenn es KEIN Sortier-Button ist.
+                           if (btn.id !== 'sort-dropdown-btn') {
+                               noteEditor.focus(); 
+                           }
+                        }, 1);
+                    }
+                });
             }
-            
-            // Setze den Active-Status im Dropdown
-            sortDropdownItems.forEach(item => {
-                item.classList.remove('active');
-                if (item.dataset.value === method) {
-                    item.classList.add('active');
-                }
-            });
-
-            // Ersetze die Haupt-Daten mit den sortierten Daten, WENN es nicht die unsortierte Ansicht ist
-            if (method !== 'unsorted') {
-                notesData = sortedNotes;
-            }
-
-            if (!silent) {
-                 renderNotes(searchInput.value); // Notizen rendern
-            }
-        };
-
-
-        const renderNotes = (searchTerm = '') => {
-            const currentNotesToDisplay = notesData.filter(note => {
-                const searchLower = searchTerm.toLowerCase();
-                const titleLower = note.title.toLowerCase();
-                const contentLower = note.content.toLowerCase();
-                
-                return titleLower.includes(searchLower) || contentLower.includes(searchLower);
-            });
-
-            notesList.innerHTML = ''; // Liste leeren
-            
-            loadingIndicator.classList.add('hidden');
-            
-            if (currentNotesToDisplay.length === 0) {
-                noNotesMessage.classList.remove('hidden');
-                if (notesData.length > 0) {
-                     noNotesMessage.querySelector('p').textContent = `Keine Notizen gefunden für "${searchTerm}".`;
-                } else {
-                     noNotesMessage.querySelector('p').textContent = `Sie haben noch keine Notizen. Fügen Sie eine neue hinzu, um zu beginnen!`;
-                }
-            } else {
-                noNotesMessage.classList.add('hidden');
-            }
-
-            currentNotesToDisplay.forEach(note => {
-                const noteElement = createNoteCard(note);
-                notesList.appendChild(noteElement);
-            });
-            
-            // Drag-Funktionalität basierend auf dem Sortiermodus aktivieren/deaktivieren
-            document.querySelectorAll('.note-card').forEach(card => {
-                card.draggable = (currentSortMethod === 'unsorted');
-            });
-        };
-
-        const createNoteCard = (note) => {
-             const div = document.createElement('div');
-             div.className = 'note-card p-4 rounded-xl shadow-lg border';
-             div.id = `note-${note.id}`;
-             div.dataset.id = note.id;
-             div.draggable = (currentSortMethod === 'unsorted');
+        });
+        
+        document.body.addEventListener('click', (e) => {
+             // Beim Klicken außerhalb des Dropdowns alle Menüs schließen
+            document.querySelectorAll('.dropdown-menu').forEach(m => m.classList.remove('active'));
              
-             // Titel nur anzeigen, wenn er vorhanden ist
-             const titleHtml = note.title.trim() ? 
-                `<h3 class="text-xl font-semibold text-gray-100 mr-4">${note.title}</h3>` : 
-                '';
+            // Wenn der Klick auf dem Editor war, Toolbar-Zustand aktualisieren (auch wenn Fokus verloren geht)
+            if (e.target === noteEditor || noteEditor.contains(e.target)) {
+                 updateToolbarState();
+            }
+        });
+        // --- ENDE Dropdown-Funktionalität ---
+
+        // *************** SORTIERFUNKTION *******************
+        
+        const sortNotes = (method) => {
+            currentSortMethod = method; 
+            
+            notesData.sort((a, b) => {
+                if (method === 'newest') {
+                    return new Date(b.dateModified) - new Date(a.dateModified);
+                } else if (method === 'oldest') {
+                    return new Date(a.dateModified) - new Date(b.dateModified);
+                } else if (method === 'title-asc') {
+                    const titleCompare = a.title.localeCompare(b.title);
+                    if (titleCompare !== 0) return titleCompare;
+                    return new Date(b.dateModified) - new Date(a.dateModified);
+                } else if (method === 'title-desc') {
+                    const titleCompare = b.title.localeCompare(a.title);
+                    if (titleCompare !== 0) return titleCompare;
+                    return new Date(b.dateModified) - new Date(a.dateModified);
+                }
+                // 'unsorted': Behält die aktuelle Reihenfolge bei (Drag-and-Drop)
+                return 0; 
+            });
+            
+            // Update des Button-Texts und aktiven Status
+            const selectedItem = document.querySelector(`#sort-dropdown-menu .dropdown-item[data-value="${method}"]`);
+            if (selectedItem) {
+                sortDropdownBtn.textContent = `Sortieren nach: ${selectedItem.textContent.trim()}`;
+                sortDropdownItems.forEach(item => item.classList.remove('active'));
+                selectedItem.classList.add('active');
+            }
+
+            saveNotesToLocal();
+            renderNotes();
+        };
+
+        // Event-Listener für Sortier-Items
+        sortDropdownItems.forEach(item => {
+            item.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation(); 
+                const method = e.target.getAttribute('data-value');
+                sortNotes(method);
+                document.getElementById('sort-dropdown-menu').classList.remove('active');
+                
+                // Expliziter Blur für Sortier-Dropdown-Button (kein Fokus auf Editor hier!)
+                setTimeout(() => {
+                   sortDropdownBtn.blur();
+                }, 1);
+            });
+        });
+
+        // *************** ENDE SORTIERFUNKTION *******************
+        
+        // ******************************************************
+        // ** KORRIGIERTE LOGIK FÜR AUFZÄHLUNGSZEICHEN (3 TYPEN) **
+        // ******************************************************
+        listDropdownItems.forEach(item => {
+            item.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                const listStyle = e.target.getAttribute('data-value');
+                const selection = window.getSelection();
+                
+                if (!selection.rangeCount) return;
+                
+                // 1. Dropdown schließen und Fokus vom Button entfernen
+                listDropdownMenu.classList.remove('active');
+                listDropdownBtn.blur(); 
+
+                // Sicherstellen, dass der Editor den Fokus hat, BEVOR wir Formatierung anwenden (wichtig für execCommand)
+                noteEditor.focus();
+                
+                // Wir verwenden setTimeout, um sicherzustellen, dass die DOM-Änderungen der Liste
+                // angewendet und der Toolbar-Status korrekt aktualisiert wird.
+                setTimeout(() => {
+                    const executeListLogic = () => {
+                         if (listStyle === 'decimal') {
+                            // Nummerierte Liste
+                            applyFormat('insertOrderedList');
+                        } else { // disc, circle
+                            
+                            const currentUl = selection.anchorNode.closest('ul');
+                            const currentStyle = currentUl ? (currentUl.style.listStyleType || 'disc') : 'none'; 
+
+                            // Toggling OFF (Liste ausschalten)
+                            const isDiscOrEmpty = currentStyle === 'disc' || currentStyle === '';
+                            const matchFound = (listStyle === 'disc' && isDiscOrEmpty) || (currentStyle === listStyle);
+
+                            if (currentUl && matchFound) {
+                                applyFormat('insertUnorderedList'); // Schaltet die Liste AUS
+                            } else {
+                                // Stil ändern oder neue Liste erstellen
+                                
+                                // Zuerst OL entfernen
+                                if (document.queryCommandState('insertOrderedList')) {
+                                     applyFormat('insertOrderedList'); 
+                                }
+                                
+                                // Stelle sicher, dass UL aktiv ist
+                                if (!document.queryCommandState('insertUnorderedList')) {
+                                    applyFormat('insertUnorderedList'); 
+                                } 
+                                
+                                // Warten (kurz) und den Style zu erzwingen
+                                setTimeout(() => {
+                                     const ulToStyle = selection.anchorNode.closest('ul');
+                                     if (ulToStyle) {
+                                        // disc (Punkte) wird am besten als leerer String gesetzt, da es der Standard ist.
+                                        ulToStyle.style.listStyleType = listStyle === 'disc' ? '' : listStyle;
+                                    }
+                                    
+                                    // Letzter Schritt: Fokus und Update
+                                    updateToolbarState(); 
+                                    noteEditor.focus(); 
+                                }, 1);
+                                return; 
+                            }
+                        }
+                        
+                        // Final focus/update für Decimal und erfolgreiches Toggle-Off
+                        updateToolbarState(); 
+                        noteEditor.focus(); 
+                    };
+                    
+                    executeListLogic();
+                }, 1);
+            });
+        });
+
+        // ******************************************************
+        // ** ENDE KORRIGIERTE LOGIK FÜR AUFZÄHLUNGSZEICHEN **
+        // ******************************************************
+        
+        // Event-Listener für Dropdown-Items (Größe)
+        sizeDropdownItems.forEach(item => {
+            item.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                const sizeValue = e.target.getAttribute('data-value');
+                
+                // Schließe Dropdown und entferne Fokus von Button
+                sizeDropdownMenu.classList.remove('active');
+                sizeDropdownBtn.blur();
+                
+                // Fokus auf Editor und dann Formatierung
+                noteEditor.focus();
+                applyFormat('fontSize', sizeValue);
+                
+                setTimeout(() => {
+                    updateToolbarState(); 
+                }, 1);
+            });
+        });
+
+        // Event-Listener für Dropdown-Items (Farbe)
+        colorDropdownItems.forEach(item => {
+            item.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                const colorValue = e.target.getAttribute('data-value');
+                const selection = window.getSelection();
+                if (!selection.rangeCount) return;
+                
+                // Schließe Dropdown und entferne Fokus von Button
+                colorDropdownMenu.classList.remove('active');
+                colorDropdownBtn.blur();
+                
+                // Fokus auf Editor und dann Formatierung
+                noteEditor.focus();
+                
+                document.execCommand('styleWithCSS', false, true);
+                applyFormat('foreColor', colorMap[colorValue]);
+                document.execCommand('styleWithCSS', false, false);
+                
+                setTimeout(() => {
+                    updateToolbarState(); 
+                }, 1);
+            });
+          });
+
+        /**
+         * Erstellt ein HTML-Element für eine einzelne Notiz.
+         */
+        const createNoteElement = (note) => {
+             const div = document.createElement('div');
+             div.className = 'note-card bg-gray-700 p-5 rounded-2xl shadow-md border border-gray-700 transition-all duration-300 hover:shadow-xl'; 
+             // Drag-and-Drop nur erlauben, wenn "unsortiert" aktiv ist
+             div.setAttribute('draggable', currentSortMethod === 'unsorted' ? 'true' : 'false');
+             div.dataset.id = note.id;
+
+             let noteContentHtml = '';
+             
+             if (note.title.trim() !== '') {
+                 // **KORREKT:** Wenn ein Titel vorhanden ist, zeige NUR den Titel (0 Zeichen Inhalt)
+                 noteContentHtml = `<h3 class="text-xl font-bold mb-2 text-gray-200">${note.title}</h3>`;
+             } else {
+                 // Wenn KEIN Titel vorhanden ist, zeige den formatierten Notizinhalt in voller Länge (mit max-height: 100px)
+                 noteContentHtml = `<div class="text-gray-300" style="max-height: 100px; overflow: hidden;">${note.content}</div>`;
+             }
+             
 
              div.innerHTML = `
-                 <div class="flex justify-between items-start mb-2">
-                     ${titleHtml}
-                     <div class="flex space-x-2 ml-auto">
-                        <button class="edit-btn calculator-btn note-action-btn text-gray-200">
-                            ✏️
-                        </button>
-                        <button class="delete-btn calculator-btn note-action-btn text-gray-200">
-                            🗑️
-                        </button>
-                    </div>
+                 ${noteContentHtml}
+                 <div class="mt-4 flex justify-end space-x-2">
+                     <button class="edit-btn bg-yellow-500 text-white text-xs font-medium py-1 px-3 rounded-full hover:bg-yellow-600 transition-colors focus:outline-none">
+                         Bearbeiten
+                     </button>
+                     <button class="delete-btn bg-red-500 text-white text-xs font-medium py-1 px-3 rounded-full hover:bg-red-600 transition-colors focus:outline-none">
+                         Löschen
+                     </button>
                  </div>
-                 <div class="text-gray-300 mb-4" style="font-size: 1rem;">${note.content}</div>
              `;
-             
              div.querySelector('.edit-btn').addEventListener('click', () => editNote(note.id, note.title, note.content));
              div.querySelector('.delete-btn').addEventListener('click', () => deleteNote(note.id));
              
@@ -1275,268 +1052,26 @@ listDropdownItems.forEach(item => item.classList.remove('active'));
                  div.addEventListener('dragend', handleDragEnd);
              }
              return div;
-        };
-        
-        // ******************************************************
-        // ** DRAG & DROP LOGIK **
-        // ******************************************************
-
-        const handleDragStart = (e) => {
-            if (currentSortMethod !== 'unsorted') {
-                e.preventDefault();
-                return;
-            }
-            draggedItem = e.target;
-            e.dataTransfer.effectAllowed = 'move';
-            e.dataTransfer.setData('text/html', draggedItem.innerHTML);
-            // Verzögerung, um die Klasse nach dem Datentransfer hinzuzufügen
-            setTimeout(() => {
-                draggedItem.classList.add('dragging');
-            }, 0);
-        };
-
-        const handleDragOver = (e) => {
-            if (currentSortMethod !== 'unsorted') {
-                e.preventDefault();
-                return;
-            }
-            e.preventDefault(); 
-            e.dataTransfer.dropEffect = 'move';
-            
-            const target = e.target.closest('.note-card');
-            if (target && target !== draggedItem) {
-                // Finde den Mittelpunkt des Ziels
-                const rect = target.getBoundingClientRect();
-                const centerY = rect.top + rect.height / 2;
-                
-                // Füge das gezogene Element entweder davor oder danach ein
-                const isBefore = e.clientY < centerY;
-                const notesList = document.getElementById('notes-list');
-
-                if (isBefore) {
-                    // Vor dem Ziel einfügen, wenn es das vorherige Element ist,
-                    // sonst sollte es nach dem vorherigen eingefügt werden.
-                    notesList.insertBefore(draggedItem, target);
-                } else {
-                    // Nach dem Ziel einfügen
-                    notesList.insertBefore(draggedItem, target.nextSibling);
-                }
-            }
-        };
-
-        const handleDrop = (e) => {
-            if (currentSortMethod !== 'unsorted') {
-                e.preventDefault();
-                return;
-            }
-            e.preventDefault();
-            
-            const target = e.target.closest('.note-card');
-            if (target && target !== draggedItem) {
-                // Die Reihenfolge im DOM ist bereits im handleDragOver aktualisiert.
-                // Jetzt müssen wir die Reihenfolge in notesData aktualisieren.
-                
-                // 1. Die neue Reihenfolge der IDs aus dem DOM abrufen
-                const newOrder = Array.from(notesList.children)
-                                      .map(child => child.dataset.id)
-                                      .filter(id => id); // Filtert Nicht-Notiz-Elemente
-                
-                // 2. Die notesData entsprechend der neuen Reihenfolge neu anordnen
-                const newNotesData = [];
-                newOrder.forEach(id => {
-                    const note = notesData.find(n => n.id === id);
-                    if (note) {
-                        newNotesData.push(note);
-                    }
-                });
-                
-                // 3. Neue Daten speichern
-                notesData = newNotesData;
-                saveNotesToLocal();
-            }
-        };
-
-        const handleDragEnd = (e) => {
-            if (currentSortMethod !== 'unsorted') {
-                e.preventDefault();
-                return;
-            }
-            // Entferne die dragging-Klasse immer
-            draggedItem.classList.remove('dragging');
-            draggedItem = null;
-        };
-
-        // ******************************************************
-        // ** IMPORT/EXPORT LOGIK **
-        // ******************************************************
-        
-        const exportNotes = () => {
-            if (notesData.length === 0) {
-                showModal("Es gibt keine Notizen zum Exportieren.");
-                return;
-            }
-            
-            const dataStr = JSON.stringify(notesData, null, 2);
-            const blob = new Blob([dataStr], { type: "application/json" });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `offline-notizen-export-${new Date().toISOString().split('T')[0]}.json`;
-            
-            // Führe den Klick aus und entferne das Element
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-            
-            showModal("Notizen wurden erfolgreich als JSON-Datei exportiert.");
-        };
-
-        const importNotes = (event) => {
-            const file = event.target.files[0];
-            if (!file) return;
-
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                try {
-                    const importedNotes = JSON.parse(e.target.result);
-                    
-                    if (!Array.isArray(importedNotes) || importedNotes.some(n => !n.id || !n.content)) {
-                        showModal("Ungültiges Dateiformat. Die Datei muss ein Array von Notizobjekten enthalten.");
-                        return;
-                    }
-                    
-                    showModal(`Es wurden ${importedNotes.length} Notizen in der Datei gefunden. Möchten Sie diese importieren? (Vorhandene Notizen werden NICHT überschrieben.)`, true)
-                        .then(confirmed => {
-                            if (confirmed) {
-                                // Filtere doppelte IDs (falls vorhanden) und füge neue Notizen hinzu
-                                const existingIds = new Set(notesData.map(n => n.id));
-                                const newNotes = importedNotes.filter(n => !existingIds.has(n.id));
-                                
-                                notesData = [...notesData, ...newNotes];
-                                
-                                // Setze die Import-Reihenfolge auf das Ende der unsortierten Liste
-                                const importedIds = newNotes.map(note => note.id);
-                                const currentOrderStr = localStorage.getItem('notes-order');
-                                let currentOrder = currentOrderStr ? JSON.parse(currentOrderStr) : notesData.map(n => n.id);
-                                currentOrder = [...currentOrder.filter(id => !importedIds.includes(id)), ...importedIds];
-                                localStorage.setItem('notes-order', JSON.stringify(currentOrder));
-
-                                saveNotesToLocal();
-                                renderNotes(searchInput.value);
-                                
-                                showModal(`Import abgeschlossen! ${newNotes.length} neue Notizen wurden hinzugefügt.`);
-                            }
-                        });
-                    
-                } catch (error) {
-                    showModal("Fehler beim Lesen oder Parsen der Datei. Stellen Sie sicher, dass es eine gültige JSON-Datei ist.");
-                    console.error("Import error:", error);
-                }
-            };
-
-            reader.readAsText(file);
-            event.target.value = ''; // Setze das File-Input zurück, damit das gleiche File erneut importiert werden kann
-        };
-        
-        // ******************************************************
-        // ** EVENT LISTENER **
-        // ******************************************************
-
-         // Toolbar-Befehle
-        boldBtn.addEventListener('click', () => executeFormatAndRestore('bold'));
-        italicBtn.addEventListener('click', () => executeFormatAndRestore('italic'));
-        underlineBtn.addEventListener('click', () => executeFormatAndRestore('underline'));
-        indentBtn.addEventListener('click', () => executeFormatAndRestore('indent'));
-        outdentBtn.addEventListener('click', () => executeFormatAndRestore('outdent'));
-        linkBtn.addEventListener('click', executeLinkCommand);
+         };
 
 
-
-        // Dropdown-Toggle (mit event.stopPropagation, um Klick-Bug zu vermeiden)
-        const toggleDropdown = (btn, menu) => {
-            btn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                
-                // Alle anderen Dropdowns schließen
-                document.querySelectorAll('.dropdown-menu').forEach(m => {
-                    if (m !== menu) {
-                        m.classList.remove('active');
-                    }
-                });
-                
-                menu.classList.toggle('active');
-                updateToolbarState(); // Wichtig, um den aktuellen Zustand der Toolbar zu erfassen
-            });
-        };
-        
-        toggleDropdown(listDropdownBtn, listDropdownMenu);
-        toggleDropdown(sizeDropdownBtn, sizeDropdownMenu);
-        toggleDropdown(colorDropdownBtn, colorDropdownMenu);
-        toggleDropdown(sortDropdownBtn, sortDropdownMenu);
-
-
-        // Dropdown-Befehle ausführen (mit neuer Listen-Logik)
-        listDropdownItems.forEach(item => {
-            item.addEventListener('click', (e) => {
-                e.preventDefault();
-                e.stopPropagation(); 
-                e.currentTarget.blur();
-                
-                // RUFE LIST-LOGIK AUF
-                toggleCustomList(item.dataset.value); 
-
-                // Editor Focus im Timeout
-                setTimeout(() => {
-                    noteEditor.focus();
-                    updateToolbarState();
-                }, 1);
-                listDropdownMenu.classList.remove('active'); 
-            });
-        });
-        sizeDropdownItems.forEach(item => item.addEventListener('click', (e) => {
-            e.stopPropagation();
-            executeFormatAndRestore('fontSize', item.dataset.value);
-            sizeDropdownMenu.classList.remove('active');
-            colorDropdownMenu.classList.remove('active');
-        }));
-        colorDropdownItems.forEach(item => item.addEventListener('click', (e) => {
-            e.stopPropagation();
-            // document.execCommand erwartet den Farbnamen oder Hex/RGB-Code
-            executeFormatAndRestore('foreColor', colorMap[item.dataset.value]); 
-            listDropdownMenu.classList.remove('active');
-            sizeDropdownMenu.classList.remove('active');
-            colorDropdownMenu.classList.remove('active');
-        }));
-        sortDropdownItems.forEach(item => item.addEventListener('click', (e) => {
-            e.stopPropagation();
-            sortNotes(item.dataset.value);
-            sortDropdownMenu.classList.remove('active');
-        }));
-
-        // Globale Klick-Events zum Schließen von Dropdowns
-        document.addEventListener('click', () => {
-            listDropdownMenu.classList.remove('active');
-            sizeDropdownMenu.classList.remove('active');
-            colorDropdownMenu.classList.remove('active');
-            sortDropdownMenu.classList.remove('active');
-        });
-        
-        // Speichern und Suchen
         saveNoteBtn.addEventListener('click', saveNote);
         searchInput.addEventListener('input', (e) => renderNotes(e.target.value));
         
-        // Import/Export
         exportBtn.addEventListener('click', exportNotes);
         importFileInput.addEventListener('change', importNotes);
         
-        // Event listener zur Aktualisierung des Toolbar-Zustands bei Fokuswechsel/Eingabe
-        noteEditor.addEventListener('mouseup', saveSelection); // Speichern der Auswahl bei Mausklick
-        noteEditor.addEventListener('keyup', saveSelection); // Speichern der Auswahl bei Tastendruck
-        noteEditor.addEventListener('input', updateToolbarState);
+        // Event listener zur Aktualisierung des Toolbar-Zustands
+        noteEditor.addEventListener('mouseup', updateToolbarState); 
+        
+        // ** GEÄNDERT: Implementiert Touch-Click-Verhalten **
+        noteEditor.addEventListener('keyup', () => {
+            collapseSelection();
+            updateToolbarState();
+        }); 
+        
         noteEditor.addEventListener('focus', updateToolbarState);
         noteEditor.addEventListener('blur', updateToolbarState);
-
 
         // Initial loading of notes
         window.addEventListener('load', loadNotesFromLocal);
