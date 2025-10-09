@@ -939,36 +939,6 @@ class="text-gray-300 mb-4 text-center">Geben Sie die URL für den Link ein.</p>
                     }
                 }
                 
-                // Sortiere notesData basierend auf der gespeicherten ID-Liste
-                if (orderArray.length > 0) { 
-                    notesData.sort((a, b) => {
-                        const indexA = orderArray.indexOf(a.id);
-                        const indexB = orderArray.indexOf(b.id);
-                        
-                        // Behandle neue/fehlende Notizen korrekt
-                        if (indexA === -1 && indexB === -1) {
-                            // String-Vergleich für neue Notizen verwenden
-                            return b.id.localeCompare(a.id);
-                        }
-                        
-                        if (indexA === -1) return 1; 
-                        if (indexB === -1) return -1;
-                        
-                        return indexA - indexB;
-                    });
-                    
-                    // OPTIMIERUNG: Bereinige die gespeicherte Reihenfolge von IDs gelöschter Notizen
-                    const currentIds = new Set(notesData.map(n => n.id));
-                    const cleanedOrder = orderArray.filter(id => currentIds.has(id));
-                    if (cleanedOrder.length !== orderArray.length) {
-                        localStorage.setItem('notes-order', JSON.stringify(cleanedOrder));
-                    }
-                    
-                } else {
-                    // Fallback: Neueste zuerst nach ID (String-Vergleich)
-                    notesData.sort((a, b) => b.id.localeCompare(a.id));
-                }
-                
                 sortNotes(currentSortMethod, true); // Stellt die Sortierung ein und rendert
             } catch (e) {
                 // Dieser catch-Block sollte jetzt nur noch bei wirklich fatalen JavaScript-Fehlern erreicht werden.
@@ -1127,9 +1097,45 @@ class="text-gray-300 mb-4 text-center">Geben Sie die URL für den Link ein.</p>
         // ** SORTIERUNGS- & RENDERLOGIK **
         // ******************************************************
 
-        const sortNotes = (method, isInitialLoad = false) => {
-            // Wenn die Sortiermethode 'unsorted' ist, verwenden wir die Reihenfolge aus dem Local Storage (bereits in loadNotesFromLocal oder setupDragAndDrop gehandhabt)
-            if (method !== 'unsorted' || isInitialLoad) {
+const sortNotes = (method, isInitialLoad = false) => {
+            
+            // 1. MANUELLE SORTIERUNG ANWENDEN, WENN 'unsorted' GEWÄHLT IST
+            if (method === 'unsorted') {
+                const storedOrder = localStorage.getItem('notes-order');
+                let orderArray = [];
+                
+                if (storedOrder) {
+                    try {
+                        // Sicherstellen, dass die IDs Strings sind
+                        orderArray = JSON.parse(storedOrder).map(id => String(id));
+                    } catch (e) {
+                        console.warn("Fehler beim Parsen der 'notes-order'.");
+                    }
+                }
+                
+                if (orderArray.length > 0) {
+                    notesData.sort((a, b) => {
+                        const indexA = orderArray.indexOf(a.id);
+                        const indexB = orderArray.indexOf(b.id);
+                        
+                        // Neue Notizen (die nicht in orderArray sind) kommen ans Ende.
+                        if (indexA === -1 && indexB === -1) {
+                            return b.id.localeCompare(a.id);
+                        }
+                        if (indexA === -1) return 1;
+                        if (indexB === -1) return -1;
+                        
+                        return indexA - indexB;
+                    });
+                    
+                } else if (!isInitialLoad) {
+                    // Wenn keine Reihenfolge gespeichert ist und es keine initiale Ladung ist, 
+                    // sortieren wir nach dem letzten Aktualisierungsdatum.
+                    notesData.sort((a, b) => b.updatedAt - a.updatedAt);
+                }
+
+            } else {
+                // 2. ALLE ANDEREN SORTIERUNGEN ANWENDEN
                 switch (method) {
                     case 'newest':
                         notesData.sort((a, b) => b.updatedAt - a.updatedAt);
@@ -1143,12 +1149,7 @@ class="text-gray-300 mb-4 text-center">Geben Sie die URL für den Link ein.</p>
                     case 'title-desc':
                         notesData.sort((a, b) => b.title.localeCompare(a.title));
                         break;
-                    case 'unsorted':
-                        // Bei initialer Ladung bereits in loadNotesFromLocal sortiert
-                        if (!isInitialLoad) {
-                            loadNotesFromLocal(); // Lade die unsortierte Reihenfolge neu
-                        }
-                        break;
+                    // Der case 'unsorted' ist nun durch die if-Prüfung oben abgedeckt
                 }
             }
             
@@ -1156,7 +1157,7 @@ class="text-gray-300 mb-4 text-center">Geben Sie die URL für den Link ein.</p>
             
             // UI aktualisieren (Dropdown Text und aktives Element)
             const sortTextMap = {
-                'unsorted': 'Unsortiert',
+                'unsorted': 'Unsortiert', // Stellen Sie sicher, dass 'Unsortiert' hier existiert
                 'newest': 'Datum (neueste zuerst)',
                 'oldest': 'Datum (älteste zuerst)',
                 'title-asc': 'Titel (A-Z)',
@@ -1174,6 +1175,7 @@ class="text-gray-300 mb-4 text-center">Geben Sie die URL für den Link ein.</p>
             // Drag-and-Drop nur in der unsortierten Ansicht erlauben
             notesList.classList.toggle('draggable-list', method === 'unsorted');
 
+            // Hier muss der Aufruf zum Rendern stehen
             renderNotes(searchInput.value);
         };
 
