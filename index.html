@@ -1216,9 +1216,10 @@ class="text-gray-300 mb-4 text-center">Geben Sie die URL für den Link ein.</p>
                     hour: '2-digit',
                     minute: '2-digit'
                 });
-
+                
+//      <h3 class="text-xl font-bold text-gray-100 mb-2">${note.title || 'Ohne Titel'}</h3>
                 noteCard.innerHTML = `
-                    <h3 class="text-xl font-bold text-gray-100 mb-2">${note.title || 'Ohne Titel'}</h3>
+                    ${note.title ? `<h3 class="text-xl font-bold text-gray-100 mb-2">${note.title}</h3>` : ''}
                     <div class="note-content text-gray-300 mb-3">${note.content}</div>
                     <p class="text-xs text-gray-500 mb-4">Zuletzt bearbeitet: ${date}</p>
                     <div class="flex justify-end space-x-2">
