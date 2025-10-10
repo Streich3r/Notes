@@ -396,8 +396,8 @@ rounded-full shadow-lg transform">
      
     </div>
 
-      <div id="notes-list" class="flex flex-col space-y-4">
-</div>
+        <div id="notes-list" class="space-y-4">
+        </div>
 
         <div id="loading-indicator" class="text-center 
 text-gray-400 mt-8 hidden">
@@ -1115,33 +1115,19 @@ const sortNotes = (method, isInitialLoad = false) => {
                 }
                 
                 if (orderArray.length > 0) {
-             // ERSETZEN Sie den existierenden notesData.sort... Block
-notesData.sort((a, b) => {
-    const indexA = orderArray.indexOf(a.id);
-    const indexB = orderArray.indexOf(b.id);
-    
-    // Fall 1: Beide Notizen sind in der gespeicherten Reihenfolge
-    if (indexA !== -1 && indexB !== -1) {
-        return indexA - indexB; // Sortiere nach der gespeicherten Reihenfolge
-    }
-    
-    // Fall 2: Note A ist NEU (Index ist -1) und Note B ist ALT (Index != -1)
-    // A soll VOR B kommen, also return -1
-    if (indexA === -1 && indexB !== -1) {
-        return -1; 
-    }
-    
-    // Fall 3: Note B ist NEU (Index ist -1) und Note A ist ALT (Index != -1)
-    // B soll VOR A kommen, also return 1
-    if (indexA !== -1 && indexB === -1) {
-        return 1; 
-    }
-
-    // Fall 4: Beide Notizen sind NEU. Sortiere sie nach dem neuesten Datum/ID (z.B. neueste zuerst)
-    // Wir nehmen hier die updatedAt-Zeit, um die Reihenfolge der neu erstellten Notizen zu bestimmen
-    return b.updatedAt - a.updatedAt;
-});
-// ENDE des ERSETZTEN Blocks
+                    notesData.sort((a, b) => {
+                        const indexA = orderArray.indexOf(a.id);
+                        const indexB = orderArray.indexOf(b.id);
+                        
+                        // Neue Notizen (die nicht in orderArray sind) kommen ans Ende.
+                        if (indexA === -1 && indexB === -1) {
+                            return b.id.localeCompare(a.id);
+                        }
+                        if (indexA === -1) return 1;
+                        if (indexB === -1) return -1;
+                        
+                        return indexA - indexB;
+                    });
                     
                 } else if (!isInitialLoad) {
                     // Wenn keine Reihenfolge gespeichert ist und es keine initiale Ladung ist, 
@@ -1192,12 +1178,6 @@ notesData.sort((a, b) => {
 
             // Hier muss der Aufruf zum Rendern stehen
             renderNotes(searchInput.value);
-
-    // ✅ HINZUGEFÜGT: Drag-and-Drop muss nach dem Rendern neu initialisiert werden,
-    // ABER NUR im unsortierten Modus.
-    if (method === 'unsorted') {
-        setupDragAndDrop(); 
-    }
         };
 
         const renderNotes = (filterText = '') => {
@@ -1302,37 +1282,59 @@ notesData.sort((a, b) => {
         // ** DRAG-AND-DROP LOGIK **
         // ******************************************************
 
-// ******************************************************
-// ** DRAG-AND-DROP LOGIK (VEREINFACHTE FUNKTION) **
-// ******************************************************
+        const setupDragAndDrop = () => {
+            const noteCards = notesList.querySelectorAll('.note-card');
 
-// Hilfsfunktion zur Bestimmung des Elements, hinter dem eingefügt werden soll (Bleibt erhalten)
-const getDragAfterElement = (container, y) => {
-    const draggableElements = [...container.querySelectorAll('.note-card:not(.dragging)')];
-    
-    return draggableElements.reduce((closest, child) => {
-        const box = child.getBoundingClientRect();
-        const offset = y - box.top - box.height / 2;
-        if (offset < 0 && offset > closest.offset) {
-            return { offset: offset, element: child };
-        } else {
-            return closest;
-        }
-    }, { offset: Number.NEGATIVE_INFINITY }).element;
-};
+            noteCards.forEach(card => {
+                card.addEventListener('dragstart', () => {
+                    draggedItem = card;
+                    // Verzögerte Klasse, um das eigene Element nicht als Drop-Zone zu behandeln
+                    setTimeout(() => card.classList.add('dragging'), 0);
+                });
 
+                card.addEventListener('dragend', () => {
+                    setTimeout(() => {
+                        draggedItem.classList.remove('dragging');
+                        draggedItem = null;
+                        
+                        // Speichere die NEUE Reihenfolge
+                        const newOrder = Array.from(notesList.children).map(child => String(child.dataset.id));
+                        localStorage.setItem('notes-order', JSON.stringify(newOrder));
 
-const setupDragAndDrop = () => {
-    // Diese Funktion verwaltet nur, wann Drag-and-Drop aktiv ist!
-    if (currentSortMethod !== 'unsorted') {
-        // Deaktivieren: Entfernt das 'draggable' Attribut von allen Karten.
-        notesList.querySelectorAll('.note-card').forEach(card => card.removeAttribute('draggable'));
-        return;
-    }
-    
-    // Aktivieren: Fügt das 'draggable' Attribut zu allen Notizkarten hinzu.
-    notesList.querySelectorAll('.note-card').forEach(card => card.setAttribute('draggable', true));
-};
+                        // Aktualisiere notesData entsprechend der neuen DOM-Reihenfolge
+                        notesData.sort((a, b) => {
+                            const indexA = newOrder.indexOf(a.id);
+                            const indexB = newOrder.indexOf(b.id);
+                            return indexA - indexB;
+                        });
+                        
+                        // Speichere die aktualisierten Daten (jetzt in der richtigen Reihenfolge)
+                        saveNotesToLocal();
+
+                    }, 0);
+                });
+
+                card.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    if (draggedItem && draggedItem !== card) {
+                        const bounding = card.getBoundingClientRect();
+                        const offset = bounding.y + (bounding.height / 2);
+
+                        if (e.clientY < offset) {
+                            // Über der oberen Hälfte: Vor diesem Element einfügen
+                            if (card.previousElementSibling !== draggedItem) {
+                                notesList.insertBefore(draggedItem, card);
+                            }
+                        } else {
+                            // Über der unteren Hälfte: Nach diesem Element einfügen
+                            if (card.nextElementSibling !== draggedItem) {
+                                notesList.insertBefore(draggedItem, card.nextElementSibling);
+                            }
+                        }
+                    }
+                });
+            });
+        };
 
         // ******************************************************
         // ** IMPORT/EXPORT LOGIK (KORRIGIERT) **
@@ -1514,76 +1516,6 @@ const setupDragAndDrop = () => {
 
         // Initial loading of notes
         window.addEventListener('load', loadNotesFromLocal);
-        // ******************************************************
-// ** DRAG-AND-DROP DELEGATION (Einmalige Initialisierung) **
-// ******************************************************
-
-// Dragstart: Registriert die gezogene Karte
-notesList.addEventListener('dragstart', (e) => {
-    // Delegation: Prüft, ob das Event von einer Notizkarte kommt und der Modus stimmt.
-    const card = e.target.closest('.note-card');
-    if (!card || currentSortMethod !== 'unsorted') {
-        e.preventDefault(); 
-        return;
-    }
-
-    draggedItem = card;
-    // Verzögerung, damit das Browsers-Drag-Image korrekt erzeugt wird
-    setTimeout(() => draggedItem.classList.add('dragging'), 0);
-});
-
-// Dragend: Cleanup
-notesList.addEventListener('dragend', () => {
-    if (draggedItem) {
-        draggedItem.classList.remove('dragging');
-    }
-    draggedItem = null; // Setze immer zurück
-});
-
-
-// Dragover: Positionierung
-notesList.addEventListener('dragover', (e) => {
-    // Abbrechen, wenn nicht im unsortierten Modus oder nichts gezogen wird
-    if (currentSortMethod !== 'unsorted' || !draggedItem) return;
-
-    e.preventDefault();
-    const afterElement = getDragAfterElement(notesList, e.clientY);
-    
-    // Fügt die Karte an der richtigen Stelle ein
-    if (afterElement == null) {
-        notesList.appendChild(draggedItem);
-    } else {
-        notesList.insertBefore(draggedItem, afterElement);
-    }
-});
-
-// Drop: Speicherung und Re-Render
-notesList.addEventListener('drop', (e) => {
-    // Abbrechen, wenn nicht im unsortierten Modus oder nichts gezogen wird
-    if (currentSortMethod !== 'unsorted' || !draggedItem) return;
-
-    e.preventDefault();
-    
-    // Reihenfolge aus dem DOM ablesen
-    const newOrder = Array.from(notesList.querySelectorAll('.note-card')).map(card => String(card.dataset.id));
-    
-    // Speichere die Reihenfolge
-    localStorage.setItem('notes-order', JSON.stringify(newOrder));
-
-    // Aktualisiere das notesData-Array entsprechend der neuen Reihenfolge
-    const sortedNotes = newOrder.map(id => notesData.find(note => String(note.id) === id)).filter(n => n);
-    const unsortedNewNotes = notesData.filter(note => !newOrder.includes(String(note.id))); 
-    
-    notesData.length = 0;
-    notesData.push(...sortedNotes, ...unsortedNewNotes);
-    
-    saveNotesToLocal();
-    
-    // Neu rendern (ruft setupDragAndDrop am Ende von renderNotes() auf)
-    renderNotes(searchInput.value); 
-
-    draggedItem = null;
-});
     </script>
 </body>
 </html>
