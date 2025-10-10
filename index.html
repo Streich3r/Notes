@@ -1117,29 +1117,26 @@ const sortNotes = (method, isInitialLoad = false) => {
                 if (orderArray.length > 0) {
           
 notesData.sort((a, b) => {
-    const indexA = orderArray.indexOf(a.id);
-    const indexB = orderArray.indexOf(b.id);
-    
-    // Fall 1: Beide Notizen sind in der gespeicherten Reihenfolge
-    if (indexA !== -1 && indexB !== -1) {
-        return indexA - indexB; // Sortiere nach der gespeicherten Reihenfolge
-    }
-    
-    // Fall 2: Note A ist NEU (Index ist -1) und Note B ist ALT (Index != -1)
-    // A soll VOR B kommen, also return -1
-    if (indexA === -1 && indexB !== -1) {
-        return -1; 
-    }
-    
-    // Fall 3: Note B ist NEU (Index ist -1) und Note A ist ALT (Index != -1)
-    // B soll VOR A kommen, also return 1
-    if (indexA !== -1 && indexB === -1) {
-        return 1; 
+    // 1. ABSOLUTE PRIORITÄT: Neueste Notiz zuerst (b.updatedAt - a.updatedAt)
+    // Dieser Schritt garantiert, dass die Notiz mit dem höchsten Zeitstempel (die zuletzt gespeicherte)
+    // immer an erster Stelle steht.
+    if (b.updatedAt !== a.updatedAt) {
+        // b.updatedAt > a.updatedAt ergibt eine positive Zahl.
+        // In der sort()-Funktion bedeutet das: A kommt nach B (B kommt zuerst).
+        return b.updatedAt - a.updatedAt; 
     }
 
-    // Fall 4: Beide Notizen sind NEU. Sortiere sie nach dem neuesten Datum/ID (z.B. neueste zuerst)
-    // Wir nehmen hier die updatedAt-Zeit, um die Reihenfolge der neu erstellten Notizen zu bestimmen
-    return b.updatedAt - a.updatedAt;
+    // 2. FALLBACK: GESPEICHERTE REIHENFOLGE
+    // Dies wird nur ausgeführt, wenn die Zeitstempel gleich sind (was bei gespeicherten Notizen der Fall ist).
+    const indexA = orderArray.indexOf(String(a.id));
+    const indexB = orderArray.indexOf(String(b.id));
+
+    if (indexA !== -1 && indexB !== -1) {
+        return indexA - indexB; // Sortiere nach der manuell festgelegten Position
+    }
+
+    // 3. FALLBACK für Notizen ohne Position/gleichem Datum: Sortiere nach ID
+    return b.id.localeCompare(a.id);
 });
                     
                 } else if (!isInitialLoad) {
