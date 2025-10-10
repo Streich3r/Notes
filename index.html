@@ -1192,6 +1192,12 @@ notesData.sort((a, b) => {
 
             // Hier muss der Aufruf zum Rendern stehen
             renderNotes(searchInput.value);
+
+    // ✅ HINZUGEFÜGT: Drag-and-Drop muss nach dem Rendern neu initialisiert werden,
+    // ABER NUR im unsortierten Modus.
+    if (method === 'unsorted') {
+        setupDragAndDrop(); 
+    }
         };
 
         const renderNotes = (filterText = '') => {
