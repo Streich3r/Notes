@@ -1059,24 +1059,6 @@ class="text-gray-300 mb-4 text-center">Geben Sie die URL für den Link ein.</p>
                 };
                 notesData.push(newNote);
                 
-                // Bei einer neuen Notiz muss die ungerendert-Reihenfolge aktualisiert werden
-                if (currentSortMethod === 'unsorted') {
-                    const currentOrderStr = localStorage.getItem('notes-order');
-                    
-                    // Sicherstellen, dass alle IDs im Order-Array Strings sind.
-                    let currentOrder;
-                    if (currentOrderStr) {
-                        // Konvertiere alle IDs aus dem Speicher explizit zu Strings
-                        currentOrder = JSON.parse(currentOrderStr).map(id => String(id));
-                    } else {
-                        // Fallback: Nutze alle aktuellen IDs, ebenfalls als Strings
-                        currentOrder = notesData.map(n => String(n.id));
-                    }
-
-                    // Füge die neue (als String erzeugte) ID hinzu
-                    currentOrder.push(newNote.id); 
-                    localStorage.setItem('notes-order', JSON.stringify(currentOrder));
-                }
             }
 
             // Felder zurücksetzen
