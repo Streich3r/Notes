@@ -1123,8 +1123,8 @@ const sortNotes = (method, isInitialLoad = false) => {
                         if (indexA === -1 && indexB === -1) {
                             return b.id.localeCompare(a.id);
                         }
-                        if (indexA === -1) return 1;
-                        if (indexB === -1) return -1;
+                        if (indexA === -1) return -1;
+                        if (indexB === -1) return 1;
                         
                         return indexA - indexB;
                     });
