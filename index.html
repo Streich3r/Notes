@@ -1334,40 +1334,43 @@ notesData.sort((a, b) => {
         // ** IMPORT/EXPORT LOGIK (KORRIGIERT) **
         // ******************************************************
 
-       const exportNotes = () => {
+   const exportNotes = () => {
     try {
+        // 1. Daten und Metadaten vorbereiten
         const exportData = {
             notes: notesData,
             version: 1.0,
-            // Füge die unsortierte Reihenfolge hinzu, damit diese beim Import beibehalten wird
             order: JSON.parse(localStorage.getItem('notes-order') || '[]')
         };
         
-        // 1. Daten in ein Blob umwandeln
         const dataStr = JSON.stringify(exportData, null, 2);
-        const blob = new Blob([dataStr], { type: 'application/json' });
         
-        // 2. Temporäre URL erstellen (eindeutige Adresse im Browserspeicher)
+        // 2. Erzeuge Blob und temporäre URL (ZUVERLÄSSIGKEIT)
+        const blob = new Blob([dataStr], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
         
-        // 3. Download-Link erstellen und konfigurieren
+        // 3. Link-Element erstellen
         const dlAnchorElem = document.createElement('a');
         dlAnchorElem.setAttribute("href", url);
         dlAnchorElem.setAttribute("download", `offline_notizen_export_${Date.now()}.json`);
         
-        // 4. Download starten und aufräumen
+        // 4. Download starten
         document.body.appendChild(dlAnchorElem);
         dlAnchorElem.click();
         
-        // ⭐️ WICHTIG: Das Aufräumen MUSS erfolgen
-        dlAnchorElem.remove();
-        URL.revokeObjectURL(url); // <-- Gibt die temporäre URL sofort frei
+        // 5. Verzögerte Bereinigung (Löst das Problem des blockierten Downloads)
+        // Wir warten kurz (100ms), um dem Browser Zeit zu geben, den Download zu starten,
+        // bevor wir die URL freigeben und das Element entfernen.
+        setTimeout(() => {
+            URL.revokeObjectURL(url); // Gibt die temporäre URL frei (wichtig für Mehrfach-Exports!)
+            dlAnchorElem.remove();     // Entfernt das Element aus dem DOM
+        }, 100); 
         
-        showModal("Ihre Notizen wurden erfolgreich exportiert!");
+        showModal("Ihre Notizen wurden erfolgreich exportiert.");
 
     } catch (e) {
         console.error("Fehler beim Exportieren der Notizen:", e);
-        showModal("Fehler beim Exportieren. Bitte versuchen Sie es erneut.");
+        showModal("Fehler beim Exportieren. Bitte überprüfen Sie die Konsole.");
     }
 };
 
