@@ -1029,6 +1029,7 @@ class="text-gray-300 mb-4 text-center">Geben Sie die URL für den Link ein.</p>
             if (document.activeElement === noteEditor) {
                 noteEditor.blur();
             }
+            const wasEditing = !!editingNoteId; // Speichert true, wenn wir im Edit-Modus sind
 
             const title = noteTitleInput.value.trim();
             const content = sanitizeHtml(noteEditor.innerHTML);
@@ -1046,7 +1047,7 @@ class="text-gray-300 mb-4 text-center">Geben Sie die URL für den Link ein.</p>
                     notesData[index].content = content;
                     notesData[index].updatedAt = Date.now();
                 }
-                showModal("Notiz erfolgreich aktualisiert!"); 
+                //showModal("Notiz erfolgreich aktualisiert!");
                 editingNoteId = null;
             } else {
                 // Neue Notiz erstellen
@@ -1073,7 +1074,7 @@ class="text-gray-300 mb-4 text-center">Geben Sie die URL für den Link ein.</p>
             saveNotesToLocal();
             // Notizen neu rendern (mit Suchfilter, falls aktiv)
             renderNotes(searchInput.value);
-            showModal(editingNoteId ? "Notiz erfolgreich aktualisiert!" : "Neue Notiz erfolgreich gespeichert!");
+            showModal(wasEditing ? "Notiz erfolgreich aktualisiert!" : "Neue Notiz erfolgreich gespeichert!");
         };
 
 
