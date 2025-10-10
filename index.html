@@ -1119,24 +1119,15 @@ const sortNotes = (method, isInitialLoad = false) => {
                         const indexA = orderArray.indexOf(a.id);
                         const indexB = orderArray.indexOf(b.id);
                         
-notesData.sort((a, b) => {
-    // ... (Logik zur Bestimmung von indexA und indexB bleibt erhalten)
-    
-    // Fall 1: Beide Notizen sind neu. Sortiere sie untereinander nach ID (oder Datum).
-    if (indexA === -1 && indexB === -1) {
-        return b.id.localeCompare(a.id); // Neueste ID (neuere Notiz) zuerst
-    }
-    
-    // Fall 2: A ist neu (-1), B ist alt. return -1 -> A kommt VOR B (Anfang der Liste)
-    if (indexA === -1) return -1; 
-
-    // Fall 3: B ist neu (-1), A ist alt. return 1 -> A kommt NACH B (B kommt VOR A)
-    if (indexB === -1) return 1;
-    
-    // Fall 4: Beide Notizen sind alt. Sortiere nach der gespeicherten Reihenfolge.
-    return indexA - indexB; 
-});
-
+                        // Neue Notizen (die nicht in orderArray sind) kommen ans Ende.
+                        if (indexA === -1 && indexB === -1) {
+                            return b.id.localeCompare(a.id);
+                        }
+                        if (indexA === -1) return 1;
+                        if (indexB === -1) return -1;
+                        
+                        return indexA - indexB;
+                    });
                     
                 } else if (!isInitialLoad) {
                     // Wenn keine Reihenfolge gespeichert ist und es keine initiale Ladung ist, 
