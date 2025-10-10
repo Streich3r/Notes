@@ -1336,38 +1336,50 @@ notesData.sort((a, b) => {
 
 const exportNotes = () => {
     try {
-        // 1. Daten und Metadaten vorbereiten
+        const userAgent = navigator.userAgent;
+        // Ist es ein mobiler Opera-Browser oder ein anderer schwieriger mobiler Fall?
+        // Wir suchen nach 'OPR' (Opera) oder 'Mobile' ODER 'Android' als Indikator für ein langsames mobiles System.
+        const requiresDelayedCleanup = /OPR|Mobile|Android/i.test(userAgent);
+
+        // 1. Daten vorbereiten (wie gehabt)
         const exportData = {
             notes: notesData,
             version: 1.0,
             order: JSON.parse(localStorage.getItem('notes-order') || '[]')
         };
-        
         const dataStr = JSON.stringify(exportData, null, 2);
-        
-        // 2. Erzeuge Blob und temporäre URL
         const blob = new Blob([dataStr], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
         
-        // 3. Link-Element erstellen
+        // 2. Link-Element erstellen
         const dlAnchorElem = document.createElement('a');
         dlAnchorElem.setAttribute("href", url);
         dlAnchorElem.setAttribute("download", `offline_notizen_export_${Date.now()}.json`);
+        dlAnchorElem.style.display = 'none'; // Element unsichtbar machen
         
-        // 4. Download starten
+        // 3. Download starten
         document.body.appendChild(dlAnchorElem);
         dlAnchorElem.click(); 
 
-        // ⭐️ ENDGÜLTIGE KORREKTUR FÜR MAXIMALE KOMPATIBILITÄT: 
-        // Wir verschieben BEIDE Bereinigungsschritte in ein längeres Timeout (250ms).
-        // Dies ist notwendig, damit langsame mobile Browser den Download registrieren können,
-        // bevor das Element entfernt und der Speicher freigegeben wird.
-        setTimeout(() => {
-            URL.revokeObjectURL(url); // Gibt die temporäre URL frei
-            dlAnchorElem.remove();     // Entfernt das Element jetzt sicher
-        }, 250); // 250ms sind der zuverlässigste Wert für Cross-Browser-Downloads
+        // 4. Fallback-Logik zur Bereinigung:
+
+        if (requiresDelayedCleanup) {
+            // LANGSAME Methode: Längere Verzögerung für langsame Mobile-Browser (Opera, älteres Android)
+            // Wir lassen das a-Element im DOM, um den Download nicht zu stören.
+            setTimeout(() => {
+                URL.revokeObjectURL(url); 
+                // Das unsichtbare a-Element bleibt im DOM (oder Sie können es hier entfernen, 
+                // aber dies ist die sicherste Methode für Opera).
+            }, 500); 
+        } else {
+            // SCHNELLE Methode: Sofortige Bereinigung für Desktop-Browser (Chrome, Firefox etc.)
+            // Das sorgt dafür, dass der Browser-Speicher sofort freigegeben wird.
+            URL.revokeObjectURL(url); 
+            // Hier entfernen wir das Element:
+            dlAnchorElem.remove();
+        }
         
-        showModal("Ihre Notizen wurden erfolgreich exportiert.");
+        showModal("Ihre Notizen wurden erfolgreich exportiert!");
 
     } catch (e) {
         console.error("Fehler beim Exportieren der Notizen:", e);
