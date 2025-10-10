@@ -1117,17 +1117,19 @@ const sortNotes = (method, isInitialLoad = false) => {
                 if (orderArray.length > 0) {
           
 notesData.sort((a, b) => {
+    
     // 1. ABSOLUTE PRIORITÄT: Neueste Notiz zuerst (b.updatedAt - a.updatedAt)
-    // Dieser Schritt garantiert, dass die Notiz mit dem höchsten Zeitstempel (die zuletzt gespeicherte)
-    // immer an erster Stelle steht.
+    // Die zuletzt gespeicherte Notiz hat den höchsten updatedAt-Wert und wird dadurch 
+    // GARANTIERT an die erste Stelle verschoben, unabhängig von der notes-order Liste.
     if (b.updatedAt !== a.updatedAt) {
-        // b.updatedAt > a.updatedAt ergibt eine positive Zahl.
-        // In der sort()-Funktion bedeutet das: A kommt nach B (B kommt zuerst).
+        // b.updatedAt - a.updatedAt ergibt eine positive Zahl, wenn b neuer ist.
+        // In der sort()-Funktion bedeutet das: B kommt vor A (absteigend).
         return b.updatedAt - a.updatedAt; 
     }
 
-    // 2. FALLBACK: GESPEICHERTE REIHENFOLGE
-    // Dies wird nur ausgeführt, wenn die Zeitstempel gleich sind (was bei gespeicherten Notizen der Fall ist).
+    // 2. FALLBACK: GESPEICHERTE MANUELLE REIHENFOLGE
+    // Dies wird nur ausgeführt, wenn die Zeitstempel identisch sind (bei Notizen, 
+    // die seit dem letzten D&D nicht bearbeitet wurden).
     const indexA = orderArray.indexOf(String(a.id));
     const indexB = orderArray.indexOf(String(b.id));
 
@@ -1135,7 +1137,7 @@ notesData.sort((a, b) => {
         return indexA - indexB; // Sortiere nach der manuell festgelegten Position
     }
 
-    // 3. FALLBACK für Notizen ohne Position/gleichem Datum: Sortiere nach ID
+    // 3. Fallback für Notizen ohne Position/gleichem Datum
     return b.id.localeCompare(a.id);
 });
                     
