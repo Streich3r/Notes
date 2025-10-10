@@ -1334,24 +1334,42 @@ notesData.sort((a, b) => {
         // ** IMPORT/EXPORT LOGIK (KORRIGIERT) **
         // ******************************************************
 
-        const exportNotes = () => {
-            const exportData = {
-                notes: notesData,
-                version: 1.0,
-                // Füge die unsortierte Reihenfolge hinzu, damit diese beim Import beibehalten wird
-                order: JSON.parse(localStorage.getItem('notes-order') || '[]')
-            };
-            
-            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(exportData, null, 2));
-            const dlAnchorElem = document.createElement('a');
-            dlAnchorElem.setAttribute("href", dataStr);
-            dlAnchorElem.setAttribute("download", `offline_notizen_export_${Date.now()}.json`);
-            document.body.appendChild(dlAnchorElem);
-            dlAnchorElem.click();
-            dlAnchorElem.remove();
-            
-           // showModal("Ihre Notizen wurden erfolgreich exportiert.");
+       const exportNotes = () => {
+    try {
+        const exportData = {
+            notes: notesData,
+            version: 1.0,
+            // Füge die unsortierte Reihenfolge hinzu, damit diese beim Import beibehalten wird
+            order: JSON.parse(localStorage.getItem('notes-order') || '[]')
         };
+        
+        // 1. Daten in ein Blob umwandeln
+        const dataStr = JSON.stringify(exportData, null, 2);
+        const blob = new Blob([dataStr], { type: 'application/json' });
+        
+        // 2. Temporäre URL erstellen (eindeutige Adresse im Browserspeicher)
+        const url = URL.createObjectURL(blob);
+        
+        // 3. Download-Link erstellen und konfigurieren
+        const dlAnchorElem = document.createElement('a');
+        dlAnchorElem.setAttribute("href", url);
+        dlAnchorElem.setAttribute("download", `offline_notizen_export_${Date.now()}.json`);
+        
+        // 4. Download starten und aufräumen
+        document.body.appendChild(dlAnchorElem);
+        dlAnchorElem.click();
+        
+        // ⭐️ WICHTIG: Das Aufräumen MUSS erfolgen
+        dlAnchorElem.remove();
+        URL.revokeObjectURL(url); // <-- Gibt die temporäre URL sofort frei
+        
+        showModal("Ihre Notizen wurden erfolgreich exportiert!");
+
+    } catch (e) {
+        console.error("Fehler beim Exportieren der Notizen:", e);
+        showModal("Fehler beim Exportieren. Bitte versuchen Sie es erneut.");
+    }
+};
 
         const importNotes = (event) => {
             const file = event.target.files[0];
