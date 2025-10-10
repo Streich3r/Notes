@@ -1334,7 +1334,7 @@ notesData.sort((a, b) => {
         // ** IMPORT/EXPORT LOGIK (KORRIGIERT) **
         // ******************************************************
 
-  const exportNotes = () => {
+ const exportNotes = () => {
     try {
         // 1. Daten und Metadaten vorbereiten
         const exportData = {
@@ -1354,14 +1354,20 @@ notesData.sort((a, b) => {
         dlAnchorElem.setAttribute("href", url);
         dlAnchorElem.setAttribute("download", `offline_notizen_export_${Date.now()}.json`);
         
-        // 4. Download starten (Synchron)
+        // 4. Download starten
         document.body.appendChild(dlAnchorElem);
-        dlAnchorElem.click(); // Synchroner Klick, direkt ausgelöst durch den Nutzer-Klick
+        dlAnchorElem.click(); 
 
-        // 5. SOFORTIGE Bereinigung (WICHTIG für MEHRFACH-EXPORTE!)
-        // Keine Verzögerung (setTimeout) mehr, um Browser-Blockierung zu vermeiden.
+        // ⭐️ KORREKTUR FÜR ANDROID/MOBILE: 
+        
+        // Element SOFORT entfernen, um den Download-Dialog nicht zu blockieren.
         dlAnchorElem.remove();     
-        URL.revokeObjectURL(url); // Gibt die temporäre URL frei
+        
+        // URL.revokeObjectURL (der wichtigste Teil) VERZÖGERT ausführen.
+        // 100ms geben Android genügend Zeit, den Download zu registrieren.
+        setTimeout(() => {
+            URL.revokeObjectURL(url); // Gibt die temporäre URL frei (wichtig für Mehrfach-Exports!)
+        }, 100); 
         
         showModal("Ihre Notizen wurden erfolgreich exportiert!");
 
