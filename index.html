@@ -1115,19 +1115,33 @@ const sortNotes = (method, isInitialLoad = false) => {
                 }
                 
                 if (orderArray.length > 0) {
-                    notesData.sort((a, b) => {
-                        const indexA = orderArray.indexOf(a.id);
-                        const indexB = orderArray.indexOf(b.id);
-                        
-                        // Neue Notizen (die nicht in orderArray sind) kommen ans Ende.
-                        if (indexA === -1 && indexB === -1) {
-                            return b.id.localeCompare(a.id);
-                        }
-                        if (indexA === -1) return 1;
-                        if (indexB === -1) return -1;
-                        
-                        return indexA - indexB;
-                    });
+             // ERSETZEN Sie den existierenden notesData.sort... Block
+notesData.sort((a, b) => {
+    const indexA = orderArray.indexOf(a.id);
+    const indexB = orderArray.indexOf(b.id);
+    
+    // Fall 1: Beide Notizen sind in der gespeicherten Reihenfolge
+    if (indexA !== -1 && indexB !== -1) {
+        return indexA - indexB; // Sortiere nach der gespeicherten Reihenfolge
+    }
+    
+    // Fall 2: Note A ist NEU (Index ist -1) und Note B ist ALT (Index != -1)
+    // A soll VOR B kommen, also return -1
+    if (indexA === -1 && indexB !== -1) {
+        return -1; 
+    }
+    
+    // Fall 3: Note B ist NEU (Index ist -1) und Note A ist ALT (Index != -1)
+    // B soll VOR A kommen, also return 1
+    if (indexA !== -1 && indexB === -1) {
+        return 1; 
+    }
+
+    // Fall 4: Beide Notizen sind NEU. Sortiere sie nach dem neuesten Datum/ID (z.B. neueste zuerst)
+    // Wir nehmen hier die updatedAt-Zeit, um die Reihenfolge der neu erstellten Notizen zu bestimmen
+    return b.updatedAt - a.updatedAt;
+});
+// ENDE des ERSETZTEN Blocks
                     
                 } else if (!isInitialLoad) {
                     // Wenn keine Reihenfolge gespeichert ist und es keine initiale Ladung ist, 
