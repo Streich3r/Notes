@@ -1362,7 +1362,7 @@ const setupDragAndDrop = () => {
         }
     });
 
-  // Drop: Speichert die neue Reihenfolge
+// Drop: Speichert die neue Reihenfolge
     notesList.addEventListener('drop', (e) => {
         e.preventDefault();
         
@@ -1374,8 +1374,6 @@ const setupDragAndDrop = () => {
 
         // Aktualisiere das notesData-Array entsprechend der neuen Reihenfolge
         const sortedNotes = newOrder.map(id => notesData.find(note => String(note.id) === id)).filter(n => n);
-        
-        // Füge Notizen, die aus irgendeinem Grund nicht im DOM waren, ans Ende an (Sicherung)
         const unsortedNewNotes = notesData.filter(note => !newOrder.includes(String(note.id))); 
         
         notesData.length = 0;
@@ -1384,10 +1382,11 @@ const setupDragAndDrop = () => {
         // Speichere die Daten mit der neuen Reihenfolge ab
         saveNotesToLocal();
         
-        // ******************************************************
-        // ✅ KRITISCH: LISTE MUSS NACH DEM DROP NEU GERENDERT WERDEN
-        // ******************************************************
+        // 1. Die Liste neu rendern (entfernt Listener)
         renderNotes(searchInput.value);
+        
+        // 2. ✅ KRITISCH: Listener SOFORT neu initialisieren!
+        setupDragAndDrop();
 
         // Cleanup
         draggedItem = null;
