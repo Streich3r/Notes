@@ -455,7 +455,7 @@ class="text-gray-300 mb-4 text-center">Geben Sie die URL für den Link ein.</p>
 
     <script>
         // DOM-Elemente
-        const notesList = document.getElementById('notes-list');
+        let notesList = document.getElementById('notes-list');
         const noteTitleInput = document.getElementById('note-title-input');
         const noteEditor = document.getElementById('note-editor');
         const saveNoteBtn = document.getElementById('save-note-btn');
@@ -1302,59 +1302,103 @@ notesData.sort((a, b) => {
         // ** DRAG-AND-DROP LOGIK **
         // ******************************************************
 
-        const setupDragAndDrop = () => {
-            const noteCards = notesList.querySelectorAll('.note-card');
+      const setupDragAndDrop = () => {
+    
+    // Wichtig: Drag and Drop wird nur im unsortierten Modus benötigt.
+    if (currentSortMethod !== 'unsorted') {
+        return;
+    }
+    
+    // *** KRITISCHER SCHRITT: ALTE EVENT-LISTENER ENTFERNEN ***
+    // Wir klonen den gesamten Container. Das ist der sicherste Weg, um alle
+    // zuvor angehängten (und fehlerhaften) Event-Listener zu entfernen.
+    const newNotesList = notesList.cloneNode(true);
+    
+    // Ersetze das alte DOM-Element durch den Klon
+    notesList.parentNode.replaceChild(newNotesList, notesList);
+    
+    // Die globale Variable muss auf das NEUE Element verweisen
+    notesList = newNotesList; 
 
-            noteCards.forEach(card => {
-                card.addEventListener('dragstart', () => {
-                    draggedItem = card;
-                    // Verzögerte Klasse, um das eigene Element nicht als Drop-Zone zu behandeln
-                    setTimeout(() => card.classList.add('dragging'), 0);
-                });
+    // Die globale draggedItem-Variable benötigen wir für die Drag-Events
+    let draggedItem = null;
 
-                card.addEventListener('dragend', () => {
-                    setTimeout(() => {
-                        draggedItem.classList.remove('dragging');
-                        draggedItem = null;
-                        
-                        // Speichere die NEUE Reihenfolge
-                        const newOrder = Array.from(notesList.children).map(child => String(child.dataset.id));
-                        localStorage.setItem('notes-order', JSON.stringify(newOrder));
+    // --- Container Listener (dragover/drop) neu setzen ---
+    
+    // Hilfsfunktion, die das Element unter dem Mauszeiger findet
+    const getDragAfterElement = (container, y) => {
+        const draggableElements = [...container.querySelectorAll('.note-card:not(.dragging)')];
+        
+        return draggableElements.reduce((closest, child) => {
+            const box = child.getBoundingClientRect();
+            const offset = y - box.top - box.height / 2;
+            if (offset < 0 && offset > closest.offset) {
+                return { offset: offset, element: child };
+            } else {
+                return closest;
+            }
+        }, { offset: Number.NEGATIVE_INFINITY }).element;
+    };
+    
+    // Dragover: Bestimmt, wo das gezogene Element platziert werden soll
+    notesList.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        if (!document.querySelector('.note-card.dragging')) return;
 
-                        // Aktualisiere notesData entsprechend der neuen DOM-Reihenfolge
-                        notesData.sort((a, b) => {
-                            const indexA = newOrder.indexOf(a.id);
-                            const indexB = newOrder.indexOf(b.id);
-                            return indexA - indexB;
-                        });
-                        
-                        // Speichere die aktualisierten Daten (jetzt in der richtigen Reihenfolge)
-                        saveNotesToLocal();
+        const afterElement = getDragAfterElement(notesList, e.clientY);
+        const draggable = document.querySelector('.note-card.dragging');
+        
+        if (afterElement == null) {
+            notesList.appendChild(draggable);
+        } else {
+            notesList.insertBefore(draggable, afterElement);
+        }
+    });
 
-                    }, 0);
-                });
+    // Drop: Speichert die neue Reihenfolge
+    notesList.addEventListener('drop', (e) => {
+        e.preventDefault();
+        
+        // Die neue Reihenfolge im notesData Array aktualisieren (wird von renderNotes genutzt)
+        const newOrder = Array.from(notesList.querySelectorAll('.note-card')).map(card => card.dataset.id);
+        
+        // Aktualisiere das notesData-Array selbst
+        const sortedNotes = newOrder.map(id => notesData.find(note => note.id === id)).filter(n => n); // Nur existierende Notizen
+        
+        // Notizen, die nicht in der Reihenfolge sind (neue Notizen), anfügen
+        const unsortedNewNotes = notesData.filter(note => !newOrder.includes(note.id));
+        
+        // Setze das globale notesData-Array neu
+        notesData.length = 0;
+        notesData.push(...sortedNotes, ...unsortedNewNotes);
 
-                card.addEventListener('dragover', (e) => {
-                    e.preventDefault();
-                    if (draggedItem && draggedItem !== card) {
-                        const bounding = card.getBoundingClientRect();
-                        const offset = bounding.y + (bounding.height / 2);
+        // Speichere die Reihenfolge im Local Storage
+        localStorage.setItem('notes-order', JSON.stringify(newOrder));
+        
+        // Cleanup
+        if (draggedItem) {
+            draggedItem.classList.remove('dragging');
+            draggedItem = null;
+        }
+    });
 
-                        if (e.clientY < offset) {
-                            // Über der oberen Hälfte: Vor diesem Element einfügen
-                            if (card.previousElementSibling !== draggedItem) {
-                                notesList.insertBefore(draggedItem, card);
-                            }
-                        } else {
-                            // Über der unteren Hälfte: Nach diesem Element einfügen
-                            if (card.nextElementSibling !== draggedItem) {
-                                notesList.insertBefore(draggedItem, card.nextElementSibling);
-                            }
-                        }
-                    }
-                });
-            });
-        };
+    // --- Einzelkarten Listener (dragstart/dragend) neu setzen ---
+    notesList.querySelectorAll('.note-card').forEach(card => {
+        card.setAttribute('draggable', true);
+        
+        card.addEventListener('dragstart', () => {
+            draggedItem = card;
+            setTimeout(() => card.classList.add('dragging'), 0);
+        });
+
+        card.addEventListener('dragend', () => {
+            if (draggedItem) {
+                card.classList.remove('dragging');
+                draggedItem = null;
+            }
+        });
+    });
+};
 
         // ******************************************************
         // ** IMPORT/EXPORT LOGIK (KORRIGIERT) **
