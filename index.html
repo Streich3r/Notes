@@ -1334,7 +1334,7 @@ notesData.sort((a, b) => {
         // ** IMPORT/EXPORT LOGIK (KORRIGIERT) **
         // ******************************************************
 
-   const exportNotes = () => {
+  const exportNotes = () => {
     try {
         // 1. Daten und Metadaten vorbereiten
         const exportData = {
@@ -1345,7 +1345,7 @@ notesData.sort((a, b) => {
         
         const dataStr = JSON.stringify(exportData, null, 2);
         
-        // 2. Erzeuge Blob und temporäre URL (ZUVERLÄSSIGKEIT)
+        // 2. Erzeuge Blob und temporäre URL
         const blob = new Blob([dataStr], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
         
@@ -1354,19 +1354,16 @@ notesData.sort((a, b) => {
         dlAnchorElem.setAttribute("href", url);
         dlAnchorElem.setAttribute("download", `offline_notizen_export_${Date.now()}.json`);
         
-        // 4. Download starten
+        // 4. Download starten (Synchron)
         document.body.appendChild(dlAnchorElem);
-        dlAnchorElem.click();
+        dlAnchorElem.click(); // Synchroner Klick, direkt ausgelöst durch den Nutzer-Klick
+
+        // 5. SOFORTIGE Bereinigung (WICHTIG für MEHRFACH-EXPORTE!)
+        // Keine Verzögerung (setTimeout) mehr, um Browser-Blockierung zu vermeiden.
+        dlAnchorElem.remove();     
+        URL.revokeObjectURL(url); // Gibt die temporäre URL frei
         
-        // 5. Verzögerte Bereinigung (Löst das Problem des blockierten Downloads)
-        // Wir warten kurz (100ms), um dem Browser Zeit zu geben, den Download zu starten,
-        // bevor wir die URL freigeben und das Element entfernen.
-        setTimeout(() => {
-            URL.revokeObjectURL(url); // Gibt die temporäre URL frei (wichtig für Mehrfach-Exports!)
-            dlAnchorElem.remove();     // Entfernt das Element aus dem DOM
-        }, 100); 
-        
-        showModal("Ihre Notizen wurden erfolgreich exportiert.");
+        showModal("Ihre Notizen wurden erfolgreich exportiert!");
 
     } catch (e) {
         console.error("Fehler beim Exportieren der Notizen:", e);
