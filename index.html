@@ -1334,7 +1334,7 @@ notesData.sort((a, b) => {
         // ** IMPORT/EXPORT LOGIK (KORRIGIERT) **
         // ******************************************************
 
- const exportNotes = () => {
+const exportNotes = () => {
     try {
         // 1. Daten und Metadaten vorbereiten
         const exportData = {
@@ -1358,18 +1358,16 @@ notesData.sort((a, b) => {
         document.body.appendChild(dlAnchorElem);
         dlAnchorElem.click(); 
 
-        // ⭐️ KORREKTUR FÜR ANDROID/MOBILE: 
-        
-        // Element SOFORT entfernen, um den Download-Dialog nicht zu blockieren.
-        dlAnchorElem.remove();     
-        
-        // URL.revokeObjectURL (der wichtigste Teil) VERZÖGERT ausführen.
-        // 100ms geben Android genügend Zeit, den Download zu registrieren.
+        // ⭐️ ENDGÜLTIGE KORREKTUR FÜR MAXIMALE KOMPATIBILITÄT: 
+        // Wir verschieben BEIDE Bereinigungsschritte in ein längeres Timeout (250ms).
+        // Dies ist notwendig, damit langsame mobile Browser den Download registrieren können,
+        // bevor das Element entfernt und der Speicher freigegeben wird.
         setTimeout(() => {
-            URL.revokeObjectURL(url); // Gibt die temporäre URL frei (wichtig für Mehrfach-Exports!)
-        }, 100); 
+            URL.revokeObjectURL(url); // Gibt die temporäre URL frei
+            dlAnchorElem.remove();     // Entfernt das Element jetzt sicher
+        }, 250); // 250ms sind der zuverlässigste Wert für Cross-Browser-Downloads
         
-        showModal("Ihre Notizen wurden erfolgreich exportiert!");
+        showModal("Ihre Notizen wurden erfolgreich exportiert.");
 
     } catch (e) {
         console.error("Fehler beim Exportieren der Notizen:", e);
