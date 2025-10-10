@@ -1302,55 +1302,62 @@ notesData.sort((a, b) => {
         // ** DRAG-AND-DROP LOGIK **
         // ******************************************************
 
-      const setupDragAndDrop = () => {
+// ******************************************************
+// ** DRAG-AND-DROP LOGIK (KORRIGIERT UND ROBUST) **
+// ******************************************************
+
+// Hilfsfunktion zur Bestimmung des Elements, hinter dem eingefügt werden soll
+const getDragAfterElement = (container, y) => {
+    // Schließt das aktuell gezogene Element aus
+    const draggableElements = [...container.querySelectorAll('.note-card:not(.dragging)')];
     
-    // Wichtig: Drag and Drop wird nur im unsortierten Modus benötigt.
+    return draggableElements.reduce((closest, child) => {
+        const box = child.getBoundingClientRect();
+        const offset = y - box.top - box.height / 2;
+        // Finde das Element, dessen Mitte am nächsten zur Maus ist und noch darüber liegt (offset < 0)
+        if (offset < 0 && offset > closest.offset) {
+            return { offset: offset, element: child };
+        } else {
+            return closest;
+        }
+    }, { offset: Number.NEGATIVE_INFINITY }).element;
+};
+
+
+const setupDragAndDrop = () => {
+    
+    // Nur im unsortierten Modus aktivieren
     if (currentSortMethod !== 'unsorted') {
         return;
     }
     
-    // *** KRITISCHER SCHRITT: ALTE EVENT-LISTENER ENTFERNEN ***
-    // Wir klonen den gesamten Container. Das ist der sicherste Weg, um alle
-    // zuvor angehängten (und fehlerhaften) Event-Listener zu entfernen.
+    // 1. KRITISCHER SCHRITT: ALTE EVENT-LISTENER SICHER ENTFERNEN
+    // Wir klonen das Element, um alle alten Listener sicher zu entfernen,
+    // da wir die Event-Listener im renderNotes neu setzen müssen.
     const newNotesList = notesList.cloneNode(true);
     
     // Ersetze das alte DOM-Element durch den Klon
     notesList.parentNode.replaceChild(newNotesList, notesList);
     
-    // Die globale Variable muss auf das NEUE Element verweisen
+    // Die globale Variable 'notesList' MUSS auf das NEUE Element verweisen
     notesList = newNotesList; 
 
-    // Die globale draggedItem-Variable benötigen wir für die Drag-Events
-    let draggedItem = null;
-
-    // --- Container Listener (dragover/drop) neu setzen ---
-    
-    // Hilfsfunktion, die das Element unter dem Mauszeiger findet
-    const getDragAfterElement = (container, y) => {
-        const draggableElements = [...container.querySelectorAll('.note-card:not(.dragging)')];
-        
-        return draggableElements.reduce((closest, child) => {
-            const box = child.getBoundingClientRect();
-            const offset = y - box.top - box.height / 2;
-            if (offset < 0 && offset > closest.offset) {
-                return { offset: offset, element: child };
-            } else {
-                return closest;
-            }
-        }, { offset: Number.NEGATIVE_INFINITY }).element;
-    };
+    // 2. Listener für den CONTAINER (Drop-Zone) neu setzen
     
     // Dragover: Bestimmt, wo das gezogene Element platziert werden soll
     notesList.addEventListener('dragover', (e) => {
         e.preventDefault();
+        // Stelle sicher, dass tatsächlich etwas gezogen wird
         if (!document.querySelector('.note-card.dragging')) return;
 
         const afterElement = getDragAfterElement(notesList, e.clientY);
         const draggable = document.querySelector('.note-card.dragging');
         
         if (afterElement == null) {
+            // Ans Ende anhängen
             notesList.appendChild(draggable);
         } else {
+            // Vor dem gefundenen Element einfügen
             notesList.insertBefore(draggable, afterElement);
         }
     });
@@ -1359,31 +1366,32 @@ notesData.sort((a, b) => {
     notesList.addEventListener('drop', (e) => {
         e.preventDefault();
         
-        // Die neue Reihenfolge im notesData Array aktualisieren (wird von renderNotes genutzt)
-        const newOrder = Array.from(notesList.querySelectorAll('.note-card')).map(card => card.dataset.id);
+        // Reihenfolge aus dem DOM ablesen
+        const newOrder = Array.from(notesList.querySelectorAll('.note-card')).map(card => String(card.dataset.id));
         
-        // Aktualisiere das notesData-Array selbst
-        const sortedNotes = newOrder.map(id => notesData.find(note => note.id === id)).filter(n => n); // Nur existierende Notizen
-        
-        // Notizen, die nicht in der Reihenfolge sind (neue Notizen), anfügen
-        const unsortedNewNotes = notesData.filter(note => !newOrder.includes(note.id));
-        
-        // Setze das globale notesData-Array neu
-        notesData.length = 0;
-        notesData.push(...sortedNotes, ...unsortedNewNotes);
-
         // Speichere die Reihenfolge im Local Storage
         localStorage.setItem('notes-order', JSON.stringify(newOrder));
+
+        // Aktualisiere das notesData-Array entsprechend der neuen Reihenfolge
+        const sortedNotes = newOrder.map(id => notesData.find(note => String(note.id) === id)).filter(n => n);
         
-        // Cleanup
-        if (draggedItem) {
-            draggedItem.classList.remove('dragging');
-            draggedItem = null;
-        }
+        // Füge Notizen, die aus irgendeinem Grund nicht im DOM waren, ans Ende an (Sicherung)
+        const unsortedNewNotes = notesData.filter(note => !newOrder.includes(String(note.id))); 
+        
+        notesData.length = 0;
+        notesData.push(...sortedNotes, ...unsortedNewNotes);
+        
+        // Speichere die Daten mit der neuen Reihenfolge ab
+        saveNotesToLocal();
+        
+        // Cleanup: remove dragging class after re-sort/save (optional, da es automatisch gehen sollte)
+        notesList.querySelectorAll('.note-card').forEach(card => card.classList.remove('dragging'));
+        draggedItem = null;
     });
 
-    // --- Einzelkarten Listener (dragstart/dragend) neu setzen ---
+    // 3. Listener für die EINZELKARTEN (Start/End) neu setzen
     notesList.querySelectorAll('.note-card').forEach(card => {
+        // Muss auf 'true' gesetzt werden, damit Drag-Events funktionieren
         card.setAttribute('draggable', true);
         
         card.addEventListener('dragstart', () => {
@@ -1392,10 +1400,9 @@ notesData.sort((a, b) => {
         });
 
         card.addEventListener('dragend', () => {
-            if (draggedItem) {
-                card.classList.remove('dragging');
-                draggedItem = null;
-            }
+            // Muss immer ausgeführt werden, falls der Drop nicht in einer gültigen Zone landete
+            card.classList.remove('dragging');
+            draggedItem = null;
         });
     });
 };
