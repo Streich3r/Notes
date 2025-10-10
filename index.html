@@ -1335,23 +1335,31 @@ notesData.sort((a, b) => {
         // ******************************************************
 
 const exportNotes = () => {
-            const exportData = {
-                notes: notesData,
-                version: 1.0,
-                // Füge die unsortierte Reihenfolge hinzu, damit diese beim Import beibehalten wird
-                order: JSON.parse(localStorage.getItem('notes-order') || '[]')
-            };
-            
-            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(exportData, null, 2));
-            const dlAnchorElem = document.createElement('a');
-            dlAnchorElem.setAttribute("href", dataStr);
-            dlAnchorElem.setAttribute("download", `offline_notizen_export_${Date.now()}.json`);
-            document.body.appendChild(dlAnchorElem);
-            dlAnchorElem.click();
-            dlAnchorElem.remove();
-            
-           // showModal("Ihre Notizen wurden erfolgreich exportiert.");
-        };
+   
+    if (notesData.length === 0) {
+        showModal("Es gibt keine Notizen zum Exportieren. Bitte erstellen Sie zuerst eine Notiz.");
+        return; // Stoppt die Funktion, bevor der Download gestartet wird
+    }
+
+
+    const exportData = {
+        notes: notesData,
+        version: 1.0,
+        // Füge die unsortierte Reihenfolge hinzu, damit diese beim Import beibehalten wird
+        order: JSON.parse(localStorage.getItem('notes-order') || '[]')
+    };
+    
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(exportData, null, 2));
+    const dlAnchorElem = document.createElement('a');
+    dlAnchorElem.setAttribute("href", dataStr);
+    dlAnchorElem.setAttribute("download", `offline_notizen_export_${Date.now()}.json`);
+    document.body.appendChild(dlAnchorElem);
+    dlAnchorElem.click();
+    dlAnchorElem.remove();
+    
+    // Sie können hier zusätzlich eine Erfolgsmeldung für den PC einfügen, falls Sie möchten
+    // showModal("Ihre Notizen wurden erfolgreich exportiert.");
+};
         
         const importNotes = (event) => {
             const file = event.target.files[0];
