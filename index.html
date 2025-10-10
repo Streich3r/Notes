@@ -1116,25 +1116,32 @@ const sortNotes = (method, isInitialLoad = false) => {
                 
                 if (orderArray.length > 0) {
                   
-                    notesData.sort((a, b) => {
-                        const indexA = orderArray.indexOf(a.id);
-                        const indexB = orderArray.indexOf(b.id);
-                        
-                        // Beide neu: Sortiere sie untereinander nach ID (optional)
-                        if (indexA === -1 && indexB === -1) {
-                            return b.id.localeCompare(a.id); 
-                        }
-                        
-                        // A ist neu (-1) und B ist alt. return -1 -> A kommt VOR B.
-                        if (indexA === -1) return -1;
-                        
-                        // B ist neu (-1) und A ist alt. return 1 -> A kommt NACH B, B kommt VOR A.
-                        if (indexB === -1) return 1;
-                        
-                        // Beide alt: Sortiere nach gespeicherter Reihenfolge.
-                        return indexA - indexB;
-                    });
+                   notesData.sort((a, b) => {
+    const indexA = orderArray.indexOf(String(a.id));
+    const indexB = orderArray.indexOf(String(b.id));
 
+    // Fall 1: Notiz A ist brandneu (höheres UpdatedAt als alle anderen)
+    // Wenn A neuer ist als B, soll A zuerst kommen (return -1)
+    if (b.updatedAt < a.updatedAt) {
+        // Wir prüfen, ob A nach dem letzten D&D gespeichert wurde.
+        // Wenn A ein Element ist, dessen ID am Ende von notes-order steht, aber deren updatedAt
+        // das aktuellste ist, ist sie die neueste Notiz.
+        return -1;
+    } 
+    // Wenn B neuer ist als A, soll B zuerst kommen (return 1)
+    if (a.updatedAt < b.updatedAt) {
+        return 1;
+    }
+
+    // Wenn die updatedAt-Zeiten gleich sind (oder wir keine definitive neueste Notiz haben), 
+    // dann nutzen wir die gespeicherte Reihenfolge, um die Stabilität alter Notizen zu gewährleisten.
+    if (indexA !== -1 && indexB !== -1) {
+        return indexA - indexB; // Sortiere nach der gespeicherten Reihenfolge
+    }
+    
+    // Fall 3: Fallback für D&D-Konflikte (kann jetzt meist ignoriert werden, da updatedAt dominiert)
+    return 0; // Kein Tausch nötig
+});
                     
                 } else if (!isInitialLoad) {
                     // Wenn keine Reihenfolge gespeichert ist und es keine initiale Ladung ist, 
