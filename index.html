@@ -1362,7 +1362,7 @@ const setupDragAndDrop = () => {
         }
     });
 
-    // Drop: Speichert die neue Reihenfolge
+  // Drop: Speichert die neue Reihenfolge
     notesList.addEventListener('drop', (e) => {
         e.preventDefault();
         
@@ -1384,8 +1384,12 @@ const setupDragAndDrop = () => {
         // Speichere die Daten mit der neuen Reihenfolge ab
         saveNotesToLocal();
         
-        // Cleanup: remove dragging class after re-sort/save (optional, da es automatisch gehen sollte)
-        notesList.querySelectorAll('.note-card').forEach(card => card.classList.remove('dragging'));
+        // ******************************************************
+        // ✅ KRITISCH: LISTE MUSS NACH DEM DROP NEU GERENDERT WERDEN
+        // ******************************************************
+        renderNotes(searchInput.value);
+
+        // Cleanup
         draggedItem = null;
     });
 
