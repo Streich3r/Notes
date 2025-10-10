@@ -1335,50 +1335,33 @@ notesData.sort((a, b) => {
         // ******************************************************
 
 const exportNotes = () => {
-    try {
-        const exportData = {
-            notes: notesData,
-            version: 1.0,
-            order: JSON.parse(localStorage.getItem('notes-order') || '[]')
-        };
-        
-        const dataStr = JSON.stringify(exportData, null, 2);
-        const blob = new Blob([dataStr], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        
-        const filename = `offline_notizen_export_${Date.now()}.json`;
+    // 1. Daten vorbereiten
+    const exportData = {
+        notes: notesData,
+        version: 1.0,
+        order: JSON.parse(localStorage.getItem('notes-order') || '[]')
+    };
+    
+    // 2. Erstelle den Data URI (sicher für manuelle Klicks)
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(exportData, null, 2));
+    const filename = `offline_notizen_export_${Date.now()}.json`;
 
-        // 1. Erstelle den Download-Link
-        const downloadLink = document.createElement('a');
-        downloadLink.href = url;
-        downloadLink.download = filename;
-        downloadLink.textContent = `Hier klicken, um ${filename} herunterzuladen`;
-        
-        // 2. Füge den Link temporär dem Modal hinzu (z.B. der Modal-Inhaltsbereich)
-        // HINWEIS: Sie müssen ein HTML-Element im Modal anpassen, das diesen Link aufnehmen kann. 
-        // Ich nenne es hier stellvertretend 'modalContentArea'.
-        // Da ich Ihre showModal-Funktion nicht kenne, verwende ich eine generische showModal-Funktion
-        // die das HTML akzeptiert:
-
-        const modalHTML = `
-            <div class="text-white">
-                <p class="mb-4">Opera Mobile blockiert programmatische Downloads nach dem ersten Mal.</p>
-                <p class="mb-4">Bitte klicken Sie manuell auf den folgenden Link, um den Export zu starten:</p>
-                ${downloadLink.outerHTML}
-            </div>
-        `;
-        
-        showModal(modalHTML); 
-
-        // 3. WICHTIG: Cleanup nach Klick auf den Link im Modal
-        // Da wir nicht wissen, wann der Benutzer klickt, können wir das Aufräumen nicht zuverlässig verzögern.
-        // Fügen Sie den Aufräumschritt HIER **NICHT** hinzu! Der Benutzer muss die Seite neu laden, um den Blob-Speicher zu leeren.
-        // Alternative: Speichern Sie 'url' global und fügen Sie eine 'Speicher leeren'-Taste in die App ein.
-
-    } catch (e) {
-        console.error("Fehler beim Exportieren der Notizen:", e);
-        showModal("Fehler beim Exportieren.");
-    }
+    // 3. Der HTML-Inhalt für das Modal (wird jetzt korrekt gerendert!)
+    const modalHTML = `
+        <div class="text-white text-base p-4">
+            <p class="mb-4 font-semibold text-lg text-yellow-400">⚠️ Export-Download</p>
+            <p class="mb-4">Ihr Browser blockiert automatische Downloads. Bitte klicken Sie manuell auf den folgenden Button:</p>
+            
+            <a href="${dataStr}" download="${filename}" 
+               class="inline-block bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded transition duration-200 mt-2">
+                Download starten (Klicken!)
+            </a>
+            <p class="mt-4 text-xs text-gray-400">Dateiname: ${filename}</p>
+        </div>
+    `;
+    
+    // 4. Modal anzeigen
+    showModal(modalHTML);
 };
         const importNotes = (event) => {
             const file = event.target.files[0];
