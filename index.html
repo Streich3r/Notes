@@ -1276,11 +1276,7 @@ notesData.sort((a, b) => {
         };
 
 
-        // ******************************************************
-        // ** DRAG-AND-DROP LOGIK **
-        // ******************************************************
-
-      // Globale Variablen für Long-Press außerhalb der Funktion definieren
+     // Globale Variablen für Long-Press außerhalb der Funktion definieren
 let pressTimer;
 const LONG_PRESS_DURATION = 500; // 500 ms (0.5 Sekunden)
 
@@ -1299,9 +1295,7 @@ const setupDragAndDrop = () => {
         // Dragstart (Wird durch Mausklick und Ziehen ausgelöst)
         card.addEventListener('dragstart', (e) => {
             draggedItem = card;
-            // Setze Daten, was bei manchen mobilen Browsern hilft
             e.dataTransfer.setData('text/plain', card.dataset.id);
-            // Verzögerte Klasse, um das eigene Element nicht als Drop-Zone zu behandeln
             setTimeout(() => card.classList.add('dragging'), 0);
         });
 
@@ -1312,7 +1306,6 @@ const setupDragAndDrop = () => {
                 const bounding = card.getBoundingClientRect();
                 const offset = bounding.y + (bounding.height / 2);
 
-                // Einfügeposition bestimmen (über oder unter der Karte)
                 if (e.clientY < offset) {
                     if (card.previousElementSibling !== draggedItem) {
                         notesList.insertBefore(draggedItem, card);
@@ -1327,8 +1320,10 @@ const setupDragAndDrop = () => {
         
         // Dragend (Maus wurde losgelassen, Reihenfolge speichern)
         card.addEventListener('dragend', () => {
-            // Speichere und aktualisiere die Daten
             setTimeout(() => {
+                // Führe Speicherlogik nur aus, wenn draggedItem noch existiert
+                if (!draggedItem) return; 
+                
                 draggedItem.classList.remove('dragging');
                 draggedItem = null;
                 
@@ -1350,50 +1345,58 @@ const setupDragAndDrop = () => {
         // ******************************************************
 
         // 1. TOUCHSTART: Starte den Timer für langes Drücken
-        // Wichtig: { passive: false } ist notwendig, um e.preventDefault() aufzurufen.
         card.addEventListener('touchstart', (e) => {
-            // Ignoriere Multitouch
             if (e.touches.length > 1) return;
             
-            // Timer starten
+            // Setzt den Timer. Bei Ablauf wird Drag-Modus aktiviert.
             pressTimer = setTimeout(() => {
                 
-                // Langes Drücken ist erfolgt!
-                e.preventDefault(); // Jetzt blockieren wir das Scrollen.
+                // Langes Drücken erfolgt! 
+                e.preventDefault(); // Blockiere Scrollen und Kontextmenü
                 
-                // Aktiviere den Drag-Modus (simuliere dragstart)
+                // Aktiviere Drag-Modus
                 draggedItem = card;
                 card.classList.add('dragging');
                 
             }, LONG_PRESS_DURATION);
-        }, { passive: false }); 
+        }, { passive: false }); // Wichtig für e.preventDefault()
 
 
-        // 2. TOUCHMOVE: Wenn der Finger sich bewegt, bevor der Timer abläuft, ist es Scrollen
-        // HINWEIS: Hier wurde das fehlende Argument (e) hinzugefügt!
+        // 2. TOUCHMOVE: Verschiebe oder breche Long-Press ab
         card.addEventListener('touchmove', (e) => { 
-            // Wenn wir uns bewegen, bevor der Timer abläuft, löschen wir den Timer
+            // Wenn wir uns bewegen, bevor der Timer abläuft, ist es Scrollen -> Timer abbrechen
             if (!draggedItem) { 
                 clearTimeout(pressTimer);
+                return;
             }
             
-            // Wenn wir im Drag-Modus sind, nutze touchmove, um die Position zu aktualisieren
-            if (draggedItem && draggedItem === card) {
+            // WIR SIND IM DRAG-MODUS: Blockiere Scrollen und verschiebe manuell
+            if (draggedItem) {
+                e.preventDefault(); // Blockiere jetzt definitiv das Scrollen
                 
                 const touch = e.touches[0];
                 
-                // Erstelle ein simuliertes Event-Objekt mit den benötigten clientY-Koordinaten
+                // Manuelles Ermitteln des Ziel-Elements unter dem Finger
+                // Verstecke das gezogene Element kurz, um das darunterliegende Element zu finden
+                draggedItem.style.display = 'none';
+                const elementOver = document.elementFromPoint(touch.clientX, touch.clientY);
+                draggedItem.style.display = ''; // Zeige es wieder an
+                
+                // Suche die nächstgelegene Notizkarte zu diesem Punkt
+                const targetCard = elementOver ? elementOver.closest('.note-card') : null;
+
+                // Erstelle ein simuliertes Event-Objekt für die clientY-Koordinaten
                 const simulatedEvent = {
-                    clientX: touch.clientX,
                     clientY: touch.clientY,
-                    preventDefault: () => {} // Dummy-Funktion
+                    // Die anderen Properties werden für handleTouchDrag nicht benötigt
                 };
                 
-                // Rufen Sie die 'dragover'-Logik mit den Touch-Koordinaten auf
-                handleTouchDrag(simulatedEvent, card);
-                
+                // Führe die Drop-Logik nur aus, wenn wir über einer GÜLTIGEN Zielkarte sind
+                if (targetCard && targetCard !== draggedItem) {
+                    handleTouchDrag(simulatedEvent, targetCard);
+                }
             }
-        });
+        }, { passive: false }); // Auch hier passive: false, da wir e.preventDefault() verwenden
 
 
         // 3. TOUCHEND: Timer löschen und Drag-Modus beenden
@@ -1410,18 +1413,17 @@ const setupDragAndDrop = () => {
     
     // Hilfsfunktion, um die dragover-Logik von oben wiederzuverwenden
     function handleTouchDrag(e, card) {
-        if (draggedItem && draggedItem !== card) {
-            const bounding = card.getBoundingClientRect();
-            const offset = bounding.y + (bounding.height / 2);
+        // draggedItem !== card ist hier schon durch die aufrufende Logik garantiert
+        const bounding = card.getBoundingClientRect();
+        const offset = bounding.y + (bounding.height / 2);
 
-            if (e.clientY < offset) {
-                if (card.previousElementSibling !== draggedItem) {
-                    notesList.insertBefore(draggedItem, card);
-                }
-            } else {
-                if (card.nextElementSibling !== draggedItem) {
-                    notesList.insertBefore(draggedItem, card.nextElementSibling);
-                }
+        if (e.clientY < offset) {
+            if (card.previousElementSibling !== draggedItem) {
+                notesList.insertBefore(draggedItem, card);
+            }
+        } else {
+            if (card.nextElementSibling !== draggedItem) {
+                notesList.insertBefore(draggedItem, card.nextElementSibling);
             }
         }
     }
