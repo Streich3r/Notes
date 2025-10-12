@@ -3,7 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Hybrider Drag & Drop Test</title>
+    <title>Handle D&D Test (Opera Fix)</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    
     <style>
         /* ************************************** */
         /* CSS STYLES */
@@ -25,38 +27,52 @@
         }
 
         .note-card {
-            padding: 15px;
+            display: flex; /* Flexbox für Handle links, Inhalt rechts */
+            align-items: center;
+            padding: 10px;
             border-radius: 6px;
             background-color: #4b5563; /* Mittelgraue Karte */
-            cursor: grab;
             transition: transform 0.2s, opacity 0.2s;
             
-            /* WICHTIG für Touch: Erlaubt Dragging, aber verhindert Scrollen beim Halten */
+            /* WICHTIG: Das ganze Element muss keine touch-action: none haben, nur das Handle */
+        }
+        
+        .drag-handle {
+            padding: 8px 15px 8px 5px; /* Größerer Touch-Bereich */
+            margin-right: 10px;
+            cursor: grab;
+            color: #9ca3af; 
+            font-size: 1.2em;
+            
+            /* WICHTIG: Hier blockieren wir die nativen Gesten (Markieren/Scrollen) */
             touch-action: none; 
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        
+        .note-body {
+            flex-grow: 1;
         }
 
-        .note-card:active {
-            cursor: grabbing;
+        .note-body .note-content {
+            font-size: 0.9em;
+            color: #d1d5db;
+            /* Wichtig: Markieren im Text ist erlaubt */
+            user-select: text; 
+            -webkit-user-select: text;
         }
 
         .note-card.dragging {
             opacity: 0.4;
             transform: scale(0.98);
         }
-
-        /* Testbereich für Markieren */
-        .note-content {
-            margin-top: 5px;
-            font-size: 0.9em;
-            color: #d1d5db;
-        }
     </style>
 </head>
 <body>
 
-    <h1>Drag & Drop Test</h1>
-    <p>Testen Sie D&D mit der Maus (PC) und Long Press (Mobil, z.B. Opera Android).</p>
-    <p><strong>Ziel:</strong> Kurzes Halten sollte Markieren/Kontextmenü erlauben, langes Halten (Long Press) sollte Dragging starten.</p>
+    <h1>Handle Drag & Drop Test</h1>
+    <p>Bitte verwenden Sie das **Griff-Icon** (<i class="fas fa-grip-vertical"></i>) zum Ziehen auf Mobilgeräten.</p>
+    <p>Text im Body kann weiterhin markiert werden.</p>
 
     <div id="notes-container">
         </div>
@@ -69,16 +85,17 @@
         // Globale Variablen
         const notesList = document.getElementById('notes-container');
         let draggedItem = null;
-        let touchTimeout = null;
         let isDragging = false;
         const DRAG_THRESHOLD = 5; // Pixel-Toleranz für Bewegung
+        
+        // Gerätekennung
         const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
         
         // Simuliere notesData für das Speichern
         let notesData = [
-            { id: '1', title: 'Erste Notiz', content: 'Dies ist Notiz 1. Versuch hier, Text zu markieren.' },
-            { id: '2', title: 'Zweite Notiz', content: 'Dies ist Notiz 2. Bei Long-Press hier, sollte Drag starten.' },
-            { id: '3', title: 'Dritte Notiz', content: 'Dies ist Notiz 3. Wichtiges Element.' }
+            { id: '1', title: 'Erste Notiz', content: 'Dies ist Notiz 1. Versuch, diesen Text zu markieren.' },
+            { id: '2', title: 'Zweite Notiz', content: 'Dies ist Notiz 2. Drücken Sie das Handle-Icon (<i class="fas fa-grip-vertical"></i>) zum Ziehen.' },
+            { id: '3', title: 'Dritte Notiz', content: 'Dies ist Notiz 3. Eine lange Notiz zum Testen.' }
         ];
 
         // *** HILFSFUNKTIONEN ***
@@ -92,8 +109,11 @@
             card.className = 'note-card';
             card.dataset.id = note.id;
             card.innerHTML = `
-                <b>${note.title}</b>
-                <div class="note-content">${note.content}</div>
+                <div class="drag-handle"><i class="fas fa-grip-vertical"></i></div>
+                <div class="note-body">
+                    <b>${note.title}</b>
+                    <div class="note-content">${note.content}</div>
+                </div>
             `;
             return card;
         };
@@ -108,30 +128,25 @@
 
 
         // ******************************************************
-        // ** TOUCH-HANDLER FUNKTIONEN (für Touch-Geräte) **
+        // ** TOUCH-HANDLER FUNKTIONEN (Handle-Basiert) **
         // ******************************************************
 
         function handleTouchStart(e) {
-            // Wenn auf ein bearbeitbares Element (z.B. Inhalt) geklickt wird, Markieren zulassen und abbrechen
-            if (e.target.closest('.note-content, .note-title') || e.touches.length !== 1) return; 
-
-            const noteCard = this;
+            // Nur starten, wenn das Handle berührt wurde
+            if (!e.target.closest('.drag-handle')) return; 
+            if (e.touches.length !== 1) return;
+            
+            // Verhindert Scrollen oder Zoomen, solange der Finger auf dem Handle ist
+            e.preventDefault(); 
+            
+            // Die noteCard ist das Elternelement des Handles
+            const noteCard = e.target.closest('.note-card');
             draggedItem = noteCard;
             
-            // Sofortige Blockierung des Markierens, um den Long-Press-Timer sauber zu starten
-            noteCard.style.userSelect = 'none';
-            noteCard.style.webkitUserSelect = 'none';
-
+            // Speichern der Startposition für die Schwellwertprüfung
             noteCard.initialX = e.touches[0].clientX;
             noteCard.initialY = e.touches[0].clientY;
             
-            // Starte den Long-Press Timeout
-            touchTimeout = setTimeout(() => {
-                isDragging = true;
-                // Optional: Visuelles Feedback, dass Drag-Modus aktiv ist
-                // noteCard.classList.add('ready-to-drag'); 
-            }, 200); 
-
             // Listener hinzufügen
             document.addEventListener('touchmove', handleTouchMove, { passive: false });
             document.addEventListener('touchend', handleTouchEnd);
@@ -145,28 +160,16 @@
             const dx = Math.abs(currentX - draggedItem.initialX);
             const dy = Math.abs(currentY - draggedItem.initialY);
 
-            // Bedingung 1: Abbruch des Long Press (Nutzer scrollt oder tippt schnell)
-            if (touchTimeout && (dx > DRAG_THRESHOLD || dy > DRAG_THRESHOLD)) {
-                clearTimeout(touchTimeout);
-                touchTimeout = null;
-                
-                // Gib die Markier-Kontrolle zurück und beende den Prozess
-                draggedItem.style.userSelect = 'auto';
-                draggedItem.style.webkitUserSelect = 'auto';
-                
-                document.removeEventListener('touchmove', handleTouchMove);
-                document.removeEventListener('touchend', handleTouchEnd);
-                draggedItem = null;
-                return; 
+            // Bedingung 1: Drag-Modus starten, sobald die Schwelle überschritten ist
+            if (!isDragging && (dx > DRAG_THRESHOLD || dy > DRAG_THRESHOLD)) {
+                isDragging = true;
+                // CSS Klasse hinzufügen
+                draggedItem.classList.add('dragging');
             }
             
-            // Bedingung 2: Drag-Modus ist aktiv (Long Press ist abgelaufen)
+            // Bedingung 2: Nur wenn der Drag-Modus aktiv ist, verschieben wir das Element
             if (isDragging) {
-                e.preventDefault(); // Verhindert natives Verhalten (Markieren/Scrollen)
-                
-                if (!draggedItem.classList.contains('dragging')) {
-                    draggedItem.classList.add('dragging');
-                }
+                e.preventDefault(); 
                 
                 // RE-ORDERING LOGIK (Emulation von dragover)
                 const targetElement = document.elementFromPoint(currentX, currentY);
@@ -186,28 +189,17 @@
         }
 
         function handleTouchEnd(e) {
-            if (touchTimeout) {
-                clearTimeout(touchTimeout);
-                touchTimeout = null;
-            }
-
             if (!draggedItem) return;
 
             // Speichere nur, wenn ein tatsächlicher Drag stattfand
             if (isDragging) {
-                draggedItem.classList.remove('dragging');
-                
                 // Speicherlogik (Reihenfolge aktualisieren)
                 const newOrder = Array.from(notesList.children).map(child => String(child.dataset.id));
-                // Hier würden Sie notesData sortieren und speichern
                 notesData.sort((a, b) => newOrder.indexOf(a.id) - newOrder.indexOf(b.id));
                 saveNotesToLocal();
             }
             
-            // Gib die Markier-Kontrolle zurück und räume auf
-            draggedItem.style.userSelect = 'auto';
-            draggedItem.style.webkitUserSelect = 'auto';
-            
+            // Aufräumen
             draggedItem.classList.remove('dragging');
             draggedItem = null;
             isDragging = false; 
@@ -225,17 +217,26 @@
 
             noteCards.forEach(card => {
                 
-                // Setze das "draggable"-Attribut basierend auf dem Gerätetyp
+                // Setze das "draggable"-Attribut nur für Maus-Geräte
                 card.setAttribute('draggable', isTouchDevice ? 'false' : 'true');
 
                 if (isTouchDevice) {
-                    // *** TOUCH-LOGIK: Verwendet Long-Press Emulation ***
-                    card.addEventListener('touchstart', handleTouchStart, { passive: false });
+                    // *** TOUCH-LOGIK: Handle-basiertes Dragging ***
+                    // Wir hören auf das Handle, nicht auf die Karte selbst
+                    const handle = card.querySelector('.drag-handle');
+                    if (handle) {
+                        handle.addEventListener('touchstart', handleTouchStart, { passive: false });
+                    }
                     
                 } else {
-                    // *** MAUS-LOGIK: Verwendet native HTML5 D&D ***
-
+                    // *** MAUS-LOGIK: Native HTML5 D&D (startet nur auf dem Handle) ***
                     card.addEventListener('dragstart', (e) => {
+                        // Dragging startet nur, wenn der Benutzer auf das Handle klickt
+                        if (!e.target.closest('.drag-handle')) {
+                            e.preventDefault();
+                            return;
+                        }
+                        
                         draggedItem = card;
                         e.dataTransfer.setData('text/plain', '');
                         setTimeout(() => card.classList.add('dragging'), 0);
@@ -246,7 +247,7 @@
                             draggedItem.classList.remove('dragging');
                             draggedItem = null;
                             
-                            // Speicherlogik (Reihenfolge aktualisieren)
+                            // Speicherlogik
                             const newOrder = Array.from(notesList.children).map(child => String(child.dataset.id));
                             notesData.sort((a, b) => newOrder.indexOf(a.id) - newOrder.indexOf(b.id));
                             saveNotesToLocal();
