@@ -1363,27 +1363,46 @@ const setupDragAndDrop = () => {
 
 
         // 2. TOUCHMOVE: Verschiebe oder breche Long-Press ab
-        card.addEventListener('touchmove', (e) => { 
-            // Wenn wir uns bewegen, bevor der Timer abläuft, ist es Scrollen -> Timer abbrechen
-            if (!draggedItem) { 
-                clearTimeout(pressTimer);
-                return;
-            }
+   card.addEventListener('touchmove', (e) => { 
+    // Wenn wir uns bewegen, bevor der Timer abläuft, ist es Scrollen -> Timer abbrechen
+    if (!draggedItem) { 
+        clearTimeout(pressTimer);
+        return;
+    }
+    
+    // WIR SIND IM DRAG-MODUS: Blockiere Scrollen und verschiebe manuell
+    if (draggedItem) {
+        e.preventDefault(); // Blockiere jetzt definitiv das Scrollen
+        
+        const touch = e.touches[0];
+        
+        // --- KORREKTUR: Ermitteln des Ziel-Elements ---
+        draggedItem.style.display = 'none'; // Verstecke das gezogene Element
+        const elementOver = document.elementFromPoint(touch.clientX, touch.clientY);
+        draggedItem.style.display = ''; // Zeige es sofort wieder an
+        
+        let targetCard = elementOver ? elementOver.closest('.note-card') : null;
+
+        // FALLBACK-LOGIK: Wenn keine Karte unter dem Finger gefunden wird, 
+        // verwende die oberste/unterste Karte als Ziel.
+        if (!targetCard) {
+            // Dies tritt wahrscheinlich auf, wenn man über den Rand zieht.
+            const visibleCards = notesList.querySelectorAll('.note-card:not(.dragging)');
             
-            // WIR SIND IM DRAG-MODUS: Blockiere Scrollen und verschiebe manuell
-            if (draggedItem) {
-                e.preventDefault(); // Blockiere jetzt definitiv das Scrollen
+            // Finde die nächste Karte, falls keine direkt unter dem Finger liegt (z.B. Header-Bereich)
+            if (visibleCards.length > 0) {
                 
-                const touch = e.touches[0];
-                
-                // Manuelles Ermitteln des Ziel-Elements unter dem Finger
-                // Verstecke das gezogene Element kurz, um das darunterliegende Element zu finden
-                draggedItem.style.display = 'none';
-                const elementOver = document.elementFromPoint(touch.clientX, touch.clientY);
-                draggedItem.style.display = ''; // Zeige es wieder an
-                
-                // Suche die nächstgelegene Notizkarte zu diesem Punkt
-                const targetCard = elementOver ? elementOver.closest('.note-card') : null;
+                // Wir verwenden die Y-Koordinate, um zu prüfen, ob wir über oder unter dem gesamten Listenbereich sind
+                if (touch.clientY < visibleCards[0].getBoundingClientRect().top) {
+                    // Der Touch-Punkt ist über der obersten Karte
+                    targetCard = visibleCards[0]; 
+                } else if (touch.clientY > visibleCards[visibleCards.length - 1].getBoundingClientRect().bottom) {
+                    // Der Touch-Punkt ist unter der untersten Karte
+                    targetCard = visibleCards[visibleCards.length - 1];
+                }
+            }
+        }
+        
 
                 // Erstelle ein simuliertes Event-Objekt für die clientY-Koordinaten
                 const simulatedEvent = {
