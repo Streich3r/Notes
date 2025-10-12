@@ -33,10 +33,9 @@
             background-color: #1a202c;
  border-color: #2d3748;
             cursor: grab;
-            touch-action: none;
-            user-select: none;
-            -webkit-user-select: none; 
-            -ms-user-select: none;
+             user-select: none; /* Verhindert Textauswahl beim Drücken */
+    -webkit-user-select: none; /* Für WebKit- und Chromium-Browser (inkl. Opera) */
+    -ms-user-select: none;
             word-break: break-word;
             overflow-wrap: break-word;
 
@@ -1281,59 +1280,152 @@ notesData.sort((a, b) => {
         // ** DRAG-AND-DROP LOGIK **
         // ******************************************************
 
-        const setupDragAndDrop = () => {
-            const noteCards = notesList.querySelectorAll('.note-card');
+      // Globale Variablen für Long-Press außerhalb der Funktion definieren
+let pressTimer;
+const LONG_PRESS_DURATION = 500; // 500 ms (0.5 Sekunden)
 
-            noteCards.forEach(card => {
-                card.addEventListener('dragstart', () => {
-                    draggedItem = card;
-                    // Verzögerte Klasse, um das eigene Element nicht als Drop-Zone zu behandeln
-                    setTimeout(() => card.classList.add('dragging'), 0);
-                });
+// Die folgenden Variablen/Funktionen müssen im globalen Scope oder zugänglich sein:
+// notesList, draggedItem, saveNotesToLocal, notesData
 
-                card.addEventListener('dragend', () => {
-                    setTimeout(() => {
-                        draggedItem.classList.remove('dragging');
-                        draggedItem = null;
-                        
-                        // Speichere die NEUE Reihenfolge
-                        const newOrder = Array.from(notesList.children).map(child => String(child.dataset.id));
-                        localStorage.setItem('notes-order', JSON.stringify(newOrder));
+const setupDragAndDrop = () => {
+    const noteCards = notesList.querySelectorAll('.note-card');
 
-                        // Aktualisiere notesData entsprechend der neuen DOM-Reihenfolge
-                        notesData.sort((a, b) => {
-                            const indexA = newOrder.indexOf(a.id);
-                            const indexB = newOrder.indexOf(b.id);
-                            return indexA - indexB;
-                        });
-                        
-                        // Speichere die aktualisierten Daten (jetzt in der richtigen Reihenfolge)
-                        saveNotesToLocal();
+    noteCards.forEach(card => {
+        
+        // ******************************************************
+        // ** 1. MAUS / DESKTOP (HTML5 Drag-API) **
+        // ******************************************************
+        
+        // Dragstart (Wird durch Mausklick und Ziehen ausgelöst)
+        card.addEventListener('dragstart', (e) => {
+            draggedItem = card;
+            // Setze Daten, was bei manchen mobilen Browsern hilft
+            e.dataTransfer.setData('text/plain', card.dataset.id);
+            // Verzögerte Klasse, um das eigene Element nicht als Drop-Zone zu behandeln
+            setTimeout(() => card.classList.add('dragging'), 0);
+        });
 
-                    }, 0);
-                });
+        // Dragover und Drop-Logik (unverändert)
+        card.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            if (draggedItem && draggedItem !== card) {
+                const bounding = card.getBoundingClientRect();
+                const offset = bounding.y + (bounding.height / 2);
 
-                card.addEventListener('dragover', (e) => {
-                    e.preventDefault();
-                    if (draggedItem && draggedItem !== card) {
-                        const bounding = card.getBoundingClientRect();
-                        const offset = bounding.y + (bounding.height / 2);
-
-                        if (e.clientY < offset) {
-                            // Über der oberen Hälfte: Vor diesem Element einfügen
-                            if (card.previousElementSibling !== draggedItem) {
-                                notesList.insertBefore(draggedItem, card);
-                            }
-                        } else {
-                            // Über der unteren Hälfte: Nach diesem Element einfügen
-                            if (card.nextElementSibling !== draggedItem) {
-                                notesList.insertBefore(draggedItem, card.nextElementSibling);
-                            }
-                        }
+                // Einfügeposition bestimmen (über oder unter der Karte)
+                if (e.clientY < offset) {
+                    if (card.previousElementSibling !== draggedItem) {
+                        notesList.insertBefore(draggedItem, card);
                     }
+                } else {
+                    if (card.nextElementSibling !== draggedItem) {
+                        notesList.insertBefore(draggedItem, card.nextElementSibling);
+                    }
+                }
+            }
+        });
+        
+        // Dragend (Maus wurde losgelassen, Reihenfolge speichern)
+        card.addEventListener('dragend', () => {
+            // Speichere und aktualisiere die Daten
+            setTimeout(() => {
+                draggedItem.classList.remove('dragging');
+                draggedItem = null;
+                
+                const newOrder = Array.from(notesList.children).map(child => String(child.dataset.id));
+                localStorage.setItem('notes-order', JSON.stringify(newOrder));
+
+                notesData.sort((a, b) => {
+                    const indexA = newOrder.indexOf(a.id);
+                    const indexB = newOrder.indexOf(b.id);
+                    return indexA - indexB;
                 });
-            });
-        };
+                saveNotesToLocal();
+            }, 0);
+        });
+
+
+        // ******************************************************
+        // ** 2. TOUCH / MOBILE (Long-Press-Erkennung) **
+        // ******************************************************
+
+        // 1. TOUCHSTART: Starte den Timer für langes Drücken
+        // Wichtig: { passive: false } ist notwendig, um e.preventDefault() aufzurufen.
+        card.addEventListener('touchstart', (e) => {
+            // Ignoriere Multitouch
+            if (e.touches.length > 1) return;
+            
+            // Timer starten
+            pressTimer = setTimeout(() => {
+                
+                // Langes Drücken ist erfolgt!
+                e.preventDefault(); // Jetzt blockieren wir das Scrollen.
+                
+                // Aktiviere den Drag-Modus (simuliere dragstart)
+                draggedItem = card;
+                card.classList.add('dragging');
+                
+            }, LONG_PRESS_DURATION);
+        }, { passive: false }); 
+
+
+        // 2. TOUCHMOVE: Wenn der Finger sich bewegt, bevor der Timer abläuft, ist es Scrollen
+        // HINWEIS: Hier wurde das fehlende Argument (e) hinzugefügt!
+        card.addEventListener('touchmove', (e) => { 
+            // Wenn wir uns bewegen, bevor der Timer abläuft, löschen wir den Timer
+            if (!draggedItem) { 
+                clearTimeout(pressTimer);
+            }
+            
+            // Wenn wir im Drag-Modus sind, nutze touchmove, um die Position zu aktualisieren
+            if (draggedItem && draggedItem === card) {
+                
+                const touch = e.touches[0];
+                
+                // Erstelle ein simuliertes Event-Objekt mit den benötigten clientY-Koordinaten
+                const simulatedEvent = {
+                    clientX: touch.clientX,
+                    clientY: touch.clientY,
+                    preventDefault: () => {} // Dummy-Funktion
+                };
+                
+                // Rufen Sie die 'dragover'-Logik mit den Touch-Koordinaten auf
+                handleTouchDrag(simulatedEvent, card);
+                
+            }
+        });
+
+
+        // 3. TOUCHEND: Timer löschen und Drag-Modus beenden
+        card.addEventListener('touchend', () => {
+            clearTimeout(pressTimer);
+            
+            if (draggedItem) {
+                // Simuliere 'dragend', um die Speicherlogik auszuführen
+                card.dispatchEvent(new Event('dragend'));
+            }
+        });
+        
+    }); // Ende noteCards.forEach
+    
+    // Hilfsfunktion, um die dragover-Logik von oben wiederzuverwenden
+    function handleTouchDrag(e, card) {
+        if (draggedItem && draggedItem !== card) {
+            const bounding = card.getBoundingClientRect();
+            const offset = bounding.y + (bounding.height / 2);
+
+            if (e.clientY < offset) {
+                if (card.previousElementSibling !== draggedItem) {
+                    notesList.insertBefore(draggedItem, card);
+                }
+            } else {
+                if (card.nextElementSibling !== draggedItem) {
+                    notesList.insertBefore(draggedItem, card.nextElementSibling);
+                }
+            }
+        }
+    }
+};
 
         // ******************************************************
         // ** IMPORT/EXPORT LOGIK (KORRIGIERT) **
