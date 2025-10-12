@@ -208,6 +208,24 @@
  /* Tailwind blue-500 */
             text-decoration: underline !important; 
         }
+
+        /* --- NEU: KORREKTUR FÜR EINRÜCKUNG (BLOCKQUOTE) --- */
+/* Diese Stile definieren die Pixelbreite pro Einzug, die JavaScript dann misst. */
+#note-editor blockquote, 
+.note-card blockquote {
+    /* WICHTIG: Die JS-Logik basiert auf diesen Werten! */
+    margin-left: 1.5rem; 
+    margin-right: 0;
+    padding-left: 0.5rem;
+    border-left: 2px solid #4a5568; 
+    
+    /* WICHTIG: Erzwingt Umbruch am Container-Rand */
+    word-break: break-word; 
+    overflow-wrap: break-word;
+}
+
+
+
         
         /* --- STABILISIERTE LISTE-STYLES --- */
         #note-editor ul, #note-editor ol, .note-card ul, .note-card ol {
@@ -541,6 +559,17 @@ class="text-gray-300 mb-4 text-center">Geben Sie die URL für den Link ein.</p>
             return "#" + hex(matches[1]) + hex(matches[2]) + hex(matches[3]);
         };
 
+        /*  --- NEU: HILFSFUNKTION FÜR DYNAMISCHE MESSUNG --- */
+const measureCssValue = (cssValue) => {
+    const temp = document.createElement('div');
+    temp.style.width = cssValue;
+    temp.style.visibility = 'hidden';
+    document.body.appendChild(temp);
+    const pixelValue = temp.offsetWidth;
+    document.body.removeChild(temp);
+    return pixelValue;
+};
+
         // ******************************************************
         // ** MODAL LOGIK **
         // ******************************************************
@@ -670,6 +699,61 @@ class="text-gray-300 mb-4 text-center">Geben Sie die URL für den Link ein.</p>
             noteEditor.focus();
             updateToolbarState(); 
         };
+
+
+        // Nach executeLinkCommand einfügen
+// --- NEU: LOGIK ZUR BEGRENZUNG DER EINRÜCKTIEFE (DYNAMISCH / DOM-BASIERT) ---
+        /**
+         * Führt den Einrückbefehl (indent) aus, begrenzt jedoch die Tiefe dynamisch
+         * basierend auf der verfügbaren Editor-Breite.
+         */
+        const executeIndentCommand = () => {
+            restoreSelection(); 
+            noteEditor.focus(); 
+            
+            // 1. Berechnung der dynamischen maximalen Einrücktiefe (DOM-Breite)
+            const editorWidth = noteEditor.clientWidth; 
+            
+            // Indent-Größen pro Ebene, gemessen per DOM-Hilfsfunktion
+            const INDENT_MARGIN = measureCssValue('1.5rem');
+            const INDENT_PADDING = measureCssValue('0.5rem');
+            const INDENT_BORDER = 2; // Ihre CSS-Border
+            const INDENT_WIDTH_PER_LEVEL = INDENT_MARGIN + INDENT_PADDING + INDENT_BORDER;
+            
+            // Mindestbreite, die für den Text übrig bleiben muss (Schutz vor Überlauf)
+            const MIN_TEXT_WIDTH = 50; 
+            
+            // Berechnung: Wie viele Einrückungen passen, bevor nur noch 50px Textbreite übrig sind?
+            const maxIndentsPossible = Math.floor((editorWidth - MIN_TEXT_WIDTH) / INDENT_WIDTH_PER_LEVEL);
+            const MAX_INDENT_LEVEL = Math.max(1, maxIndentsPossible); 
+            
+            
+            // 2. Aktuelles Einrückungslevel zählen (DOM-Traversierung)
+            const selection = window.getSelection();
+            if (selection.rangeCount > 0) {
+                let currentNode = selection.getRangeAt(0).startContainer.parentNode;
+                let indentLevel = 0;
+                
+                // Zählt die verschachtelten BLOCKQUOTE-Elemente
+                while (currentNode && currentNode !== noteEditor && currentNode.tagName !== 'BODY') {
+                    if (currentNode.tagName === 'BLOCKQUOTE') {
+                        indentLevel++; 
+                    }
+                    currentNode = currentNode.parentNode;
+                }
+
+                // 3. Einrückung anwenden, falls dynamisches Limit nicht erreicht ist
+                if (indentLevel < MAX_INDENT_LEVEL) {
+                    document.execCommand('indent', false, null);
+                } else {
+                    console.log(`Dynamische Max. Einrücktiefe (${MAX_INDENT_LEVEL}) erreicht (Breite: ${editorWidth}px).`);
+                }
+            }
+            
+            saveSelection(); 
+            updateToolbarState();
+        };
+        // --- ENDE NEU: LOGIK ZUR BEGRENZUNG DER EINRÜCKTIEFE ---
         
 
         // ******************************************************
@@ -1565,7 +1649,11 @@ const exportNotes = () => {
         boldBtn.addEventListener('click', () => executeFormatAndRestore('bold'));
         italicBtn.addEventListener('click', () => executeFormatAndRestore('italic'));
         underlineBtn.addEventListener('click', () => executeFormatAndRestore('underline'));
-        indentBtn.addEventListener('click', () => executeFormatAndRestore('indent'));
+        // NEU: Ruft die Funktion zur dynamischen Einrückbegrenzung auf
+indentBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    executeIndentCommand(); 
+});
         outdentBtn.addEventListener('click', () => executeFormatAndRestore('outdent'));
         linkBtn.addEventListener('click', executeLinkCommand);
 
