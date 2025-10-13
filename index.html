@@ -55,6 +55,7 @@
              user-select: none; /* Verhindert Textauswahl beim Drücken */
             -webkit-user-select: none; /* Für WebKit- und Chromium-Browser (inkl. Opera) */
             -ms-user-select: none;
+            padding: 1rem; 
             overflow-x: hidden !important; /* 1. HINDERT DEN INHALT DARAN, HORIZONTAL HERAUSZURAGEN */
             white-space: pre-wrap;
             word-break: break-word;
@@ -232,19 +233,24 @@
             text-decoration: underline !important; 
         }
 
-        /* --- NEU: KORREKTUR FÜR EINRÜCKUNG (BLOCKQUOTE) --- */
-/* Diese Stile definieren die Pixelbreite pro Einzug, die JavaScript dann misst. */
+/* --- KORREKTUR FÜR EINRÜCKUNG (BLOCKQUOTE) --- */
 #note-editor blockquote, 
 .note-card blockquote {
-    /* WICHTIG: Die JS-Logik basiert auf diesen Werten! */
+    /* ... andere Stile ... */
+    
     margin-left: 1.5rem; 
     margin-right: 0;
     padding-left: 0.5rem;
     border-left: 2px solid #4a5568; 
-    width: 100%; /* Wichtig: Stellt sicher, dass das Block-Element die volle Breite des verfügbaren Raumes einnimmt */
-    box-sizing: border-box; /* Wichtig, falls padding/border hinzugefügt wird */
+    
+    /* FIX: Ersetze width: 100% durch auto und setze max-width */
+    width: auto; /* WICHTIG: Erlaubt Breitenanpassung nach margin-left */
+    max-width: 100%; /* Stellt sicher, dass es nie den Platz des Eltern-Containers überschreitet */
+    
+    box-sizing: border-box; 
     display: block; 
-    min-width: 0;
+    min-width: 0; /* Verhindert Überlauf */
+    
     word-break: break-word; 
     overflow-wrap: break-word;
 }
