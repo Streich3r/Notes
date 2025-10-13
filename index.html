@@ -234,7 +234,6 @@
         }
 
 /* --- FINALE KORREKTUR FÜR EINRÜCKUNG (BLOCKQUOTE) --- */
-/* Diese Regel löst das Problem des Text-Verschwindens bei tiefen Einzügen. */
 #note-editor blockquote, 
 .note-card blockquote {
     /* Einzug-Definitionen */
@@ -247,11 +246,10 @@
     display: block; 
     box-sizing: border-box;
     
-    /* WICHTIGSTER FIX: overflow: hidden MUSS width: auto haben, um einen Block Formatting Context (BFC) zu erstellen */
-    /* Dadurch wird die Breite automatisch auf den verfügbaren Platz nach Abzug der Ränder berechnet. */
+    /* WICHTIGSTER FIX: BFC-Aktivierung */
     width: auto; 
-    max-width: 100%; /* NEU: Fügt max-width hinzu, um zu verhindern, dass die Breite des Containers überschritten wird. */
-    overflow: hidden !important; /* Zwingt den Browser, die Breite korrekt zu berechnen und den Inhalt umzubrechen. */
+    max-width: none !important; /* MUSS DEAKTIVIERT WERDEN, um Konflikte mit Margin zu lösen */
+    overflow: hidden !important; /* Zwingt den Browser zur korrekten Breitenberechnung */
 
     /* Umbruch-Regeln */
     word-break: break-word; 
