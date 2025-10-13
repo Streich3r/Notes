@@ -234,7 +234,7 @@
  /* Tailwind blue-500 */
             text-decoration: underline !important; 
         }
-
+        
 /* --- FINALE KORREKTUR FÜR EINRÜCKUNG (BLOCKQUOTE) --- */
 #note-editor blockquote, 
 .note-card blockquote {
@@ -249,11 +249,13 @@
     box-sizing: border-box;
     min-width: 0;
     
-    /* ULTIMATIVER FIX: Zwingt den Browser, die Breite korrekt zu berechnen */
-    /* width: 100% ist hier stabiler als width: auto in contenteditable */
-    width: 100% !important; 
-    max-width: 100% !important; /* MUSS 100% SEIN */
-    overflow: hidden !important; /* Löst den BFC-Mechanismus zur korrigierten Breitenberechnung */
+    /* NEUER ULTIMATIVER FIX: Explizite Breitenberechnung */
+    /* Zwingt das Element, die 100% Breite MINUS den eigenen Margin zu nutzen */
+    width: calc(100% - 1.5rem) !important; 
+    
+    /* BFC-Trigger beibehalten, um das Umbruchverhalten zu stabilisieren */
+    max-width: none !important; 
+    overflow: hidden !important; 
 
     /* Umbruch-Regeln */
     word-break: break-word; 
