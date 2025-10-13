@@ -233,24 +233,26 @@
             text-decoration: underline !important; 
         }
 
-/* --- KORREKTUR FÜR EINRÜCKUNG (BLOCKQUOTE) --- */
+/* --- FINALE KORREKTUR FÜR EINRÜCKUNG (BLOCKQUOTE) --- */
 #note-editor blockquote, 
 .note-card blockquote {
-    /* ... andere Stile ... */
-    
+    /* Einzug-Definitionen */
     margin-left: 1.5rem; 
     margin-right: 0;
     padding-left: 0.5rem;
     border-left: 2px solid #4a5568; 
-    
-    /* FIX: Ersetze width: 100% durch auto und setze max-width */
-    width: auto; /* WICHTIG: Erlaubt Breitenanpassung nach margin-left */
-    max-width: 100%; /* Stellt sicher, dass es nie den Platz des Eltern-Containers überschreitet */
-    
-    box-sizing: border-box; 
+
+    /* NEU: Kritische Stabilität-Fixes */
     display: block; 
-    min-width: 0; /* Verhindert Überlauf */
+    box-sizing: border-box;
     
+    /* WICHTIGSTER FIX: Ersetze width-Regeln durch overflow: hidden */
+    /* Dies verhindert, dass sich margins negativ auswirken und zwingt den Inhalt zum Umbruch */
+    width: auto;
+    max-width: none; /* Deaktiviere max-width, um Konflikte mit Margin zu vermeiden */
+    overflow: hidden !important; 
+
+    /* Umbruch-Regeln */
     word-break: break-word; 
     overflow-wrap: break-word;
 }
