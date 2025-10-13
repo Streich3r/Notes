@@ -50,18 +50,20 @@
 
         .note-card {
             background-color: #1a202c;
- border-color: #2d3748;
+             border-color: #2d3748;
             cursor: grab;
              user-select: none; /* Verhindert Textauswahl beim Drücken */
-    -webkit-user-select: none; /* Für WebKit- und Chromium-Browser (inkl. Opera) */
-    -ms-user-select: none;
+            -webkit-user-select: none; /* Für WebKit- und Chromium-Browser (inkl. Opera) */
+            -ms-user-select: none;
+            overflow-x: hidden !important; /* 1. HINDERT DEN INHALT DARAN, HORIZONTAL HERAUSZURAGEN */
+            white-space: pre-wrap;
             word-break: break-word;
             overflow-wrap: break-word;
 
         }
         .note-card.dragging {
-            opacity: 0.5;
- transform: scale(0.95);
+           opacity: 0.5;
+           transform: scale(0.95);
         }
         #note-editor {
             min-height: 100px;
