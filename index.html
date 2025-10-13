@@ -249,10 +249,11 @@
     box-sizing: border-box;
     min-width: 0;
     
-    /* WICHTIGSTER FIX: BFC-Aktivierung */
-    width: auto; 
-    max-width: none !important; /* MUSS DEAKTIVIERT WERDEN, um Konflikte mit Margin zu lösen */
-    overflow: hidden !important; /* Zwingt den Browser zur korrekten Breitenberechnung */
+    /* ULTIMATIVER FIX: Zwingt den Browser, die Breite korrekt zu berechnen */
+    /* width: 100% ist hier stabiler als width: auto in contenteditable */
+    width: 100% !important; 
+    max-width: 100% !important; /* MUSS 100% SEIN */
+    overflow: hidden !important; /* Löst den BFC-Mechanismus zur korrigierten Breitenberechnung */
 
     /* Umbruch-Regeln */
     word-break: break-word; 
