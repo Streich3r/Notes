@@ -55,6 +55,7 @@
              user-select: none; /* Verhindert Textauswahl beim Drücken */
             -webkit-user-select: none; /* Für WebKit- und Chromium-Browser (inkl. Opera) */
             -ms-user-select: none;
+            min-width: 0;
             padding: 1rem; 
             overflow-x: hidden !important; /* 1. HINDERT DEN INHALT DARAN, HORIZONTAL HERAUSZURAGEN */
             white-space: pre-wrap;
@@ -75,6 +76,7 @@
             color: #ffffff;
             outline: none; 
             transition: all 0.3s;
+            min-width: 0;
             overflow-x: hidden !important; /* 1. HINDERT DEN INHALT DARAN, HORIZONTAL HERAUSZURAGEN */
             white-space: pre-wrap;
             word-break: break-word !important;
@@ -245,6 +247,7 @@
     /* Kritische Stabilität-Fixes */
     display: block; 
     box-sizing: border-box;
+    min-width: 0;
     
     /* WICHTIGSTER FIX: BFC-Aktivierung */
     width: auto; 
