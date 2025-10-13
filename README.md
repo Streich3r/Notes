@@ -4,7 +4,7 @@ Simple Notes for offline using
 
 ## Features
 
-- Offline-ready
+- offline-ready
 - touch/mouse/keyboard-ready
 - PWA-ready
 
