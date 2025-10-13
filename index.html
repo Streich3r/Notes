@@ -76,6 +76,8 @@
             white-space: pre-wrap;
             word-break: break-word !important;
             overflow-wrap: break-word !important; /* Alternative/Ergänzung für besseren Support */
+            line-height: 1.5 !important;
+            vertical-align: top !important;
         }
         
         #note-editor:focus {
@@ -239,8 +241,8 @@
     border-left: 2px solid #4a5568; 
     width: 100%; /* Wichtig: Stellt sicher, dass das Block-Element die volle Breite des verfügbaren Raumes einnimmt */
     box-sizing: border-box; /* Wichtig, falls padding/border hinzugefügt wird */
-    
-    /* WICHTIG: Erzwingt Umbruch am Container-Rand */
+    display: block; 
+    min-width: 0;
     word-break: break-word; 
     overflow-wrap: break-word;
 }
