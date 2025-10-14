@@ -63,6 +63,7 @@
             overflow-wrap: break-word;
             min-height: 0 !important;
             height: auto !important;
+            line-height: normal !important; 
 
         }
         .note-card.dragging {
@@ -295,6 +296,14 @@
     height: 0 !important;
     margin: 0 !important;
     padding: 0 !important;
+}
+        /* Neutralisiert alle vertikalen Ränder in Containern INNERHALB der Notizkarte */
+.note-card > div,
+.note-card > footer {
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
 }
 
         
