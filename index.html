@@ -61,6 +61,8 @@
             white-space: pre-wrap;
             word-break: break-word;
             overflow-wrap: break-word;
+            min-height: 0 !important;
+            height: auto !important;
 
         }
         .note-card.dragging {
@@ -235,10 +237,10 @@
             text-decoration: underline !important; 
         }
         
-/* --- FINALE KORREKTUR FÜR EINRÜCKUNG (BLOCKQUOTE) --- */
+/* --- ULTIMATIVE KORREKTUR FÜR EINRÜCKUNG (BLOCKQUOTE) --- */
 #note-editor blockquote, 
 .note-card blockquote {
-    /* Einzug-Definitionen */
+    /* Einzug-Definitionen (Keine Änderung) */
     margin-left: 1.5rem; 
     margin-right: 0;
     padding-left: 0.5rem;
@@ -248,20 +250,19 @@
     display: block; 
     box-sizing: border-box;
     min-width: 0;
+
+    /* DIES IST DER DEFINITIVE FIX: Gleicht den eigenen Margin von 1.5rem aus */
+    width: calc(100% - 1.5rem) !important;
+    max-width: calc(100% - 1.5rem) !important; 
     
-    /* NEUER ULTIMATIVER FIX: Explizite Breitenberechnung */
-    /* Zwingt das Element, die 100% Breite MINUS den eigenen Margin zu nutzen */
-    width: calc(100% - 1.5rem) !important; 
-    
-    /* BFC-Trigger beibehalten, um das Umbruchverhalten zu stabilisieren */
-    max-width: none !important; 
+    /* BFC-Trigger */
     overflow: hidden !important; 
-
-    /* Umbruch-Regeln */
-    word-break: break-word; 
-    overflow-wrap: break-word;
+    
+    /* Stellt sicher, dass der Text umbricht, auch wenn er tief verschachtelt ist */
+    white-space: pre-wrap !important; 
+    word-break: break-word !important; 
+    overflow-wrap: break-word !important;
 }
-
 
         
         /* --- STABILISIERTE LISTE-STYLES --- */
