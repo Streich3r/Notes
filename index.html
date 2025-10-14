@@ -1791,6 +1791,27 @@ indentBtn.addEventListener('click', (e) => {
 
         // Initial loading of notes
         window.addEventListener('load', loadNotesFromLocal);
+
+        // --- FIX FÜR UMGEBROCHENEN TEXT NACH BILDSCHIRM-DREHUNG ---
+
+let resizeTimer;
+window.addEventListener('resize', () => {
+    // Debounce-Funktion: Wartet kurz, um nicht bei jeder Pixeländerung neu zu rendern
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(() => {
+        // Ruft die Funktion auf, die alle Notizen neu in die DOM-Elemente lädt.
+        // Dies zwingt den Browser, die Textumbrüche basierend auf der neuen Breite neu zu berechnen.
+        renderNotes(searchInput.value || ''); 
+    }, 200); // 200 Millisekunden Verzögerung
+});
+
+// Ältere Browser und mobile Geräte können stattdessen 'orientationchange' verwenden
+window.addEventListener('orientationchange', () => {
+    // Verzögerung ist hier oft notwendig, da die Breite nicht sofort aktualisiert wird
+    setTimeout(() => {
+        renderNotes(searchInput.value || '');
+    }, 300);
+});
     </script>
 </body>
 </html>
