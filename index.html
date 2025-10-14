@@ -63,21 +63,36 @@
             overflow-wrap: break-word;
             min-height: 0 !important;
             height: auto !important;
-            /* NEU: Fix für unnötigen Leerraum in leeren Notizen */
-.note-card p:empty,
-.note-card div:empty,
-.note-card span:empty {
-    margin: 0 !important;
-    padding: 0 !important;
-    min-height: 0 !important;
-    height: 0 !important;
-    display: none !important; /* Aggressiver Fix für leere Elemente */
-}
-/* Fix für einzelne Zeilenumbrüche, die unnötigen Platz schaffen */
+
+
+            /* NEUER ULTIMATIVER FIX FÜR HÖHE UND LEERRAUM */
+
+/* Neutralisiert vertikale Ränder auf den Haupt-Blöcken im Editor/Karte */
+#note-editor p,
+#note-editor div,
 .note-card p,
 .note-card div {
-    margin-top: 0;
-    margin-bottom: 0;
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+}
+
+/* Zwingt leere Editor-Tags, keinen Platz einzunehmen */
+.note-card p:empty,
+.note-card div:empty {
+    min-height: 0 !important;
+    height: 0 !important;
+    line-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    display: none !important; 
+}
+
+/* Spezifisch für leere Listen-Items */
+.note-card li:empty {
+    list-style: none !important;
+    height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
 }
 
         }
