@@ -48,20 +48,27 @@
             -webkit-tap-highlight-color: transparent;
         }
 
-        .note-card {
+         .note-card {
             background-color: #1a202c;
- border-color: #2d3748;
+             border-color: #2d3748;
             cursor: grab;
              user-select: none; /* Verhindert Textauswahl beim Drücken */
-    -webkit-user-select: none; /* Für WebKit- und Chromium-Browser (inkl. Opera) */
-    -ms-user-select: none;
+            -webkit-user-select: none; /* Für WebKit- und Chromium-Browser (inkl. Opera) */
+            -ms-user-select: none;
+            min-width: 0;
+            padding:  0.5rem 1rem; 
+            overflow-x: hidden !important; /* 1. HINDERT DEN INHALT DARAN, HORIZONTAL HERAUSZURAGEN */
+            white-space: pre-wrap;
             word-break: break-word;
             overflow-wrap: break-word;
+            min-height: 0 !important;
+            height: auto !important;
+            line-height: normal !important; 
 
         }
         .note-card.dragging {
-            opacity: 0.5;
- transform: scale(0.95);
+           opacity: 0.5;
+           transform: scale(0.95);
         }
         #note-editor {
             min-height: 100px;
@@ -72,10 +79,13 @@
             color: #ffffff;
             outline: none; 
             transition: all 0.3s;
+            min-width: 0;
             overflow-x: hidden !important; /* 1. HINDERT DEN INHALT DARAN, HORIZONTAL HERAUSZURAGEN */
             white-space: pre-wrap;
-            word-break: normal;
-            overflow-wrap: break-word; /* Alternative/Ergänzung für besseren Support */
+            word-break: break-word !important;
+            overflow-wrap: break-word !important; /* Alternative/Ergänzung für besseren Support */
+            line-height: 1.5 !important;
+            vertical-align: top !important;
         }
         
         #note-editor:focus {
