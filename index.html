@@ -58,7 +58,7 @@
           /*  min-width: 0;*/
           /*  padding:  0.5rem 1rem; */
             overflow-x: hidden !important; /* 1. HINDERT DEN INHALT DARAN, HORIZONTAL HERAUSZURAGEN */
-            white-space: pre-wrap; 
+          /*   white-space: pre-wrap;  */
             word-break: break-word;
             overflow-wrap: break-word;
           /*   min-height: 0 !important; */
@@ -312,6 +312,27 @@
             font-size: 1.25rem; /* Für die Icons */
             border-radius: 9999px; /* Rund */
         }
+
+        /* FINALER, AGGRESSIVSTER & FUNKTIONALER RESET */
+.note-card h3, 
+.note-card p, 
+.note-card div {
+    /* 1. Kompaktheit (alle Margins/Paddings auf 0) */
+    margin: 0 !important;
+    padding: 0 !important;
+    line-height: 1.2 !important; 
+
+    /* 2. Zeilenumbrüche respektieren (nur hier, nicht am äußeren Container) */
+    white-space: pre-wrap !important;
+}
+
+/* 3. FIX: Sorgt dafür, dass leere Zeilen sichtbar bleiben */
+.note-card div:empty,
+.note-card p:empty {
+    /* Gibt dem leeren Element die Höhe einer einzelnen Textzeile */
+    min-height: 1.2em !important; 
+    display: block !important; 
+}
 
     </style>
 </head>
