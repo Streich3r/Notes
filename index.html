@@ -50,22 +50,18 @@
 
         .note-card {
             background-color: #1a202c;
-             border-color: #2d3748;
+ border-color: #2d3748;
             cursor: grab;
-             padding: 0.25rem 1rem !important;
              user-select: none; /* Verhindert Textauswahl beim Drücken */
-            -webkit-user-select: none; /* Für WebKit- und Chromium-Browser (inkl. Opera) */
-            -ms-user-select: none;
-            overflow-x: hidden !important; /* 1. HINDERT DEN INHALT DARAN, HORIZONTAL HERAUSZURAGEN */
-            white-space: pre-wrap;
+    -webkit-user-select: none; /* Für WebKit- und Chromium-Browser (inkl. Opera) */
+    -ms-user-select: none;
             word-break: break-word;
             overflow-wrap: break-word;
-         
 
         }
         .note-card.dragging {
-           opacity: 0.5;
-           transform: scale(0.95);
+            opacity: 0.5;
+ transform: scale(0.95);
         }
         #note-editor {
             min-height: 100px;
@@ -78,9 +74,8 @@
             transition: all 0.3s;
             overflow-x: hidden !important; /* 1. HINDERT DEN INHALT DARAN, HORIZONTAL HERAUSZURAGEN */
             white-space: pre-wrap;
-            word-break: break-word !important;
-            overflow-wrap: break-word !important; /* Alternative/Ergänzung für besseren Support */
-            vertical-align: top !important;
+            word-break: normal;
+            overflow-wrap: break-word; /* Alternative/Ergänzung für besseren Support */
         }
         
         #note-editor:focus {
@@ -233,31 +228,22 @@
             text-decoration: underline !important; 
         }
 
-        /* --- ULTIMATIVE KORREKTUR FÜR EINRÜCKUNG (BLOCKQUOTE) --- */
- #note-editor blockquote, 
+        /* --- NEU: KORREKTUR FÜR EINRÜCKUNG (BLOCKQUOTE) --- */
+/* Diese Stile definieren die Pixelbreite pro Einzug, die JavaScript dann misst. */
+#note-editor blockquote, 
 .note-card blockquote {
-    /* WICHTIG: Setzt alle Browser-Standard-Margins zurück */
-    margin: 0 !important; 
-    
-    /* Jetzt wenden wir unsere korrigierten Ränder und Stile an */
-    margin-left: 1.5rem !important; /* Behält den Einzug bei */
+    /* WICHTIG: Die JS-Logik basiert auf diesen Werten! */
+    margin-left: 1.5rem; 
+    margin-right: 0;
     padding-left: 0.5rem;
     border-left: 2px solid #4a5568; 
+    
+    /* WICHTIG: Erzwingt Umbruch am Container-Rand */
+    word-break: break-word; 
+    overflow-wrap: break-word;
+}
 
-    display: block; 
-    box-sizing: border-box;
-    min-width: 0;
-    
-    /* DEFINITIVER FIX: Berechnet die Breite = 100% des Elternteils minus den eigenen Margin. */
-    width: calc(100% - 1.5rem) !important;
-    max-width: calc(100% - 1.5rem) !important; 
-    
-    /* BFC-Trigger und Umbruch sicherstellen */
-    overflow: hidden !important; 
-    white-space: pre-wrap !important; 
-    word-break: break-word !important; 
-    overflow-wrap: break-word !important;
-} 
+
 
         
         /* --- STABILISIERTE LISTE-STYLES --- */
@@ -305,20 +291,6 @@
             font-size: 1.25rem; /* Für die Icons */
             border-radius: 9999px; /* Rund */
         }
-
-/* FINALER, AGGRESSIVSTER RESET: MUSS ALLES ÜBERSCHREIBEN */
-.note-card h3, 
-.note-card p, 
-.note-card div {
-    /* Setzt Margen und Polsterungen auf 0 */
-    margin-top: 0 !important;
-    margin-bottom: 0 !important;
-    padding-top: 0 !important;   /* WICHTIG: Stellt sicher, dass auch Browser-Paddings weg sind */
-    padding-bottom: 0 !important; /* WICHTIG: Stellt sicher, dass auch Browser-Paddings weg sind */
-    
-    /* Reduziert den Platz zwischen den Textzeilen */
-    line-height: 1.2 !important; 
-}
 
     </style>
 </head>
@@ -1351,9 +1323,9 @@ notesData.sort((a, b) => {
                 
 //      <h3 class="text-xl font-bold text-gray-100 mb-2">${note.title || 'Ohne Titel'}</h3>
                 noteCard.innerHTML = `
-                    ${note.title ? `<h3 class="text-xl font-bold text-gray-100 mb-0">${note.title}</h3>` : ''}
-                    <div class="note-content text-gray-300 mb-0">${note.content}</div>
-                    <p class="text-xs text-gray-500 mb-0">Zuletzt bearbeitet: ${date}</p>
+                    ${note.title ? `<h3 class="text-xl font-bold text-gray-100 mb-2">${note.title}</h3>` : ''}
+                    <div class="note-content text-gray-300 mb-3">${note.content}</div>
+                    <p class="text-xs text-gray-500 mb-4">Zuletzt bearbeitet: ${date}</p>
                     <div class="flex justify-end space-x-2">
                         <button class="calculator-btn note-action-btn bg-yellow-600 text-white hover:bg-yellow-700 edit-btn" data-id="${note.id}" title="Bearbeiten">
                             <i class="fas fa-edit"></i>
@@ -1771,27 +1743,6 @@ indentBtn.addEventListener('click', (e) => {
 
         // Initial loading of notes
         window.addEventListener('load', loadNotesFromLocal);
-
-        // --- FIX FÜR UMGEBROCHENEN TEXT NACH BILDSCHIRM-DREHUNG ---
-
-let resizeTimer;
-window.addEventListener('resize', () => {
-    // Debounce-Funktion: Wartet kurz, um nicht bei jeder Pixeländerung neu zu rendern
-    clearTimeout(resizeTimer);
-    resizeTimer = setTimeout(() => {
-        // Ruft die Funktion auf, die alle Notizen neu in die DOM-Elemente lädt.
-        // Dies zwingt den Browser, die Textumbrüche basierend auf der neuen Breite neu zu berechnen.
-        renderNotes(searchInput.value || ''); 
-    }, 200); // 200 Millisekunden Verzögerung
-});
-
-// Ältere Browser und mobile Geräte können stattdessen 'orientationchange' verwenden
-window.addEventListener('orientationchange', () => {
-    // Verzögerung ist hier oft notwendig, da die Breite nicht sofort aktualisiert wird
-    setTimeout(() => {
-        renderNotes(searchInput.value || '');
-    }, 300);
-});
     </script>
 </body>
 </html>
