@@ -232,31 +232,6 @@
             text-decoration: underline !important; 
         }
         
-/* --- ULTIMATIVE KORREKTUR FÜR EINRÜCKUNG (BLOCKQUOTE) --- */
-#note-editor blockquote, 
-.note-card blockquote {
-    /* WICHTIG: Setzt alle Browser-Standard-Margins zurück */
-    margin: 0 !important; 
-    
-    /* Jetzt wenden wir unsere korrigierten Ränder und Stile an */
-    margin-left: 1.5rem !important; /* Behält den Einzug bei */
-    padding-left: 0.5rem;
-    border-left: 2px solid #4a5568; 
-
-    display: block; 
-    box-sizing: border-box;
-    min-width: 0;
-    
-    /* DEFINITIVER FIX: Berechnet die Breite = 100% des Elternteils minus den eigenen Margin. */
-    width: calc(100% - 1.5rem) !important;
-    max-width: calc(100% - 1.5rem) !important; 
-    
-    /* BFC-Trigger und Umbruch sicherstellen */
-    overflow: hidden !important; 
-    white-space: pre-wrap !important; 
-    word-break: break-word !important; 
-    overflow-wrap: break-word !important;
-}
 
         
         /* --- STABILISIERTE LISTE-STYLES --- */
