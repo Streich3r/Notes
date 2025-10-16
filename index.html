@@ -56,7 +56,7 @@
             -webkit-user-select: none; /* Für WebKit- und Chromium-Browser (inkl. Opera) */
             -ms-user-select: none;
             min-width: 0;
-            padding: 1rem; 
+            padding:  0.5rem 1rem; 
             overflow-x: hidden !important; /* 1. HINDERT DEN INHALT DARAN, HORIZONTAL HERAUSZURAGEN */
             white-space: pre-wrap;
             word-break: break-word;
@@ -1384,9 +1384,9 @@ notesData.sort((a, b) => {
                 
 //      <h3 class="text-xl font-bold text-gray-100 mb-2">${note.title || 'Ohne Titel'}</h3>
                 noteCard.innerHTML = `
-                    ${note.title ? `<h3 class="text-xl font-bold text-gray-100 mb-2">${note.title}</h3>` : ''}
-                    <div class="note-content text-gray-300 mb-3">${note.content}</div>
-                    <p class="text-xs text-gray-500 mb-4">Zuletzt bearbeitet: ${date}</p>
+                    ${note.title ? `<h3 class="text-xl font-bold text-gray-100 mb-1">${note.title}</h3>` : ''}
+                    <div class="note-content text-gray-300 mb-1">${note.content}</div>
+                    <p class="text-xs text-gray-500 mb-1">Zuletzt bearbeitet: ${date}</p>
                     <div class="flex justify-end space-x-2">
                         <button class="calculator-btn note-action-btn bg-yellow-600 text-white hover:bg-yellow-700 edit-btn" data-id="${note.id}" title="Bearbeiten">
                             <i class="fas fa-edit"></i>
