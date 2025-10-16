@@ -6,28 +6,9 @@
     <title>Notes</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" integrity="sha512-..." crossorigin="anonymous" referrerpolicy="no-referrer" />
-    <!-- Manifest für PWA -->
-  <link rel="manifest" href="manifest.json">
-
-  <!-- Favicons für Browser -->
- <link rel="icon" type="image/png" href="icon-512.png">
-
-  <!-- Apple Touch Icon (iOS Homescreen) -->
-  <link rel="apple-touch-icon" href="icon-512.png">
-
-  <!-- Theme-Farben für Browser-UI -->
-  <meta name="theme-color" content="#0b0d12">
-  <meta name="background-color" content="#0b0d12">
-
-  <!-- Optional: Windows Tile Icons -->
-  <meta name="msapplication-TileImage" content="icon-512.png">
-  <meta name="msapplication-TileColor" content="#0b0d12">
-  
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap');
-
-
-       
+        
         :root{
             /* BASICS */
             --btn-gray: #4b5563;
@@ -50,25 +31,14 @@
 
         .note-card {
             background-color: #1a202c;
-             border-color: #2d3748;
+ border-color: #2d3748;
             cursor: grab;
-             user-select: none; /* Verhindert Textauswahl beim Drücken */
-            -webkit-user-select: none; /* Für WebKit- und Chromium-Browser (inkl. Opera) */
-            -ms-user-select: none;
-            min-width: 0;
-            padding:  0.5rem 1rem; 
-            overflow-x: hidden !important; /* 1. HINDERT DEN INHALT DARAN, HORIZONTAL HERAUSZURAGEN */
-            white-space: pre-wrap;
             word-break: break-word;
             overflow-wrap: break-word;
-            min-height: 0 !important;
-            height: auto !important;
-            line-height: normal !important; 
-
         }
         .note-card.dragging {
-           opacity: 0.5;
-           transform: scale(0.95);
+            opacity: 0.5;
+ transform: scale(0.95);
         }
         #note-editor {
             min-height: 100px;
@@ -79,13 +49,10 @@
             color: #ffffff;
             outline: none; 
             transition: all 0.3s;
-            min-width: 0;
             overflow-x: hidden !important; /* 1. HINDERT DEN INHALT DARAN, HORIZONTAL HERAUSZURAGEN */
             white-space: pre-wrap;
-            word-break: break-word !important;
-            overflow-wrap: break-word !important; /* Alternative/Ergänzung für besseren Support */
-            line-height: 1.5 !important;
-            vertical-align: top !important;
+            word-break: normal;
+            overflow-wrap: break-word; /* Alternative/Ergänzung für besseren Support */
         }
         
         #note-editor:focus {
@@ -237,75 +204,6 @@
  /* Tailwind blue-500 */
             text-decoration: underline !important; 
         }
-        
-/* --- ULTIMATIVE KORREKTUR FÜR EINRÜCKUNG (BLOCKQUOTE) --- */
-#note-editor blockquote, 
-.note-card blockquote {
-    /* WICHTIG: Setzt alle Browser-Standard-Margins zurück */
-    margin: 0 !important; 
-    
-    /* Jetzt wenden wir unsere korrigierten Ränder und Stile an */
-    margin-left: 1.5rem !important; /* Behält den Einzug bei */
-    padding-left: 0.5rem;
-    border-left: 2px solid #4a5568; 
-
-    display: block; 
-    box-sizing: border-box;
-    min-width: 0;
-    
-    /* DEFINITIVER FIX: Berechnet die Breite = 100% des Elternteils minus den eigenen Margin. */
-    width: calc(100% - 1.5rem) !important;
-    max-width: calc(100% - 1.5rem) !important; 
-    
-    /* BFC-Trigger und Umbruch sicherstellen */
-    overflow: hidden !important; 
-    white-space: pre-wrap !important; 
-    word-break: break-word !important; 
-    overflow-wrap: break-word !important;
-}
-
-/* --- ULTIMATIVER FIX FÜR LEERE ELEMENTE UND ZEILENUMBRÜCHE --- */
-
-/* Neutralisiert die vertikalen Browser-Standard-Margins auf den Haupt-Blöcken */
-#note-editor p,
-#note-editor div,
-.note-card p,
-.note-card div {
-    margin-top: 0 !important;
-    margin-bottom: 0 !important;
-    /* Stellt sicher, dass die Zeilenhöhe sich der Größe anpassen kann */
-    line-height: 1.5; 
-}
-
-/* Zwingt leere Platzhalter-Tags (p, div) zu kollabieren */
-.note-card p:empty,
-.note-card div:empty,
-.note-card li:empty {
-    min-height: 0 !important;
-    height: 0 !important;
-    line-height: 0 !important; /* Wichtig, um die vertikale Höhe des Platzes auf Null zu setzen */
-    margin: 0 !important;
-    padding: 0 !important;
-    /* display: none ist die aggressivste Methode */
-    display: none !important; 
-}
-
-/* FIX: Entfernt einen hartnäckigen Zeilenumbruch (<br>) am Ende des Inhalts, der oft eine Leerzeile erzeugt. */
-.note-card br:last-child {
-    display: none !important;
-    height: 0 !important;
-    margin: 0 !important;
-    padding: 0 !important;
-}
-        /* Neutralisiert alle vertikalen Ränder in Containern INNERHALB der Notizkarte */
-.note-card > div,
-.note-card > footer {
-    margin-top: 0 !important;
-    margin-bottom: 0 !important;
-    padding-top: 0 !important;
-    padding-bottom: 0 !important;
-}
-
         
         /* --- STABILISIERTE LISTE-STYLES --- */
         #note-editor ul, #note-editor ol, .note-card ul, .note-card ol {
@@ -639,17 +537,6 @@ class="text-gray-300 mb-4 text-center">Geben Sie die URL für den Link ein.</p>
             return "#" + hex(matches[1]) + hex(matches[2]) + hex(matches[3]);
         };
 
-        /*  --- NEU: HILFSFUNKTION FÜR DYNAMISCHE MESSUNG --- */
-const measureCssValue = (cssValue) => {
-    const temp = document.createElement('div');
-    temp.style.width = cssValue;
-    temp.style.visibility = 'hidden';
-    document.body.appendChild(temp);
-    const pixelValue = temp.offsetWidth;
-    document.body.removeChild(temp);
-    return pixelValue;
-};
-
         // ******************************************************
         // ** MODAL LOGIK **
         // ******************************************************
@@ -779,61 +666,6 @@ const measureCssValue = (cssValue) => {
             noteEditor.focus();
             updateToolbarState(); 
         };
-
-
-        // Nach executeLinkCommand einfügen
-// --- NEU: LOGIK ZUR BEGRENZUNG DER EINRÜCKTIEFE (DYNAMISCH / DOM-BASIERT) ---
-        /**
-         * Führt den Einrückbefehl (indent) aus, begrenzt jedoch die Tiefe dynamisch
-         * basierend auf der verfügbaren Editor-Breite.
-         */
-        const executeIndentCommand = () => {
-            restoreSelection(); 
-            noteEditor.focus(); 
-            
-            // 1. Berechnung der dynamischen maximalen Einrücktiefe (DOM-Breite)
-            const editorWidth = noteEditor.clientWidth; 
-            
-            // Indent-Größen pro Ebene, gemessen per DOM-Hilfsfunktion
-            const INDENT_MARGIN = measureCssValue('1.5rem');
-            const INDENT_PADDING = measureCssValue('0.5rem');
-            const INDENT_BORDER = 2; // Ihre CSS-Border
-            const INDENT_WIDTH_PER_LEVEL = INDENT_MARGIN + INDENT_PADDING + INDENT_BORDER;
-            
-            // Mindestbreite, die für den Text übrig bleiben muss (Schutz vor Überlauf)
-            const MIN_TEXT_WIDTH = 50; 
-            
-            // Berechnung: Wie viele Einrückungen passen, bevor nur noch 50px Textbreite übrig sind?
-            const maxIndentsPossible = Math.floor((editorWidth - MIN_TEXT_WIDTH) / INDENT_WIDTH_PER_LEVEL);
-            const MAX_INDENT_LEVEL = Math.max(1, maxIndentsPossible); 
-            
-            
-            // 2. Aktuelles Einrückungslevel zählen (DOM-Traversierung)
-            const selection = window.getSelection();
-            if (selection.rangeCount > 0) {
-                let currentNode = selection.getRangeAt(0).startContainer.parentNode;
-                let indentLevel = 0;
-                
-                // Zählt die verschachtelten BLOCKQUOTE-Elemente
-                while (currentNode && currentNode !== noteEditor && currentNode.tagName !== 'BODY') {
-                    if (currentNode.tagName === 'BLOCKQUOTE') {
-                        indentLevel++; 
-                    }
-                    currentNode = currentNode.parentNode;
-                }
-
-                // 3. Einrückung anwenden, falls dynamisches Limit nicht erreicht ist
-                if (indentLevel < MAX_INDENT_LEVEL) {
-                    document.execCommand('indent', false, null);
-                } else {
-                    console.log(`Dynamische Max. Einrücktiefe (${MAX_INDENT_LEVEL}) erreicht (Breite: ${editorWidth}px).`);
-                }
-            }
-            
-            saveSelection(); 
-            updateToolbarState();
-        };
-        // --- ENDE NEU: LOGIK ZUR BEGRENZUNG DER EINRÜCKTIEFE ---
         
 
         // ******************************************************
@@ -1197,7 +1029,6 @@ const measureCssValue = (cssValue) => {
             if (document.activeElement === noteEditor) {
                 noteEditor.blur();
             }
-            const wasEditing = !!editingNoteId; // Speichert true, wenn wir im Edit-Modus sind
 
             const title = noteTitleInput.value.trim();
             const content = sanitizeHtml(noteEditor.innerHTML);
@@ -1215,7 +1046,6 @@ const measureCssValue = (cssValue) => {
                     notesData[index].content = content;
                     notesData[index].updatedAt = Date.now();
                 }
-                //showModal("Notiz erfolgreich aktualisiert!");
                 editingNoteId = null;
             } else {
                 // Neue Notiz erstellen
@@ -1227,8 +1057,26 @@ const measureCssValue = (cssValue) => {
                     updatedAt: Date.now(),
                     color: 'default' 
                 };
-              notesData.unshift(newNote);
+                notesData.push(newNote);
                 
+                // Bei einer neuen Notiz muss die ungerendert-Reihenfolge aktualisiert werden
+                if (currentSortMethod === 'unsorted') {
+                    const currentOrderStr = localStorage.getItem('notes-order');
+                    
+                    // Sicherstellen, dass alle IDs im Order-Array Strings sind.
+                    let currentOrder;
+                    if (currentOrderStr) {
+                        // Konvertiere alle IDs aus dem Speicher explizit zu Strings
+                        currentOrder = JSON.parse(currentOrderStr).map(id => String(id));
+                    } else {
+                        // Fallback: Nutze alle aktuellen IDs, ebenfalls als Strings
+                        currentOrder = notesData.map(n => String(n.id));
+                    }
+
+                    // Füge die neue (als String erzeugte) ID hinzu
+                    currentOrder.push(newNote.id); 
+                    localStorage.setItem('notes-order', JSON.stringify(currentOrder));
+                }
             }
 
             // Felder zurücksetzen
@@ -1242,7 +1090,7 @@ const measureCssValue = (cssValue) => {
             saveNotesToLocal();
             // Notizen neu rendern (mit Suchfilter, falls aktiv)
             renderNotes(searchInput.value);
-            showModal(wasEditing ? "Notiz erfolgreich aktualisiert!" : "Neue Notiz erfolgreich gespeichert!");
+            showModal(editingNoteId ? "Notiz erfolgreich aktualisiert!" : "Neue Notiz erfolgreich gespeichert!");
         };
 
 
@@ -1267,29 +1115,19 @@ const sortNotes = (method, isInitialLoad = false) => {
                 }
                 
                 if (orderArray.length > 0) {
-          
-notesData.sort((a, b) => {
-    const indexA = orderArray.indexOf(String(a.id));
-    const indexB = orderArray.indexOf(String(b.id));
-
-    // 1. NEUE NOTIZEN ZUERST
-    // Wenn A neu ist (-1) und B alt (!=-1), kommt A vor B.
-    if (indexA === -1 && indexB !== -1) {
-        return -1;
-    }
-    // Wenn B neu ist (-1) und A alt (!=-1), kommt B vor A.
-    if (indexA !== -1 && indexB === -1) {
-        return 1;
-    }
-
-    // 2. GESPEICHERTE REIHENFOLGE (für alte Notizen)
-    if (indexA !== -1 && indexB !== -1) {
-        return indexA - indexB; // Sortiere nach der manuellen Position
-    }
-
-    // 3. FALLBACK: Beide sind neu. Sortiere sie nach Zeitstempel (neueste zuerst).
-    return b.updatedAt - a.updatedAt;
-});
+                    notesData.sort((a, b) => {
+                        const indexA = orderArray.indexOf(a.id);
+                        const indexB = orderArray.indexOf(b.id);
+                        
+                        // Neue Notizen (die nicht in orderArray sind) kommen ans Ende.
+                        if (indexA === -1 && indexB === -1) {
+                            return b.id.localeCompare(a.id);
+                        }
+                        if (indexA === -1) return 1;
+                        if (indexB === -1) return -1;
+                        
+                        return indexA - indexB;
+                    });
                     
                 } else if (!isInitialLoad) {
                     // Wenn keine Reihenfolge gespeichert ist und es keine initiale Ladung ist, 
@@ -1384,9 +1222,9 @@ notesData.sort((a, b) => {
                 
 //      <h3 class="text-xl font-bold text-gray-100 mb-2">${note.title || 'Ohne Titel'}</h3>
                 noteCard.innerHTML = `
-                    ${note.title ? `<h3 class="text-xl font-bold text-gray-100 mb-1">${note.title}</h3>` : ''}
-                    <div class="note-content text-gray-300 mb-1">${note.content}</div>
-                    <p class="text-xs text-gray-500 mb-1">Zuletzt bearbeitet: ${date}</p>
+                    ${note.title ? `<h3 class="text-xl font-bold text-gray-100 mb-2">${note.title}</h3>` : ''}
+                    <div class="note-content text-gray-300 mb-3">${note.content}</div>
+                    <p class="text-xs text-gray-500 mb-4">Zuletzt bearbeitet: ${date}</p>
                     <div class="flex justify-end space-x-2">
                         <button class="calculator-btn note-action-btn bg-yellow-600 text-white hover:bg-yellow-700 edit-btn" data-id="${note.id}" title="Bearbeiten">
                             <i class="fas fa-edit"></i>
@@ -1440,209 +1278,87 @@ notesData.sort((a, b) => {
         };
 
 
-     // Globale Variablen für Long-Press außerhalb der Funktion definieren
-let pressTimer;
-const LONG_PRESS_DURATION = 500; // 500 ms (0.5 Sekunden)
-
-// Die folgenden Variablen/Funktionen müssen im globalen Scope oder zugänglich sein:
-// notesList, draggedItem, saveNotesToLocal, notesData
-
-const setupDragAndDrop = () => {
-    const noteCards = notesList.querySelectorAll('.note-card');
-
-    noteCards.forEach(card => {
-        
         // ******************************************************
-        // ** 1. MAUS / DESKTOP (HTML5 Drag-API) **
+        // ** DRAG-AND-DROP LOGIK **
         // ******************************************************
-        
-        // Dragstart (Wird durch Mausklick und Ziehen ausgelöst)
-        card.addEventListener('dragstart', (e) => {
-            draggedItem = card;
-            e.dataTransfer.setData('text/plain', card.dataset.id);
-            setTimeout(() => card.classList.add('dragging'), 0);
-        });
 
-        // Dragover und Drop-Logik (unverändert)
-        card.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            if (draggedItem && draggedItem !== card) {
-                const bounding = card.getBoundingClientRect();
-                const offset = bounding.y + (bounding.height / 2);
+        const setupDragAndDrop = () => {
+            const noteCards = notesList.querySelectorAll('.note-card');
 
-                if (e.clientY < offset) {
-                    if (card.previousElementSibling !== draggedItem) {
-                        notesList.insertBefore(draggedItem, card);
-                    }
-                } else {
-                    if (card.nextElementSibling !== draggedItem) {
-                        notesList.insertBefore(draggedItem, card.nextElementSibling);
-                    }
-                }
-            }
-        });
-        
-        // Dragend (Maus wurde losgelassen, Reihenfolge speichern)
-        card.addEventListener('dragend', () => {
-            setTimeout(() => {
-                // Führe Speicherlogik nur aus, wenn draggedItem noch existiert
-                if (!draggedItem) return; 
-                
-                draggedItem.classList.remove('dragging');
-                draggedItem = null;
-                
-                const newOrder = Array.from(notesList.children).map(child => String(child.dataset.id));
-                localStorage.setItem('notes-order', JSON.stringify(newOrder));
-
-                notesData.sort((a, b) => {
-                    const indexA = newOrder.indexOf(a.id);
-                    const indexB = newOrder.indexOf(b.id);
-                    return indexA - indexB;
+            noteCards.forEach(card => {
+                card.addEventListener('dragstart', () => {
+                    draggedItem = card;
+                    // Verzögerte Klasse, um das eigene Element nicht als Drop-Zone zu behandeln
+                    setTimeout(() => card.classList.add('dragging'), 0);
                 });
-                saveNotesToLocal();
-            }, 0);
-        });
 
+                card.addEventListener('dragend', () => {
+                    setTimeout(() => {
+                        draggedItem.classList.remove('dragging');
+                        draggedItem = null;
+                        
+                        // Speichere die NEUE Reihenfolge
+                        const newOrder = Array.from(notesList.children).map(child => String(child.dataset.id));
+                        localStorage.setItem('notes-order', JSON.stringify(newOrder));
 
-        // ******************************************************
-        // ** 2. TOUCH / MOBILE (Long-Press-Erkennung) **
-        // ******************************************************
+                        // Aktualisiere notesData entsprechend der neuen DOM-Reihenfolge
+                        notesData.sort((a, b) => {
+                            const indexA = newOrder.indexOf(a.id);
+                            const indexB = newOrder.indexOf(b.id);
+                            return indexA - indexB;
+                        });
+                        
+                        // Speichere die aktualisierten Daten (jetzt in der richtigen Reihenfolge)
+                        saveNotesToLocal();
 
-        // 1. TOUCHSTART: Starte den Timer für langes Drücken
-        card.addEventListener('touchstart', (e) => {
-            if (e.touches.length > 1) return;
-            
-            // Setzt den Timer. Bei Ablauf wird Drag-Modus aktiviert.
-            pressTimer = setTimeout(() => {
-                
-                // Langes Drücken erfolgt! 
-                e.preventDefault(); // Blockiere Scrollen und Kontextmenü
-                
-                // Aktiviere Drag-Modus
-                draggedItem = card;
-                card.classList.add('dragging');
-                
-            }, LONG_PRESS_DURATION);
-        }, { passive: false }); // Wichtig für e.preventDefault()
+                    }, 0);
+                });
 
+                card.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    if (draggedItem && draggedItem !== card) {
+                        const bounding = card.getBoundingClientRect();
+                        const offset = bounding.y + (bounding.height / 2);
 
-        // 2. TOUCHMOVE: Verschiebe oder breche Long-Press ab
-   card.addEventListener('touchmove', (e) => { 
-    // Wenn wir uns bewegen, bevor der Timer abläuft, ist es Scrollen -> Timer abbrechen
-    if (!draggedItem) { 
-        clearTimeout(pressTimer);
-        return;
-    }
-    
-    // WIR SIND IM DRAG-MODUS: Blockiere Scrollen und verschiebe manuell
-    if (draggedItem) {
-        e.preventDefault(); // Blockiere jetzt definitiv das Scrollen
-        
-        const touch = e.touches[0];
-        
-        // --- KORREKTUR: Ermitteln des Ziel-Elements ---
-        draggedItem.style.display = 'none'; // Verstecke das gezogene Element
-        const elementOver = document.elementFromPoint(touch.clientX, touch.clientY);
-        draggedItem.style.display = ''; // Zeige es sofort wieder an
-        
-        let targetCard = elementOver ? elementOver.closest('.note-card') : null;
-
-        // FALLBACK-LOGIK: Wenn keine Karte unter dem Finger gefunden wird, 
-        // verwende die oberste/unterste Karte als Ziel.
-        if (!targetCard) {
-            // Dies tritt wahrscheinlich auf, wenn man über den Rand zieht.
-            const visibleCards = notesList.querySelectorAll('.note-card:not(.dragging)');
-            
-            // Finde die nächste Karte, falls keine direkt unter dem Finger liegt (z.B. Header-Bereich)
-            if (visibleCards.length > 0) {
-                
-                // Wir verwenden die Y-Koordinate, um zu prüfen, ob wir über oder unter dem gesamten Listenbereich sind
-                if (touch.clientY < visibleCards[0].getBoundingClientRect().top) {
-                    // Der Touch-Punkt ist über der obersten Karte
-                    targetCard = visibleCards[0]; 
-                } else if (touch.clientY > visibleCards[visibleCards.length - 1].getBoundingClientRect().bottom) {
-                    // Der Touch-Punkt ist unter der untersten Karte
-                    targetCard = visibleCards[visibleCards.length - 1];
-                }
-            }
-        }
-        
-
-                // Erstelle ein simuliertes Event-Objekt für die clientY-Koordinaten
-                const simulatedEvent = {
-                    clientY: touch.clientY,
-                    // Die anderen Properties werden für handleTouchDrag nicht benötigt
-                };
-                
-                // Führe die Drop-Logik nur aus, wenn wir über einer GÜLTIGEN Zielkarte sind
-                if (targetCard && targetCard !== draggedItem) {
-                    handleTouchDrag(simulatedEvent, targetCard);
-                }
-            }
-        }, { passive: false }); // Auch hier passive: false, da wir e.preventDefault() verwenden
-
-
-        // 3. TOUCHEND: Timer löschen und Drag-Modus beenden
-        card.addEventListener('touchend', () => {
-            clearTimeout(pressTimer);
-            
-            if (draggedItem) {
-                // Simuliere 'dragend', um die Speicherlogik auszuführen
-                card.dispatchEvent(new Event('dragend'));
-            }
-        });
-        
-    }); // Ende noteCards.forEach
-    
-    // Hilfsfunktion, um die dragover-Logik von oben wiederzuverwenden
-    function handleTouchDrag(e, card) {
-        // draggedItem !== card ist hier schon durch die aufrufende Logik garantiert
-        const bounding = card.getBoundingClientRect();
-        const offset = bounding.y + (bounding.height / 2);
-
-        if (e.clientY < offset) {
-            if (card.previousElementSibling !== draggedItem) {
-                notesList.insertBefore(draggedItem, card);
-            }
-        } else {
-            if (card.nextElementSibling !== draggedItem) {
-                notesList.insertBefore(draggedItem, card.nextElementSibling);
-            }
-        }
-    }
-};
+                        if (e.clientY < offset) {
+                            // Über der oberen Hälfte: Vor diesem Element einfügen
+                            if (card.previousElementSibling !== draggedItem) {
+                                notesList.insertBefore(draggedItem, card);
+                            }
+                        } else {
+                            // Über der unteren Hälfte: Nach diesem Element einfügen
+                            if (card.nextElementSibling !== draggedItem) {
+                                notesList.insertBefore(draggedItem, card.nextElementSibling);
+                            }
+                        }
+                    }
+                });
+            });
+        };
 
         // ******************************************************
         // ** IMPORT/EXPORT LOGIK (KORRIGIERT) **
         // ******************************************************
 
-const exportNotes = () => {
-   
-    if (notesData.length === 0) {
-        showModal("Es gibt keine Notizen zum Exportieren. Bitte erstellen Sie zuerst eine Notiz.");
-        return; // Stoppt die Funktion, bevor der Download gestartet wird
-    }
+        const exportNotes = () => {
+            const exportData = {
+                notes: notesData,
+                version: 1.0,
+                // Füge die unsortierte Reihenfolge hinzu, damit diese beim Import beibehalten wird
+                order: JSON.parse(localStorage.getItem('notes-order') || '[]')
+            };
+            
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(exportData, null, 2));
+            const dlAnchorElem = document.createElement('a');
+            dlAnchorElem.setAttribute("href", dataStr);
+            dlAnchorElem.setAttribute("download", `offline_notizen_export_${Date.now()}.json`);
+            document.body.appendChild(dlAnchorElem);
+            dlAnchorElem.click();
+            dlAnchorElem.remove();
+            
+           // showModal("Ihre Notizen wurden erfolgreich exportiert.");
+        };
 
-
-    const exportData = {
-        notes: notesData,
-        version: 1.0,
-        // Füge die unsortierte Reihenfolge hinzu, damit diese beim Import beibehalten wird
-        order: JSON.parse(localStorage.getItem('notes-order') || '[]')
-    };
-    
-    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(exportData, null, 2));
-    const dlAnchorElem = document.createElement('a');
-    dlAnchorElem.setAttribute("href", dataStr);
-    dlAnchorElem.setAttribute("download", `offline_notizen_export_${Date.now()}.json`);
-    document.body.appendChild(dlAnchorElem);
-    dlAnchorElem.click();
-    dlAnchorElem.remove();
-    
-    // Sie können hier zusätzlich eine Erfolgsmeldung für den PC einfügen, falls Sie möchten
-    // showModal("Ihre Notizen wurden erfolgreich exportiert.");
-};
-        
         const importNotes = (event) => {
             const file = event.target.files[0];
             if (!file) {
@@ -1722,18 +1438,14 @@ const exportNotes = () => {
 
 
         // ******************************************************
-        // *** INITIALISIERUNG ***
+        // ** INITIALISIERUNG **
         // ******************************************************
 
         // Event Listener für die Toolbar
         boldBtn.addEventListener('click', () => executeFormatAndRestore('bold'));
         italicBtn.addEventListener('click', () => executeFormatAndRestore('italic'));
         underlineBtn.addEventListener('click', () => executeFormatAndRestore('underline'));
-        // NEU: Ruft die Funktion zur dynamischen Einrückbegrenzung auf
-indentBtn.addEventListener('click', (e) => {
-    e.stopPropagation();
-    executeIndentCommand(); 
-});
+        indentBtn.addEventListener('click', () => executeFormatAndRestore('indent'));
         outdentBtn.addEventListener('click', () => executeFormatAndRestore('outdent'));
         linkBtn.addEventListener('click', executeLinkCommand);
 
@@ -1804,27 +1516,6 @@ indentBtn.addEventListener('click', (e) => {
 
         // Initial loading of notes
         window.addEventListener('load', loadNotesFromLocal);
-
-        // --- FIX FÜR UMGEBROCHENEN TEXT NACH BILDSCHIRM-DREHUNG ---
-
-let resizeTimer;
-window.addEventListener('resize', () => {
-    // Debounce-Funktion: Wartet kurz, um nicht bei jeder Pixeländerung neu zu rendern
-    clearTimeout(resizeTimer);
-    resizeTimer = setTimeout(() => {
-        // Ruft die Funktion auf, die alle Notizen neu in die DOM-Elemente lädt.
-        // Dies zwingt den Browser, die Textumbrüche basierend auf der neuen Breite neu zu berechnen.
-        renderNotes(searchInput.value || ''); 
-    }, 200); // 200 Millisekunden Verzögerung
-});
-
-// Ältere Browser und mobile Geräte können stattdessen 'orientationchange' verwenden
-window.addEventListener('orientationchange', () => {
-    // Verzögerung ist hier oft notwendig, da die Breite nicht sofort aktualisiert wird
-    setTimeout(() => {
-        renderNotes(searchInput.value || '');
-    }, 300);
-});
     </script>
 </body>
 </html>
