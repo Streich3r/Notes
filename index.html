@@ -1799,44 +1799,43 @@ indentBtn.addEventListener('click', (e) => {
         window.addEventListener('load', loadNotesFromLocal);
 
 
-        // ******************************************************
-// ** ULTIMATIVER FIX FÜR BOLD/ITALIC/UNDERLINE (B/I/U) **
+// ******************************************************
+// ** NEUE SPEZIAL-FUNKTIONEN FÜR BOLD/ITALIC/UNDERLINE **
 // ******************************************************
 
 /**
- * Führt einen Formatierungsbefehl aus und erzwingt die korrekte Verschachtelung
- * (z.B. <b><i>|</i></b>) auch bei leerer Auswahl/blinkendem Cursor.
+ * Führt einen Formatierungsbefehl aus und erzwingt die korrekte Verschachtelung.
+ * Diese Funktion nutzt Ihre existierenden, *funktionierenden* saveSelection/restoreSelection
+ * (die von den Listen/Link-Buttons verwendet werden), wendet sie aber aggressiv an.
  */
-const toggleRobustFormat = (command) => {
-    // 1. Fokus in den Editor setzen (KRITISCH)
+const toggleRobustFormatForBIU = (command) => {
+    // 1. Fokus in den Editor setzen
     noteEditor.focus();
     
-    // 2. Cursorposition VOR execCommand wiederherstellen (DER FIX)
-    // Dies zwingt den Browser, das neue Formatierungs-Tag in das gespeicherte
-    // Tag zu verschachteln, anstatt es aufzuheben/zu ersetzen.
+    // 2. KRITISCHER FIX: Cursorposition VOR execCommand wiederherstellen.
+    // DIES ZWINGT DEN BROWSER ZUR VERSCHACHTELUNG (<b><i>).
     restoreSelection(); 
     
     // 3. Befehl ausführen
     document.execCommand(command, false, null);
     
-    // 4. Cursorposition/Auswahl NEU speichern
+    // 4. Cursorposition NEU speichern (für den nächsten Klick)
     saveSelection();
     
     // 5. Toolbar aktualisieren
     updateToolbarState(); 
 };
 
-// Spezielle Wrapper-Funktionen für die Button-Events
 const toggleBold = () => {
-    toggleRobustFormat('bold');
+    toggleRobustFormatForBIU('bold');
 };
 
 const toggleItalic = () => {
-    toggleRobustFormat('italic');
+    toggleRobustFormatForBIU('italic');
 };
 
 const toggleUnderline = () => {
-    toggleRobustFormat('underline');
+    toggleRobustFormatForBIU('underline');
 };
     </script>
 </body>
