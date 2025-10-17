@@ -944,20 +944,34 @@ const formatDoc = (command, value = null) => {
             saveSelection();
         };
 
-        // ******************************************************
-        // ** FORMATIERUNGSLOGIK **
-        // ******************************************************
+      // ******************************************************
+// ** FORMATIERUNGSLOGIK (ROBUST FÜR ALLE BEFEHLE) **
+// ******************************************************
 
-        const applyFormat = (command, value = null) => {
-            noteEditor.focus();
-            try {
-                document.execCommand(command, false, value);
-            } catch (e) {
-                // Ignoriere Fehler wie 'applyFormat("foreColor", "white")'
-            }
-            collapseSelection();
-            updateToolbarState(); // Aktualisiert den Status nach der Anwendung
-        };
+const applyFormat = (command, value = null) => {
+    // 1. KRITISCH: Den Fokus in den Editor setzen.
+    noteEditor.focus();
+    
+    // 2. Die letzte Cursorposition/Auswahl WIEDERHERSTELLEN. 
+    //    DIES IST DER FIX: Stellt den Cursor in die letzte Position/Tags, 
+    //    was die korrekte Verschachtelung (B in I) erzwingt.
+    restoreSelection(); 
+    
+    try {
+        // 3. Befehl ausführen
+        document.execCommand(command, false, value);
+    } catch (e) {
+        // Ignoriere Fehler wie 'applyFormat("foreColor", "white")'
+    }
+
+    // 4. Cursorposition/Auswahl NEU SPEICHERN.
+    saveSelection(); 
+    
+    // ❌ collapseSelection() WURDE ENTFERNT, da es die Verschachtelung bricht.
+
+    // 5. Toolbar aktualisieren
+    updateToolbarState(); 
+};
 
         // ******************************************************
         // ** TOOLBAR AKTUALISIERUNG (ACTIVE MARKER) LOGIK **
