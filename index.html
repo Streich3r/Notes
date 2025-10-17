@@ -1707,9 +1707,9 @@ const exportNotes = () => {
         // ******************************************************
 
         // Event Listener für die Toolbar
-        boldBtn.addEventListener('click', () => executeFormatAndRestore('bold'));
-        italicBtn.addEventListener('click', () => executeFormatAndRestore('italic'));
-        underlineBtn.addEventListener('click', () => executeFormatAndRestore('underline'));
+       boldBtn.addEventListener('click', (e) => { e.preventDefault(); toggleBold(); });
+       italicBtn.addEventListener('click', (e) => { e.preventDefault(); toggleItalic(); });
+       underlineBtn.addEventListener('click', (e) => { e.preventDefault(); toggleUnderline(); });
         // NEU: Ruft die Funktion zur dynamischen Einrückbegrenzung auf
 indentBtn.addEventListener('click', (e) => {
     e.stopPropagation();
@@ -1785,6 +1785,45 @@ indentBtn.addEventListener('click', (e) => {
 
         // Initial loading of notes
         window.addEventListener('load', loadNotesFromLocal);
+
+        // ******************************************************
+// ** NEUE, ROBUSTE TOGGLE-FUNKTIONEN (FIX B/I/U) **
+// ******************************************************
+
+/**
+ * Führt einen Formatierungsbefehl aus, der die korrekte Verschachtelung für
+ * Bold, Italic und Underline sicherstellt, indem die Auswahl aggressiv 
+ * vor der Ausführung wiederhergestellt wird.
+ */
+const toggleRobustFormat = (command) => {
+    // 1. Fokus in den Editor setzen
+    noteEditor.focus();
+    
+    // 2. KRITISCHER FIX: Cursorposition VOR execCommand wiederherstellen
+    //    Dies zwingt den Browser zur Verschachtelung (z.B. <b><i>).
+    restoreSelection(); 
+    
+    // 3. Befehl ausführen
+    document.execCommand(command, false, null);
+    
+    // 4. Cursorposition/Auswahl NEU speichern
+    saveSelection();
+    
+    // 5. Toolbar aktualisieren
+    updateToolbarState(); 
+};
+
+const toggleBold = () => {
+    toggleRobustFormat('bold');
+};
+
+const toggleItalic = () => {
+    toggleRobustFormat('italic');
+};
+
+const toggleUnderline = () => {
+    toggleRobustFormat('underline');
+};
     </script>
 </body>
 </html>
