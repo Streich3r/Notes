@@ -691,18 +691,32 @@ const measureCssValue = (cssValue) => {
             }
             return null;
         };
+  
         const saveSelection = () => {
-            savedRange = getSelectionRange();
-        };
+    if (window.getSelection) {
+        const selection = window.getSelection();
+        if (selection.rangeCount > 0) {
+            savedRange = selection.getRangeAt(0);
+        }
+    } else if (document.selection && document.selection.createRange) {
+        savedRange = document.selection.createRange();
+    }
+};
 
-        const restoreSelection = () => {
-            if (savedRange) {
-                const selection = window.getSelection();
-                selection.removeAllRanges();
-                selection.addRange(savedRange);
-                savedRange = null; 
-            }
-        };
+const restoreSelection = () => {
+    if (savedRange) {
+        if (window.getSelection) {
+            const selection = window.getSelection();
+            selection.removeAllRanges();
+            selection.addRange(savedRange);
+            return true;
+        } else if (document.selection && savedRange.select) {
+            savedRange.select();
+            return true;
+        }
+    }
+    return false;
+};
         const collapseSelection = () => {
             const selection = window.getSelection();
             if (selection.rangeCount > 0) {
@@ -713,6 +727,24 @@ const measureCssValue = (cssValue) => {
                 selection.addRange(range);
             }
         };
+
+
+        // Funktion zum Anwenden von Formatierungen
+const formatDoc = (command, value = null) => {
+    // 1. Auswahl wiederherstellen (damit der Browser weiß, welchen Text er formatieren soll)
+    if (restoreSelection()) {
+        // 2. Befehl ausführen
+        document.execCommand(command, false, value);
+        // 3. Auswahl nach dem Befehl neu speichern (wichtig für den nächsten Klick)
+        saveSelection(); 
+    } else {
+        // Fallback, wenn keine Auswahl gespeichert war, aber der Editor fokussiert ist
+        document.execCommand(command, false, value);
+    }
+    // Nach der Formatierung den Zustand der Toolbar aktualisieren und den Fokus behalten
+    updateToolbarState();
+    noteEditor.focus();
+};
         /**
          * Führt einen Formatierungsbefehl aus und stellt den Fokus in den Editor zurück.
          * @param {string} command - Der execCommand-Befehl.
@@ -1707,9 +1739,21 @@ const exportNotes = () => {
         // ******************************************************
 
         // Event Listener für die Toolbar
-        boldBtn.addEventListener('click', () => executeFormatAndRestore('bold'));
-        italicBtn.addEventListener('click', () => executeFormatAndRestore('italic'));
-        underlineBtn.addEventListener('click', () => executeFormatAndRestore('underline'));
+   
+boldBtn.addEventListener('click', (e) => {
+    e.preventDefault(); // Verhindert, dass der Editor den Fokus verliert
+    formatDoc('bold');
+});
+
+italicBtn.addEventListener('click', (e) => {
+    e.preventDefault();
+    formatDoc('italic');
+});
+
+underlineBtn.addEventListener('click', (e) => {
+    e.preventDefault();
+    formatDoc('underline');
+});
         // NEU: Ruft die Funktion zur dynamischen Einrückbegrenzung auf
 indentBtn.addEventListener('click', (e) => {
     e.stopPropagation();
