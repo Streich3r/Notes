@@ -691,32 +691,18 @@ const measureCssValue = (cssValue) => {
             }
             return null;
         };
-  
         const saveSelection = () => {
-    if (window.getSelection) {
-        const selection = window.getSelection();
-        if (selection.rangeCount > 0) {
-            savedRange = selection.getRangeAt(0);
-        }
-    } else if (document.selection && document.selection.createRange) {
-        savedRange = document.selection.createRange();
-    }
-};
+            savedRange = getSelectionRange();
+        };
 
-const restoreSelection = () => {
-    if (savedRange) {
-        if (window.getSelection) {
-            const selection = window.getSelection();
-            selection.removeAllRanges();
-            selection.addRange(savedRange);
-            return true;
-        } else if (document.selection && savedRange.select) {
-            savedRange.select();
-            return true;
-        }
-    }
-    return false;
-};
+        const restoreSelection = () => {
+            if (savedRange) {
+                const selection = window.getSelection();
+                selection.removeAllRanges();
+                selection.addRange(savedRange);
+                savedRange = null; 
+            }
+        };
         const collapseSelection = () => {
             const selection = window.getSelection();
             if (selection.rangeCount > 0) {
@@ -727,27 +713,23 @@ const restoreSelection = () => {
                 selection.addRange(range);
             }
         };
+        /**
+         * Führt einen Formatierungsbefehl aus und stellt den Fokus in den Editor zurück.
+         * @param {string} command - Der execCommand-Befehl.
+         * @param {string} value - Der Wert für den execCommand-Befehl.
+         */
+        const executeFormatAndRestore = (command, value = null) => {
+            // WICHTIG: Auswahl wiederherstellen und Fokus setzen VOR execCommand
+            restoreSelection();
+            noteEditor.focus(); 
 
-
- 
-        // Funktion zum Anwenden von Formatierungen (ROBUST)
-const formatDoc = (command, value = null) => {
-    // 1. KRITISCH: Den Fokus in den Editor setzen.
-    noteEditor.focus();
-    
-    // 2. Die letzte bekannte Cursorposition/Auswahl wiederherstellen. 
-    //    Dies erzwingt die korrekte Verschachtelung (z.B. <b><i>...).
-    restoreSelection();
-    
-    // 3. Befehl ausführen
-    document.execCommand(command, false, value);
-    
-    // 4. Cursorposition nach dem Befehl speichern
-    saveSelection();
-    
-    // 5. Toolbar aktualisieren
-    updateToolbarState();
-};
+            // Führe den Formatierungsbefehl aus
+            document.execCommand(command, false, value);
+            // Auswahl/Range erneut speichern, falls sich die Auswahl geändert hat
+            saveSelection();
+            // Toolbar-Status aktualisieren
+            updateToolbarState();
+        };
         const executeLinkCommand = async () => {
             // 1. Auswahl speichern
             saveSelection();
@@ -1725,21 +1707,9 @@ const exportNotes = () => {
         // ******************************************************
 
         // Event Listener für die Toolbar
-   
-boldBtn.addEventListener('click', (e) => {
-    e.preventDefault(); // Verhindert, dass der Editor den Fokus verliert
-    formatDoc('bold');
-});
-
-italicBtn.addEventListener('click', (e) => {
-    e.preventDefault();
-    formatDoc('italic');
-});
-
-underlineBtn.addEventListener('click', (e) => {
-    e.preventDefault();
-    formatDoc('underline');
-});
+        boldBtn.addEventListener('click', () => executeFormatAndRestore('bold'));
+        italicBtn.addEventListener('click', () => executeFormatAndRestore('italic'));
+        underlineBtn.addEventListener('click', () => executeFormatAndRestore('underline'));
         // NEU: Ruft die Funktion zur dynamischen Einrückbegrenzung auf
 indentBtn.addEventListener('click', (e) => {
     e.stopPropagation();
@@ -1797,7 +1767,7 @@ indentBtn.addEventListener('click', (e) => {
             sortDropdownMenu.classList.remove('active');
         });
         
-              // Speichern und Suchen
+        // Speichern und Suchen
         saveNoteBtn.addEventListener('click', saveNote);
         searchInput.addEventListener('input', (e) => renderNotes(e.target.value));
         
@@ -1805,39 +1775,6 @@ indentBtn.addEventListener('click', (e) => {
         exportBtn.addEventListener('click', exportNotes);
         importFileInput.addEventListener('change', importNotes);
         
-        // ******************************************************
-        // ** NEU: FORMATIERUNGS-BUTTONS FIX **
-        // ******************************************************
-        boldBtn.addEventListener('click', (e) => {
-            e.preventDefault(); // Wichtig: Verhindert Fokusverlust
-            formatDoc('bold');
-        });
-
-        italicBtn.addEventListener('click', (e) => {
-            e.preventDefault();
-            formatDoc('italic');
-        });
-
-        underlineBtn.addEventListener('click', (e) => {
-            e.preventDefault();
-            formatDoc('underline');
-        });
-        
-        // Nutzt die bereits definierte Logik für Einzug/Auszug/Link
-        indentBtn.addEventListener('click', (e) => {
-            e.preventDefault();
-            executeIndentCommand(); 
-        });
-
-        outdentBtn.addEventListener('click', (e) => {
-            e.preventDefault();
-            formatDoc('outdent');
-        });
-
-        linkBtn.addEventListener('click', (e) => {
-            e.preventDefault();
-            executeLinkCommand();
-        });
         // Event listener zur Aktualisierung des Toolbar-Zustands bei Fokuswechsel/Eingabe
         noteEditor.addEventListener('mouseup', saveSelection); // Speichern der Auswahl bei Mausklick
         noteEditor.addEventListener('keyup', saveSelection); // Speichern der Auswahl bei Tastendruck
