@@ -729,39 +729,25 @@ const restoreSelection = () => {
         };
 
 
-        // Funktion zum Anwenden von Formatierungen
+ 
+        // Funktion zum Anwenden von Formatierungen (ROBUST)
 const formatDoc = (command, value = null) => {
-    // 1. Auswahl wiederherstellen (damit der Browser weiß, welchen Text er formatieren soll)
-    if (restoreSelection()) {
-        // 2. Befehl ausführen
-        document.execCommand(command, false, value);
-        // 3. Auswahl nach dem Befehl neu speichern (wichtig für den nächsten Klick)
-        saveSelection(); 
-    } else {
-        // Fallback, wenn keine Auswahl gespeichert war, aber der Editor fokussiert ist
-        document.execCommand(command, false, value);
-    }
-    // Nach der Formatierung den Zustand der Toolbar aktualisieren und den Fokus behalten
-    updateToolbarState();
-    noteEditor.focus();
+    // 1. KRITISCH: Den Fokus in den Editor setzen.
+    noteEditor.focus();
+    
+    // 2. Die letzte bekannte Cursorposition/Auswahl wiederherstellen. 
+    //    Dies erzwingt die korrekte Verschachtelung (z.B. <b><i>...).
+    restoreSelection();
+    
+    // 3. Befehl ausführen
+    document.execCommand(command, false, value);
+    
+    // 4. Cursorposition nach dem Befehl speichern
+    saveSelection();
+    
+    // 5. Toolbar aktualisieren
+    updateToolbarState();
 };
-        /**
-         * Führt einen Formatierungsbefehl aus und stellt den Fokus in den Editor zurück.
-         * @param {string} command - Der execCommand-Befehl.
-         * @param {string} value - Der Wert für den execCommand-Befehl.
-         */
-        const executeFormatAndRestore = (command, value = null) => {
-            // WICHTIG: Auswahl wiederherstellen und Fokus setzen VOR execCommand
-            restoreSelection();
-            noteEditor.focus(); 
-
-            // Führe den Formatierungsbefehl aus
-            document.execCommand(command, false, value);
-            // Auswahl/Range erneut speichern, falls sich die Auswahl geändert hat
-            saveSelection();
-            // Toolbar-Status aktualisieren
-            updateToolbarState();
-        };
         const executeLinkCommand = async () => {
             // 1. Auswahl speichern
             saveSelection();
