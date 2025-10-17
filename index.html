@@ -721,23 +721,8 @@ const restoreSelection = () => {
                 selection.addRange(range);
             }
         };
-        /**
-         * Führt einen Formatierungsbefehl aus und stellt den Fokus in den Editor zurück.
-         * @param {string} command - Der execCommand-Befehl.
-         * @param {string} value - Der Wert für den execCommand-Befehl.
-         */
-        const executeFormatAndRestore = (command, value = null) => {
-            // WICHTIG: Auswahl wiederherstellen und Fokus setzen VOR execCommand
-            restoreSelection();
-            noteEditor.focus(); 
 
-            // Führe den Formatierungsbefehl aus
-            document.execCommand(command, false, value);
-            // Auswahl/Range erneut speichern, falls sich die Auswahl geändert hat
-            saveSelection();
-            // Toolbar-Status aktualisieren
-            updateToolbarState();
-        };
+        
         const executeLinkCommand = async () => {
             // 1. Auswahl speichern
             saveSelection();
@@ -769,14 +754,12 @@ const restoreSelection = () => {
             updateToolbarState(); 
         };
 
-        // Funktion zum Anwenden von Formatierungen (ROBUST für Toggles B/I/U)
+// Funktion zum Anwenden von Formatierungen (Hauptfunktion für ALLE einfachen Befehle)
 const formatDoc = (command, value = null) => {
     // 1. KRITISCH: Den Fokus in den Editor setzen.
     noteEditor.focus();
     
-    // 2. Die letzte Cursorposition/Auswahl WIEDERHERSTELLEN.
-    //    Dies zwingt den Browser, das neue Formatierungs-Tag
-    //    INNERHALB des vorherigen zu verschachteln (z.B. <b><i>).
+    // 2. Die letzte Cursorposition/Auswahl WIEDERHERSTELLEN. (Der FIX)
     restoreSelection();
     
     // 3. Befehl ausführen
