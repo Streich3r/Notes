@@ -695,14 +695,19 @@ const measureCssValue = (cssValue) => {
             savedRange = getSelectionRange();
         };
 
-        const restoreSelection = () => {
-            if (savedRange) {
-                const selection = window.getSelection();
-                selection.removeAllRanges();
-                selection.addRange(savedRange);
-                savedRange = null; 
-            }
-        };
+ let savedRange = null; // Global deklariert
+
+const restoreSelection = () => {
+    if (savedRange) {
+        if (window.getSelection) {
+            const selection = window.getSelection();
+            selection.removeAllRanges();
+            selection.addRange(savedRange);
+            return true;
+        } 
+    }
+    return false;
+};
         const collapseSelection = () => {
             const selection = window.getSelection();
             if (selection.rangeCount > 0) {
@@ -1707,9 +1712,21 @@ const exportNotes = () => {
         // ******************************************************
 
         // Event Listener für die Toolbar
-       boldBtn.addEventListener('click', (e) => { e.preventDefault(); toggleBold(); });
-       italicBtn.addEventListener('click', (e) => { e.preventDefault(); toggleItalic(); });
-       underlineBtn.addEventListener('click', (e) => { e.preventDefault(); toggleUnderline(); });
+
+boldBtn.addEventListener('click', (e) => {
+    e.preventDefault(); 
+    toggleBold(); // RUFT die neue, robuste Funktion auf
+});
+
+italicBtn.addEventListener('click', (e) => {
+    e.preventDefault(); 
+    toggleItalic(); // RUFT die neue, robuste Funktion auf
+});
+
+underlineBtn.addEventListener('click', (e) => {
+    e.preventDefault(); 
+    toggleUnderline(); // RUFT die neue, robuste Funktion auf
+});
         // NEU: Ruft die Funktion zur dynamischen Einrückbegrenzung auf
 indentBtn.addEventListener('click', (e) => {
     e.stopPropagation();
@@ -1786,21 +1803,21 @@ indentBtn.addEventListener('click', (e) => {
         // Initial loading of notes
         window.addEventListener('load', loadNotesFromLocal);
 
-        // ******************************************************
-// ** NEUE, ROBUSTE TOGGLE-FUNKTIONEN (FIX B/I/U) **
+// ******************************************************
+// ** ULTIMATIVER FIX FÜR BOLD/ITALIC/UNDERLINE (B/I/U) **
 // ******************************************************
 
 /**
- * Führt einen Formatierungsbefehl aus, der die korrekte Verschachtelung für
- * Bold, Italic und Underline sicherstellt, indem die Auswahl aggressiv 
- * vor der Ausführung wiederhergestellt wird.
+ * Führt einen Formatierungsbefehl aus und erzwingt die korrekte Verschachtelung
+ * (z.B. <b><i>|</i></b>) auch bei leerer Auswahl/blinkendem Cursor.
  */
 const toggleRobustFormat = (command) => {
-    // 1. Fokus in den Editor setzen
+    // 1. Fokus in den Editor setzen (KRITISCH)
     noteEditor.focus();
     
-    // 2. KRITISCHER FIX: Cursorposition VOR execCommand wiederherstellen
-    //    Dies zwingt den Browser zur Verschachtelung (z.B. <b><i>).
+    // 2. Cursorposition VOR execCommand wiederherstellen (DER FIX)
+    // Dies zwingt den Browser, das neue Formatierungs-Tag in das gespeicherte
+    // Tag zu verschachteln, anstatt es aufzuheben/zu ersetzen.
     restoreSelection(); 
     
     // 3. Befehl ausführen
@@ -1813,6 +1830,7 @@ const toggleRobustFormat = (command) => {
     updateToolbarState(); 
 };
 
+// Spezielle Wrapper-Funktionen für die Button-Events
 const toggleBold = () => {
     toggleRobustFormat('bold');
 };
