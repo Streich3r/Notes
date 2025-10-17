@@ -1800,32 +1800,41 @@ indentBtn.addEventListener('click', (e) => {
 
 
 // ******************************************************
-// ** NEUE SPEZIAL-FUNKTIONEN FÜR BOLD/ITALIC/UNDERLINE **
+// ** ULTIMATIVER FIX: AGGRESSIVE CURSOR-MANIPULATION (NUR FÜR B/I/U) **
 // ******************************************************
 
 /**
  * Führt einen Formatierungsbefehl aus und erzwingt die korrekte Verschachtelung.
- * Diese Funktion nutzt Ihre existierenden, *funktionierenden* saveSelection/restoreSelection
- * (die von den Listen/Link-Buttons verwendet werden), wendet sie aber aggressiv an.
+ * Diese Methode umgeht das Standard-restoreSelection() für B/I/U.
  */
 const toggleRobustFormatForBIU = (command) => {
-    // 1. Fokus in den Editor setzen
+    // 1. Zuerst die aktuelle Auswahl speichern (falls Text selektiert ist)
+    saveSelection();
+
+    // 2. Befehl ausführen (Browser toggelt den Zustand)
+    document.execCommand(command, false, null);
+
+    // 3. Den Editor fokussieren (notwendig, um die Range zu manipulieren)
     noteEditor.focus();
     
-    // 2. KRITISCHER FIX: Cursorposition VOR execCommand wiederherstellen.
-    // DIES ZWINGT DEN BROWSER ZUR VERSCHACHTELUNG (<b><i>).
-    restoreSelection(); 
-    
-    // 3. Befehl ausführen
-    document.execCommand(command, false, null);
-    
-    // 4. Cursorposition NEU speichern (für den nächsten Klick)
-    saveSelection();
+    // 4. KRITISCHER FIX: Die gespeicherte Range wieder herstellen,
+    //    dann die Auswahl zum ENDE der Range kollabieren.
+    if (restoreSelection()) {
+        const selection = window.getSelection();
+        // Hier kollabieren wir explizit zum Ende der wiederhergestellten Range
+        selection.getRangeAt(0).collapse(false); 
+        // Wichtig: Wir speichern die neue, kollabierte Position FÜR den nächsten Klick.
+        saveSelection();
+    } else {
+        // Fallback: Wenn keine Auswahl gespeichert war, einfach neu speichern
+        saveSelection();
+    }
     
     // 5. Toolbar aktualisieren
     updateToolbarState(); 
 };
 
+// Spezielle Wrapper-Funktionen für die Button-Events
 const toggleBold = () => {
     toggleRobustFormatForBIU('bold');
 };
