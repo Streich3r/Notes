@@ -1811,7 +1811,7 @@ indentBtn.addEventListener('click', (e) => {
             sortDropdownMenu.classList.remove('active');
         });
         
-        // Speichern und Suchen
+              // Speichern und Suchen
         saveNoteBtn.addEventListener('click', saveNote);
         searchInput.addEventListener('input', (e) => renderNotes(e.target.value));
         
@@ -1819,6 +1819,39 @@ indentBtn.addEventListener('click', (e) => {
         exportBtn.addEventListener('click', exportNotes);
         importFileInput.addEventListener('change', importNotes);
         
+        // ******************************************************
+        // ** NEU: FORMATIERUNGS-BUTTONS FIX **
+        // ******************************************************
+        boldBtn.addEventListener('click', (e) => {
+            e.preventDefault(); // Wichtig: Verhindert Fokusverlust
+            formatDoc('bold');
+        });
+
+        italicBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            formatDoc('italic');
+        });
+
+        underlineBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            formatDoc('underline');
+        });
+        
+        // Nutzt die bereits definierte Logik für Einzug/Auszug/Link
+        indentBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            executeIndentCommand(); 
+        });
+
+        outdentBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            formatDoc('outdent');
+        });
+
+        linkBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            executeLinkCommand();
+        });
         // Event listener zur Aktualisierung des Toolbar-Zustands bei Fokuswechsel/Eingabe
         noteEditor.addEventListener('mouseup', saveSelection); // Speichern der Auswahl bei Mausklick
         noteEditor.addEventListener('keyup', saveSelection); // Speichern der Auswahl bei Tastendruck
