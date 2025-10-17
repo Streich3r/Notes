@@ -695,22 +695,14 @@ const measureCssValue = (cssValue) => {
             savedRange = getSelectionRange();
         };
 
-  // NEU: Diese Funktion fehlte (oder war falsch platziert) und ist notwendig.
-const restoreSelection = () => {
-    if (savedRange) {
-        if (window.getSelection) {
-            const selection = window.getSelection();
-            selection.removeAllRanges();
-            selection.addRange(savedRange);
-            return true;
-        } else if (document.selection && savedRange.select) {
-            // Fallback für ältere IE-Versionen
-            savedRange.select();
-            return true;
-        }
-    }
-    return false;
-};
+        const restoreSelection = () => {
+            if (savedRange) {
+                const selection = window.getSelection();
+                selection.removeAllRanges();
+                selection.addRange(savedRange);
+                savedRange = null; 
+            }
+        };
         const collapseSelection = () => {
             const selection = window.getSelection();
             if (selection.rangeCount > 0) {
@@ -721,8 +713,23 @@ const restoreSelection = () => {
                 selection.addRange(range);
             }
         };
+        /**
+         * Führt einen Formatierungsbefehl aus und stellt den Fokus in den Editor zurück.
+         * @param {string} command - Der execCommand-Befehl.
+         * @param {string} value - Der Wert für den execCommand-Befehl.
+         */
+        const executeFormatAndRestore = (command, value = null) => {
+            // WICHTIG: Auswahl wiederherstellen und Fokus setzen VOR execCommand
+            restoreSelection();
+            noteEditor.focus(); 
 
-        
+            // Führe den Formatierungsbefehl aus
+            document.execCommand(command, false, value);
+            // Auswahl/Range erneut speichern, falls sich die Auswahl geändert hat
+            saveSelection();
+            // Toolbar-Status aktualisieren
+            updateToolbarState();
+        };
         const executeLinkCommand = async () => {
             // 1. Auswahl speichern
             saveSelection();
@@ -753,26 +760,6 @@ const restoreSelection = () => {
             noteEditor.focus();
             updateToolbarState(); 
         };
-
-// Funktion zum Anwenden von Formatierungen (Hauptfunktion für ALLE einfachen Befehle)
-const formatDoc = (command, value = null) => {
-    // 1. KRITISCH: Den Fokus in den Editor setzen.
-    noteEditor.focus();
-    
-    // 2. Die letzte Cursorposition/Auswahl WIEDERHERSTELLEN. (Der FIX)
-    restoreSelection();
-    
-    // 3. Befehl ausführen
-    document.execCommand(command, false, value);
-    
-    // 4. Cursorposition NEU speichern (für den nächsten Klick)
-    saveSelection();
-    
-    // 5. Toolbar aktualisieren
-    updateToolbarState();
-};
-
-        
 
 
         // Nach executeLinkCommand einfügen
@@ -944,34 +931,20 @@ const formatDoc = (command, value = null) => {
             saveSelection();
         };
 
-      // ******************************************************
-// ** FORMATIERUNGSLOGIK (ROBUST FÜR ALLE BEFEHLE) **
-// ******************************************************
+        // ******************************************************
+        // ** FORMATIERUNGSLOGIK **
+        // ******************************************************
 
-const applyFormat = (command, value = null) => {
-    // 1. KRITISCH: Den Fokus in den Editor setzen.
-    noteEditor.focus();
-    
-    // 2. Die letzte Cursorposition/Auswahl WIEDERHERSTELLEN. 
-    //    DIES IST DER FIX: Stellt den Cursor in die letzte Position/Tags, 
-    //    was die korrekte Verschachtelung (B in I) erzwingt.
-    restoreSelection(); 
-    
-    try {
-        // 3. Befehl ausführen
-        document.execCommand(command, false, value);
-    } catch (e) {
-        // Ignoriere Fehler wie 'applyFormat("foreColor", "white")'
-    }
-
-    // 4. Cursorposition/Auswahl NEU SPEICHERN.
-    saveSelection(); 
-    
-    // ❌ collapseSelection() WURDE ENTFERNT, da es die Verschachtelung bricht.
-
-    // 5. Toolbar aktualisieren
-    updateToolbarState(); 
-};
+        const applyFormat = (command, value = null) => {
+            noteEditor.focus();
+            try {
+                document.execCommand(command, false, value);
+            } catch (e) {
+                // Ignoriere Fehler wie 'applyFormat("foreColor", "white")'
+            }
+            collapseSelection();
+            updateToolbarState(); // Aktualisiert den Status nach der Anwendung
+        };
 
         // ******************************************************
         // ** TOOLBAR AKTUALISIERUNG (ACTIVE MARKER) LOGIK **
