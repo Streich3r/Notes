@@ -1219,8 +1219,22 @@ const measureCssValue = (cssValue) => {
 
             const title = noteTitleInput.value.trim();
             const content = sanitizeHtml(noteEditor.innerHTML);
+const containsImage = content.includes('<img'); 
 
-            if (!title && !content) {
+    // BEREINIGUNG FÜR DIE LEERE-PRÜFUNG:
+    // 1. Entferne alle <br>-Tags (leere Zeilen).
+    // 2. Entferne alle anderen HTML-Tags (außer Bilder, die nicht als <br> erkannt werden).
+    // 3. Trimmt Leerzeichen.
+    const contentCheck = content
+        .replace(/<br\s*\/?>/g, '')   
+        .replace(/<[^>]*>/g, '')      
+        .trim();                      
+
+    // PRÜFUNG: Die Notiz ist leer, wenn:
+    // KEIN Titel UND
+    // KEIN Bild UND
+    // KEIN sichtbarer Text (contentCheck === '')
+    if (!title && !containsImage && contentCheck === '') {
                 showModal("Die Notiz ist leer. Bitte geben Sie einen Titel oder Inhalt ein.");
                 return;
             }
@@ -1399,6 +1413,51 @@ notesData.sort((a, b) => {
                     hour: '2-digit',
                     minute: '2-digit'
                 });
+
+
+                // ******************************************************
+    // *** NEUE LOGIK FÜR NOTIZKARTEN-INHALT ***
+    // ******************************************************
+    let cardContentHtml = '';
+    const noteContentHtml = note.content;
+
+    // 1. PRÜFUNG: Enthält die Notiz ein Bild?
+    if (noteContentHtml.includes('<img')) {
+        // Sucht nach dem ersten <img>-Tag und dessen src-Attribut
+        const firstImageMatch = noteContentHtml.match(/<img\s[^>]*src=["']([^"']*)["'][^>]*>/i);
+        
+        if (firstImageMatch && firstImageMatch[0]) {
+            // Bereite das Bild-Tag für die Vorschau vor
+            const imageForCard = firstImageMatch[0]
+                // 1. Entferne den Vollbild-Klick-Handler
+                .replace(/onclick="[^"]*"/g, '') 
+                // 2. Entferne alle Inline-Styles, um eigene Styles für die Vorschau zu setzen
+                .replace(/style="[^"]*"/g, '') 
+                // 3. Setze neue, limitierte Vorschau-Styles (max. 100px Höhe)
+                .replace('<img', '<img style="object-fit: contain; max-height: 100px; max-width: 100%; display: block; margin: 0 auto; height: auto;"');
+
+            cardContentHtml = `
+                <div style="max-height: 100px; overflow: hidden; margin-bottom: 8px; text-align: center;">
+                    ${imageForCard}
+                </div>
+                <p class="text-xs text-gray-500 italic">[Bild-Notiz]</p>`;
+        }
+    } 
+
+    // 2. FALLBACK: Wenn kein Bild gefunden wurde, erstelle einen Text-Snippet
+    if (cardContentHtml === '') {
+        // Entferne alle HTML-Tags für einen sauberen Text-Snippet
+        const strippedText = noteContentHtml.replace(/<[^>]*>/g, ' ').replace(/\s\s+/g, ' ').trim();
+        
+        // Erstelle den Snippet (die ersten 150 Zeichen)
+        const snippet = strippedText.substring(0, 150) + (strippedText.length > 150 ? '...' : '');
+        
+        // Wenn der Text-Snippet leer ist, zeige "Leere Notiz"
+        cardContentHtml = `<p class="text-gray-300">${snippet || 'Leere Notiz'}</p>`;
+    }
+    // ******************************************************
+    // *** ENDE NEUE LOGIK ***
+    // ******************************************************
                 
 //      <h3 class="text-xl font-bold text-gray-100 mb-2">${note.title || 'Ohne Titel'}</h3>
                 noteCard.innerHTML = `
