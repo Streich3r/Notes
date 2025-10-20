@@ -321,6 +321,7 @@
     margin: 0 !important;
     padding: 0 !important;
     line-height: 1.2 !important; 
+    color: #ffffff !important;
 
     /* 2. Zeilenumbrüche respektieren (nur hier, nicht am äußeren Container) */
     white-space: pre-wrap !important;
@@ -1707,21 +1708,9 @@ const exportNotes = () => {
         // ******************************************************
 
         // Event Listener für die Toolbar
- 
-boldBtn.addEventListener('click', (e) => {
-    e.preventDefault(); 
-    toggleBold(); // RUFT die neue, robuste Funktion auf
-});
-
-italicBtn.addEventListener('click', (e) => {
-    e.preventDefault(); 
-    toggleItalic(); // RUFT die neue, robuste Funktion auf
-});
-
-underlineBtn.addEventListener('click', (e) => {
-    e.preventDefault(); 
-    toggleUnderline(); // RUFT die neue, robuste Funktion auf
-});
+        boldBtn.addEventListener('click', () => executeFormatAndRestore('bold'));
+        italicBtn.addEventListener('click', () => executeFormatAndRestore('italic'));
+        underlineBtn.addEventListener('click', () => executeFormatAndRestore('underline'));
         // NEU: Ruft die Funktion zur dynamischen Einrückbegrenzung auf
 indentBtn.addEventListener('click', (e) => {
     e.stopPropagation();
@@ -1797,55 +1786,6 @@ indentBtn.addEventListener('click', (e) => {
 
         // Initial loading of notes
         window.addEventListener('load', loadNotesFromLocal);
-
-
-// ******************************************************
-// ** ULTIMATIVER FIX: AGGRESSIVE CURSOR-MANIPULATION (NUR FÜR B/I/U) **
-// ******************************************************
-
-/**
- * Führt einen Formatierungsbefehl aus und erzwingt die korrekte Verschachtelung.
- * Diese Methode umgeht das Standard-restoreSelection() für B/I/U.
- */
-const toggleRobustFormatForBIU = (command) => {
-    // 1. Zuerst die aktuelle Auswahl speichern (falls Text selektiert ist)
-    saveSelection();
-
-    // 2. Befehl ausführen (Browser toggelt den Zustand)
-    document.execCommand(command, false, null);
-
-    // 3. Den Editor fokussieren (notwendig, um die Range zu manipulieren)
-    noteEditor.focus();
-    
-    // 4. KRITISCHER FIX: Die gespeicherte Range wieder herstellen,
-    //    dann die Auswahl zum ENDE der Range kollabieren.
-    if (restoreSelection()) {
-        const selection = window.getSelection();
-        // Hier kollabieren wir explizit zum Ende der wiederhergestellten Range
-        selection.getRangeAt(0).collapse(false); 
-        // Wichtig: Wir speichern die neue, kollabierte Position FÜR den nächsten Klick.
-        saveSelection();
-    } else {
-        // Fallback: Wenn keine Auswahl gespeichert war, einfach neu speichern
-        saveSelection();
-    }
-    
-    // 5. Toolbar aktualisieren
-    updateToolbarState(); 
-};
-
-// Spezielle Wrapper-Funktionen für die Button-Events
-const toggleBold = () => {
-    toggleRobustFormatForBIU('bold');
-};
-
-const toggleItalic = () => {
-    toggleRobustFormatForBIU('italic');
-};
-
-const toggleUnderline = () => {
-    toggleRobustFormatForBIU('underline');
-};
     </script>
 </body>
 </html>
