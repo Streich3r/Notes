@@ -360,6 +360,15 @@
 .note-card u {
     color: inherit; 
 }
+
+        /* FIX 3: Setzt den "zuletzt bearbeitet"-Text wieder auf Grau. */
+/* Nutzt die spezifische Klasse 'text-gray-500' oder die relative Position des p-Tags. */
+.note-card p.text-gray-500 {
+    /* Grauwert basierend auf dem Tailwind-Standard (text-gray-500) oder einer Annäherung */
+    color: #9ca3af !important; 
+    /* #9ca3af ist der Standardwert für text-gray-400/500 in einigen Tailwind-Versionen 
+       und wird als deutliches, dezentes Grau wahrgenommen. */
+}
         
 
     </style>
