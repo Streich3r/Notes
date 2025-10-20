@@ -1865,6 +1865,40 @@ indentBtn.addEventListener('click', (e) => {
 
         // Initial loading of notes
         window.addEventListener('load', loadNotesFromLocal);
+
+        // ==========================================================
+// FIX: KORRIGIERTE EVENT LISTENER FÜR BOLD, ITALIC, UNDERLINE
+// Fügt die fehlenden Listener hinzu und verhindert den Fokusverlust (e.preventDefault()).
+// ==========================================================
+
+// Überprüfen, ob die Button-Elemente im DOM existieren, bevor Listener hinzugefügt werden (optional, aber sicher)
+if (typeof boldBtn !== 'undefined') {
+    boldBtn.addEventListener('click', (e) => {
+        // WICHTIG: Verhindert, dass der Button den Fokus vom Editor nimmt.
+        e.preventDefault(); 
+        // Ruft die zentrale Funktion zur Formatierung/Fokuswiederherstellung auf.
+        executeFormatAndRestore('bold');
+    });
+}
+
+if (typeof italicBtn !== 'undefined') {
+    italicBtn.addEventListener('click', (e) => {
+        e.preventDefault(); 
+        executeFormatAndRestore('italic');
+    });
+}
+
+if (typeof underlineBtn !== 'undefined') {
+    underlineBtn.addEventListener('click', (e) => {
+        e.preventDefault(); 
+        executeFormatAndRestore('underline');
+    });
+}
+
+// ==========================================================
+// ENDE DES FIXES
+// ==========================================================
+        
     </script>
 </body>
 </html>
