@@ -1867,45 +1867,42 @@ indentBtn.addEventListener('click', (e) => {
         window.addEventListener('load', loadNotesFromLocal);
 
 // ==========================================================
-// FINALER FIX: STABILE FUNKTION FÜR ZUVERLÄSSIGES TOGGLE UND STAPELN (B, I, U)
+// FINALER FIX: ASYNCHRONE STABILISIERUNG FÜR ZUVERLÄSSIGES MULTI-TOGGLE (B, I, U)
 // ==========================================================
 
-// Die zentrale Funktion zur Ausführung mit NULL-Verzögerung für Stabilität.
-function finalStableToggle(command) {
+// Zentrale Funktion für einen stabilen asynchronen Formatierungs-Toggle
+async function finalStableToggle(command) {
     const noteEditor = document.getElementById('note-editor');
     
-    // Verwenden Sie setTimeout(..., 0), um die Ausführung in die nächste Event-Schleife zu verschieben.
-    // Dies garantiert die Wiederherstellung des Fokus/Auswahl und ermöglicht das Stapeln (Multi-Toggle).
-    setTimeout(() => {
-        
-        // Cursorposition/Auswahl wiederherstellen
-        if (typeof restoreSelection === 'function') {
-            restoreSelection();
-        }
+    // Kleiner Promise-Wrapper für asynchrone Stabilität (ersetzt setTimeout(..., 0))
+    await new Promise(resolve => setTimeout(resolve, 0)); 
+    
+    // 1. Cursorposition/Auswahl wiederherstellen
+    if (typeof restoreSelection === 'function') {
+        restoreSelection();
+    }
 
-        // Befehl ausführen (Toggle)
-        document.execCommand(command, false, null);
-        
-        // Auswahl speichern und Editor neu fokussieren
-        if (typeof saveSelection === 'function') {
-            saveSelection(); 
-        }
-        if (noteEditor) {
-            noteEditor.focus();
-        }
-        
-        // Toolbar-Zustand aktualisieren (visuelles Feedback)
-        if (typeof updateToolbarState === 'function') {
-            updateToolbarState();
-        }
-        
-    }, 0); 
+    // 2. Befehl ausführen (Toggle)
+    document.execCommand(command, false, null);
+    
+    // 3. Auswahl speichern und Editor neu fokussieren
+    if (typeof saveSelection === 'function') {
+        saveSelection(); 
+    }
+    if (noteEditor) {
+        noteEditor.focus();
+    }
+    
+    // 4. Toolbar-Zustand aktualisieren (visuelles Feedback)
+    if (typeof updateToolbarState === 'function') {
+        updateToolbarState();
+    }
 }
 
 // 1. Event Listener für BOLD
 if (typeof boldBtn !== 'undefined' && boldBtn) {
     boldBtn.addEventListener('click', (e) => {
-        e.preventDefault(); // Verhindert Fokusverlust
+        e.preventDefault(); 
         e.stopPropagation();
         finalStableToggle('bold');
     });
@@ -1914,7 +1911,7 @@ if (typeof boldBtn !== 'undefined' && boldBtn) {
 // 2. Event Listener für ITALIC
 if (typeof italicBtn !== 'undefined' && italicBtn) {
     italicBtn.addEventListener('click', (e) => {
-        e.preventDefault(); // Verhindert Fokusverlust
+        e.preventDefault(); 
         e.stopPropagation();
         finalStableToggle('italic');
     });
@@ -1923,7 +1920,7 @@ if (typeof italicBtn !== 'undefined' && italicBtn) {
 // 3. Event Listener für UNDERLINE
 if (typeof underlineBtn !== 'undefined' && underlineBtn) {
     underlineBtn.addEventListener('click', (e) => {
-        e.preventDefault(); // Verhindert Fokusverlust
+        e.preventDefault(); 
         e.stopPropagation();
         finalStableToggle('underline');
     });
