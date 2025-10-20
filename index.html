@@ -336,6 +336,32 @@
     display: block !important; 
 }
 
+        /* FINALER, AGGRESSIVSTER & FUNKTIONALER RESET */
+.note-card h3, 
+.note-card p, 
+.note-card div {
+    /* ... (Ihre bestehenden Regeln) ... */
+    line-height: 1.2 !important; 
+    color: #ffffff !important;
+    white-space: pre-wrap !important;
+}
+
+/* FIX 1 (WICHTIG): Stellt die Basis-Farbe des Containers auf Weiss ein. */
+.note-card {
+    color: #ffffff !important;
+}
+
+/* FIX 2: Formatierungs-Tags erben die Weissfarbe, blockieren aber keine manuellen Farbwahlen. */
+/* ACHTUNG: Die Tags span und font sind hier absichtlich NICHT enthalten! */
+.note-card b,
+.note-card strong,
+.note-card i,
+.note-card em,
+.note-card u {
+    color: inherit; 
+}
+        
+
     </style>
 </head>
 <body class="bg-black min-h-screen p-4 flex items-center justify-center">
