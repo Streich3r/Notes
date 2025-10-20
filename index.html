@@ -1788,32 +1788,37 @@ const exportNotes = () => {
 
         // Event Listener für die Toolbar
 /** ---------------------------------------------
- *   NEUE FORMATIERUNGS-LOGIK (B/I/U)
- *   -> unterstützt gleichzeitige Kombinationen
- *   -> funktioniert unabhängig voneinander
+ *   STABILE FORMATIERUNGS-LOGIK (B/I/U)
+ *   -> alle kombinierbar
+ *   -> einzeln toggelbar
+ *   -> keine Konflikte durch restoreSelection()
  * --------------------------------------------- */
 const toggleFormat = (command) => {
-    restoreSelection();
+    const sel = window.getSelection();
+    if (!sel.rangeCount || !noteEditor.contains(sel.anchorNode)) return;
+
     noteEditor.focus();
 
-    // Toggle Formatierung
+    // Direkt auf der aktuellen Auswahl arbeiten – kein restoreSelection()
     document.execCommand(command, false, null);
 
-    // Auswahl erneut speichern und Toolbar aktualisieren
-    saveSelection();
+    // Toolbar aktualisieren
     updateToolbarState();
+
+    // Fokus und Cursorposition beibehalten
+    noteEditor.focus();
 };
 
-// Event-Listener ersetzen
-boldBtn.addEventListener('click', (e) => {
-    e.preventDefault();
+// Buttons neu binden
+boldBtn.addEventListener('mousedown', (e) => {
+    e.preventDefault(); // Verhindert, dass die Auswahl verloren geht
     toggleFormat('bold');
 });
-italicBtn.addEventListener('click', (e) => {
+italicBtn.addEventListener('mousedown', (e) => {
     e.preventDefault();
     toggleFormat('italic');
 });
-underlineBtn.addEventListener('click', (e) => {
+underlineBtn.addEventListener('mousedown', (e) => {
     e.preventDefault();
     toggleFormat('underline');
 });
