@@ -1210,20 +1210,63 @@ const measureCssValue = (cssValue) => {
             return cleanedHtml;
         };
 
-        const saveNote = () => {
+    const saveNote = () => {
+
             // Aktuelle Auswahl verwerfen, damit der Fokus im Editor bleibt, falls er dort war
+
             if (document.activeElement === noteEditor) {
+
                 noteEditor.blur();
+
             }
+
             const wasEditing = !!editingNoteId; // Speichert true, wenn wir im Edit-Modus sind
 
+
+
             const title = noteTitleInput.value.trim();
+
             const content = sanitizeHtml(noteEditor.innerHTML);
 
-            if (!title && !content) {
+const containsImage = content.includes('<img'); 
+
+
+
+    // BEREINIGUNG FÜR DIE LEERE-PRÜFUNG:
+
+    // 1. Entferne alle <br>-Tags (leere Zeilen).
+
+    // 2. Entferne alle anderen HTML-Tags (außer Bilder, die nicht als <br> erkannt werden).
+
+    // 3. Trimmt Leerzeichen.
+
+    const contentCheck = content
+
+        .replace(/<br\s*\/?>/g, '')   
+
+        .replace(/<[^>]*>/g, '')      
+
+        .trim();                      
+
+
+
+    // PRÜFUNG: Die Notiz ist leer, wenn:
+
+    // KEIN Titel UND
+
+    // KEIN Bild UND
+
+    // KEIN sichtbarer Text (contentCheck === '')
+
+    if (!title && !containsImage && contentCheck === '') {
+
                 showModal("Die Notiz ist leer. Bitte geben Sie einen Titel oder Inhalt ein.");
+
                 return;
+
             }
+
+
 
             if (editingNoteId) {
                 // Notiz bearbeiten (Edit-Modus)
