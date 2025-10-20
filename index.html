@@ -1867,62 +1867,68 @@ indentBtn.addEventListener('click', (e) => {
         window.addEventListener('load', loadNotesFromLocal);
 
 // ==========================================================
-// FINALER FIX: ISOLIERTE LOGIK FÜR BOLD, ITALIC, UNDERLINE
-// Stellt die Auswahl nach jedem Klick wieder her, um Multi-Toggle zu ermöglichen.
+// FINALER, KOMPLETTER FIX: AGGRESSIVE LOGIK FÜR MULTI-TOGGLE (B, I, U)
+// Dieser Block muss GANZ am Ende des <script>-Tags eingefügt werden.
 // ==========================================================
 
-const noteEditor = document.getElementById('note-editor'); // Nehmen Sie an, dies ist bereits definiert
-
-// NEUE zentrale Funktion, die Toggling und Fokus garantiert
-function aggressiveToggleFormat(command) {
-    const selection = window.getSelection();
+// NEUE zentrale Funktion, die Toggling und Fokus GARANTIERT
+function finalToggleFormat(command) {
+    const noteEditor = document.getElementById('note-editor');
     
-    // 1. Fokus und Auswahl wiederherstellen
-    // (nutzt die bereits in Ihrem Code definierten saveSelection/restoreSelection)
-    restoreSelection();
+    // 1. Auswahl wiederherstellen (nutzt Ihre vorhandene Funktion)
+    // Stellt den Cursor/die Markierung wieder her, falls er zwischen Klicks verloren ging.
+    if (typeof restoreSelection === 'function') {
+        restoreSelection();
+    }
     
-    // 2. Befehl ausführen
+    // 2. Befehl ausführen (Toggling)
     document.execCommand(command, false, null);
     
     // 3. Auswahl nach der Ausführung erneut speichern
-    saveSelection(); 
+    if (typeof saveSelection === 'function') {
+        saveSelection(); 
+    }
     
-    // 4. Editor neu fokussieren (falls der Fokus doch verloren ging)
-    noteEditor.focus();
+    // 4. Editor neu fokussieren (GARANTIERT, dass die Formate aktiv bleiben)
+    if (noteEditor) {
+        noteEditor.focus();
+    }
     
-    // 5. Toolbar-Zustand aktualisieren, um die Buttons anzuzeigen
-    updateToolbarState();
+    // 5. Toolbar-Zustand aktualisieren (visuelles Feedback)
+    if (typeof updateToolbarState === 'function') {
+        updateToolbarState();
+    }
 }
 
-// 1. Event Listener für BOLD (nutzt die aggressive Funktion)
-if (typeof boldBtn !== 'undefined') {
+// 1. Event Listener für BOLD (nutzt die neue, stabile Funktion)
+if (typeof boldBtn !== 'undefined' && boldBtn) {
     boldBtn.addEventListener('click', (e) => {
         e.preventDefault(); 
         e.stopPropagation(); // Stoppt Blasen-Effekte, die den Fokus stören könnten
-        aggressiveToggleFormat('bold');
+        finalToggleFormat('bold');
     });
 }
 
-// 2. Event Listener für ITALIC (nutzt die aggressive Funktion)
-if (typeof italicBtn !== 'undefined') {
+// 2. Event Listener für ITALIC (nutzt die neue, stabile Funktion)
+if (typeof italicBtn !== 'undefined' && italicBtn) {
     italicBtn.addEventListener('click', (e) => {
         e.preventDefault(); 
         e.stopPropagation();
-        aggressiveToggleFormat('italic');
+        finalToggleFormat('italic');
     });
 }
 
-// 3. Event Listener für UNDERLINE (nutzt die aggressive Funktion)
-if (typeof underlineBtn !== 'undefined') {
+// 3. Event Listener für UNDERLINE (nutzt die neue, stabile Funktion)
+if (typeof underlineBtn !== 'undefined' && underlineBtn) {
     underlineBtn.addEventListener('click', (e) => {
         e.preventDefault(); 
         e.stopPropagation();
-        aggressiveToggleFormat('underline');
+        finalToggleFormat('underline');
     });
 }
 
 // ==========================================================
-// ENDE DES FIXES
+// ENDE DES SKRIPT-BLOCCKS
 // ==========================================================
         
     </script>
