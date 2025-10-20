@@ -1867,68 +1867,65 @@ indentBtn.addEventListener('click', (e) => {
         window.addEventListener('load', loadNotesFromLocal);
 
 // ==========================================================
-// FINALER FIX: STABILE VERZÖGERTE FUNKTION FÜR MULTI-TOGGLE (B, I, U)
+// FINALER FIX: STABILE FUNKTION FÜR ZUVERLÄSSIGES TOGGLE UND STAPELN (B, I, U)
 // ==========================================================
 
-const noteEditor = document.getElementById('note-editor');
-
-// Kernfunktion: Führt den Befehl aus und aktualisiert den Zustand
-function executeStableFormat(command) {
-    // Stellt die Cursorposition/Auswahl wieder her
-    if (typeof restoreSelection === 'function') {
-        restoreSelection();
-    }
+// Die zentrale Funktion zur Ausführung mit NULL-Verzögerung für Stabilität.
+function finalStableToggle(command) {
+    const noteEditor = document.getElementById('note-editor');
     
-    // Befehl ausführen (Toggle)
-    document.execCommand(command, false, null);
-    
-    // Auswahl speichern und Fokus neu setzen
-    if (typeof saveSelection === 'function') {
-        saveSelection(); 
-    }
-    if (noteEditor) {
-        noteEditor.focus();
-    }
-    
-    // Toolbar-Zustand aktualisieren
-    if (typeof updateToolbarState === 'function') {
-        updateToolbarState();
-    }
-}
-
-// Wrapper-Funktion: Verzögert die Ausführung des Befehls (Der Schlüssel für das Stapeln)
-function finalToggleWrapper(command) {
-    // 10ms Verzögerung, um dem Browser Zeit zu geben, den vorherigen execCommand zu verarbeiten.
+    // Verwenden Sie setTimeout(..., 0), um die Ausführung in die nächste Event-Schleife zu verschieben.
+    // Dies garantiert die Wiederherstellung des Fokus/Auswahl und ermöglicht das Stapeln (Multi-Toggle).
     setTimeout(() => {
-        executeStableFormat(command);
-    }, 10); 
-}
+        
+        // Cursorposition/Auswahl wiederherstellen
+        if (typeof restoreSelection === 'function') {
+            restoreSelection();
+        }
 
+        // Befehl ausführen (Toggle)
+        document.execCommand(command, false, null);
+        
+        // Auswahl speichern und Editor neu fokussieren
+        if (typeof saveSelection === 'function') {
+            saveSelection(); 
+        }
+        if (noteEditor) {
+            noteEditor.focus();
+        }
+        
+        // Toolbar-Zustand aktualisieren (visuelles Feedback)
+        if (typeof updateToolbarState === 'function') {
+            updateToolbarState();
+        }
+        
+    }, 0); 
+}
 
 // 1. Event Listener für BOLD
 if (typeof boldBtn !== 'undefined' && boldBtn) {
     boldBtn.addEventListener('click', (e) => {
-        e.preventDefault(); 
+        e.preventDefault(); // Verhindert Fokusverlust
         e.stopPropagation();
-        finalToggleWrapper('bold');
+        finalStableToggle('bold');
     });
 }
 
 // 2. Event Listener für ITALIC
 if (typeof italicBtn !== 'undefined' && italicBtn) {
     italicBtn.addEventListener('click', (e) => {
-        e.preventDefault(); 
+        e.preventDefault(); // Verhindert Fokusverlust
         e.stopPropagation();
-        finalToggleWrapper('italic');
+        finalStableToggle('italic');
     });
 }
 
 // 3. Event Listener für UNDERLINE
 if (typeof underlineBtn !== 'undefined' && underlineBtn) {
     underlineBtn.addEventListener('click', (e) => {
-        e.preventDefault(); 
+        e.preventDefault(); // Verhindert Fokusverlust
         e.stopPropagation();
-        finalToggleWrapper('underline');
+        finalStableToggle('underline');
     });
 }
 
