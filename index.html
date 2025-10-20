@@ -1787,9 +1787,38 @@ const exportNotes = () => {
         // ******************************************************
 
         // Event Listener für die Toolbar
-        boldBtn.addEventListener('click', () => executeFormatAndRestore('bold'));
-        italicBtn.addEventListener('click', () => executeFormatAndRestore('italic'));
-        underlineBtn.addEventListener('click', () => executeFormatAndRestore('underline'));
+/** ---------------------------------------------
+ *   NEUE FORMATIERUNGS-LOGIK (B/I/U)
+ *   -> unterstützt gleichzeitige Kombinationen
+ *   -> funktioniert unabhängig voneinander
+ * --------------------------------------------- */
+const toggleFormat = (command) => {
+    restoreSelection();
+    noteEditor.focus();
+
+    // Toggle Formatierung
+    document.execCommand(command, false, null);
+
+    // Auswahl erneut speichern und Toolbar aktualisieren
+    saveSelection();
+    updateToolbarState();
+};
+
+// Event-Listener ersetzen
+boldBtn.addEventListener('click', (e) => {
+    e.preventDefault();
+    toggleFormat('bold');
+});
+italicBtn.addEventListener('click', (e) => {
+    e.preventDefault();
+    toggleFormat('italic');
+});
+underlineBtn.addEventListener('click', (e) => {
+    e.preventDefault();
+    toggleFormat('underline');
+});
+
+
         // NEU: Ruft die Funktion zur dynamischen Einrückbegrenzung auf
 indentBtn.addEventListener('click', (e) => {
     e.stopPropagation();
@@ -1865,75 +1894,6 @@ indentBtn.addEventListener('click', (e) => {
 
         // Initial loading of notes
         window.addEventListener('load', loadNotesFromLocal);
-
-// ==========================================================
-// FINALER FIX: MINIMALISTISCHE LOGIK FÜR FOKUS-WIEDERHERSTELLUNG (B, I, U)
-// ==========================================================
-
-const noteEditor = document.getElementById('note-editor');
-
-/**
- * Führt den Formatierungsbefehl aus und erzwingt die Fokuswiederherstellung.
- */
-function executeAndRestoreFocus(command) {
-    // 1. Auswahl wiederherstellen (nutzt Ihre vorhandene Funktion)
-    if (typeof restoreSelection === 'function') {
-        restoreSelection();
-    }
-    
-    // 2. Befehl ausführen (Toggle)
-    document.execCommand(command, false, null);
-    
-    // 3. Auswahl speichern
-    if (typeof saveSelection === 'function') {
-        saveSelection(); 
-    }
-    
-    // 4. Fokus GARANTIERT zurücksetzen (WICHTIG!)
-    // Der Einsatz von setTimeout(..., 0) ist die zuverlässigste Methode, um den Fokus
-    // nach dem Klick-Event zurückzuholen und das Stapeln zu stabilisieren.
-    setTimeout(() => {
-        if (noteEditor) {
-            noteEditor.focus();
-        }
-        // Toolbar-Zustand aktualisieren
-        if (typeof updateToolbarState === 'function') {
-            updateToolbarState();
-        }
-    }, 0); 
-}
-
-// 1. Event Listener für BOLD
-if (typeof boldBtn !== 'undefined' && boldBtn) {
-    boldBtn.addEventListener('click', (e) => {
-        e.preventDefault(); // Verhindert Fokusverlust beim Klick
-        e.stopPropagation();
-        executeAndRestoreFocus('bold');
-    });
-}
-
-// 2. Event Listener für ITALIC
-if (typeof italicBtn !== 'undefined' && italicBtn) {
-    italicBtn.addEventListener('click', (e) => {
-        e.preventDefault(); 
-        e.stopPropagation();
-        executeAndRestoreFocus('italic');
-    });
-}
-
-// 3. Event Listener für UNDERLINE
-if (typeof underlineBtn !== 'undefined' && underlineBtn) {
-    underlineBtn.addEventListener('click', (e) => {
-        e.preventDefault(); 
-        e.stopPropagation();
-        executeAndRestoreFocus('underline');
-    });
-}
-
-// ==========================================================
-// ENDE DES SKRIPT-BLOCCKS
-// ==========================================================
-        
     </script>
 </body>
 </html>
