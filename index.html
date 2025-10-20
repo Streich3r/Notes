@@ -1787,9 +1787,9 @@ const exportNotes = () => {
         // ******************************************************
 
         // Event Listener für die Toolbar
-        boldBtn.addEventListener('click', () => executeFormatAndRestore('bold'));
-        italicBtn.addEventListener('click', () => executeFormatAndRestore('italic'));
-        underlineBtn.addEventListener('click', () => executeFormatAndRestore('underline'));
+      // boldBtn.addEventListener('click', () => executeFormatAndRestore('bold'));
+      //  italicBtn.addEventListener('click', () => executeFormatAndRestore('italic'));
+      //  underlineBtn.addEventListener('click', () => executeFormatAndRestore('underline'));
         // NEU: Ruft die Funktion zur dynamischen Einrückbegrenzung auf
 indentBtn.addEventListener('click', (e) => {
     e.stopPropagation();
@@ -1865,6 +1865,87 @@ indentBtn.addEventListener('click', (e) => {
 
         // Initial loading of notes
         window.addEventListener('load', loadNotesFromLocal);
+
+        // ==========================================================
+// NEUE FUNKTIONEN FÜR ZUVERLÄSSIGES TOGGLE VON B, I, U
+// ==========================================================
+
+// Variable zum Speichern der aktuellen Auswahl oder des Cursors
+let savedSelection = null; 
+
+// Speichert die aktuelle Auswahl/Cursor-Position im Editor
+function saveSelection() {
+    const editor = document.getElementById('note-editor');
+    const selection = window.getSelection();
+    
+    // Nur speichern, wenn der Editor im Fokus ist und eine Auswahl existiert
+    if (editor && editor.contains(selection.anchorNode)) {
+        if (selection.rangeCount > 0) {
+            savedSelection = selection.getRangeAt(0);
+        } else {
+            savedSelection = null; // Auswahl zurücksetzen
+        }
+    }
+}
+
+// Stellt die gespeicherte Auswahl wieder her
+function restoreSelection() {
+    if (!savedSelection) return false;
+    
+    const selection = window.getSelection();
+    selection.removeAllRanges();
+    selection.addRange(savedSelection);
+    return true;
+}
+
+// Funktion zum Umschalten (Toggle) der Formatierung mit Auswahl-Speicherung
+function toggleFormat(command) {
+    // 1. Auswahl wiederherstellen (wichtig für Tastatur oder schnelles Klicken)
+    const selectionWasRestored = restoreSelection();
+    
+    // Wenn keine Auswahl wiederhergestellt wurde, aber der Editor den Fokus hat,
+    // nutzen wir die aktuelle Selection (Fall: normaler Text ist ausgewählt)
+    if (!selectionWasRestored) {
+        saveSelection();
+    }
+    
+    // 2. Formatierungsbefehl ausführen
+    document.execCommand(command, false, null);
+    
+    // 3. Nach der Ausführung die Auswahl erneut speichern
+    saveSelection();
+    
+    // 4. Toolbar-Zustand aktualisieren
+    updateToolbarState();
+}
+
+// ==========================================================
+// ZUWEISUNG DER NEUEN FUNKTIONEN ZU DEN BUTTONS
+// ==========================================================
+
+// Suchen Sie in Ihrem Code die Zeilen, die auf 'boldBtn', 'italicBtn', 'underlineBtn' hören. 
+// Ersetzen Sie deren Event Listener durch die neuen Funktionen.
+
+// (HINWEIS: Dies sind die Event-Listener im ersten Teil Ihres Scripts - 
+// passen Sie bitte die IDs an, falls sie abweichen)
+
+document.getElementById('boldBtn').addEventListener('click', (e) => {
+    e.preventDefault(); 
+    toggleFormat('bold');
+});
+
+document.getElementById('italicBtn').addEventListener('click', (e) => {
+    e.preventDefault(); 
+    toggleFormat('italic');
+});
+
+document.getElementById('underlineBtn').addEventListener('click', (e) => {
+    e.preventDefault(); 
+    toggleFormat('underline');
+});
+// ==========================================================
+// ENDE DER NEUEN FUNKTIONEN
+// ==========================================================
     </script>
 </body>
 </html>
