@@ -1867,25 +1867,68 @@ indentBtn.addEventListener('click', (e) => {
         window.addEventListener('load', loadNotesFromLocal);
 
 // ==========================================================
-// FINALER FIX: ASYNCHRONE STABILISIERUNG FÜR ZUVERLÄSSIGES MULTI-TOGGLE (B, I, U)
+// FINALER, KOMPLETTER FIX: TAG-BASIERTE LOGIK FÜR B, I, U (ersetzt execCommand)
+// Dieser Block muss GANZ am Ende des <script>-Tags eingefügt werden.
 // ==========================================================
 
-// Zentrale Funktion für einen stabilen asynchronen Formatierungs-Toggle
-async function finalStableToggle(command) {
-    const noteEditor = document.getElementById('note-editor');
-    
-    // Kleiner Promise-Wrapper für asynchrone Stabilität (ersetzt setTimeout(..., 0))
-    await new Promise(resolve => setTimeout(resolve, 0)); 
-    
-    // 1. Cursorposition/Auswahl wiederherstellen
+const noteEditor = document.getElementById('note-editor');
+// Hilfsfunktion zum Prüfen des Zustands (nutzt execCommand nur zum Auslesen)
+const isFormatActive = (command) => document.queryCommandState(command);
+
+/**
+ * Togglet die Formatierung, indem entweder execCommand (bei Auswahl)
+ * oder Tags (bei leerer Auswahl) verwendet werden.
+ * @param {string} command - Der Befehl ('bold', 'italic', 'underline').
+ * @param {string} tag - Der HTML-Tag ('B', 'I', 'U').
+ */
+function toggleCustomFormat(command, tag) {
+    // 1. Fokus und Auswahl wiederherstellen
     if (typeof restoreSelection === 'function') {
         restoreSelection();
     }
-
-    // 2. Befehl ausführen (Toggle)
-    document.execCommand(command, false, null);
     
-    // 3. Auswahl speichern und Editor neu fokussieren
+    const selection = window.getSelection();
+
+    if (!selection.rangeCount) return;
+
+    // A) Wenn TEXT MARKIERT ist (sichere Ausführung über execCommand)
+    if (!selection.isCollapsed) {
+        document.execCommand(command, false, null);
+    } 
+    // B) Wenn KEIN TEXT MARKIERT ist (kritischer Fall: Tags manuell einfügen/entfernen)
+    else {
+        // Zustand prüfen, indem wir den Cursor-Pfad rückwärts scannen
+        let isActive = isFormatActive(command);
+        
+        // Wenn der Stil AKTIV ist (deaktivieren)
+        if (isActive) {
+            // Führt den Toggle-Befehl aus, um den aktiven Tag zu schließen
+            document.execCommand(command, false, null);
+        } 
+        // Wenn der Stil NICHT AKTIV ist (aktivieren/Tag einfügen)
+        else {
+            // 1. Tag erstellen (z.B. <b>)
+            const node = document.createElement(tag);
+            // Wir fügen einen Zero-Width Space (\uFEFF) ein. Das ist ein unsichtbarer Marker.
+            node.innerHTML = '\uFEFF'; 
+            
+            // 2. Cursorposition (Range) ermitteln und den Knoten einfügen
+            const range = selection.getRangeAt(0);
+            range.deleteContents();
+            range.insertNode(node);
+
+            // 3. Cursor in den Knoten setzen
+            const newRange = document.createRange();
+            newRange.setStart(node, 1); // Setze Cursor HINTER den unsichtbaren Marker
+            newRange.collapse(true);
+            
+            // 4. Auswahl (Selection) aktualisieren
+            selection.removeAllRanges();
+            selection.addRange(newRange);
+        }
+    }
+
+    // 5. Auswahl speichern und Editor neu fokussieren
     if (typeof saveSelection === 'function') {
         saveSelection(); 
     }
@@ -1893,18 +1936,19 @@ async function finalStableToggle(command) {
         noteEditor.focus();
     }
     
-    // 4. Toolbar-Zustand aktualisieren (visuelles Feedback)
+    // 6. Toolbar-Zustand aktualisieren
     if (typeof updateToolbarState === 'function') {
         updateToolbarState();
     }
 }
+
 
 // 1. Event Listener für BOLD
 if (typeof boldBtn !== 'undefined' && boldBtn) {
     boldBtn.addEventListener('click', (e) => {
         e.preventDefault(); 
         e.stopPropagation();
-        finalStableToggle('bold');
+        toggleCustomFormat('bold', 'B');
     });
 }
 
@@ -1913,7 +1957,7 @@ if (typeof italicBtn !== 'undefined' && italicBtn) {
     italicBtn.addEventListener('click', (e) => {
         e.preventDefault(); 
         e.stopPropagation();
-        finalStableToggle('italic');
+        toggleCustomFormat('italic', 'I');
     });
 }
 
@@ -1922,7 +1966,7 @@ if (typeof underlineBtn !== 'undefined' && underlineBtn) {
     underlineBtn.addEventListener('click', (e) => {
         e.preventDefault(); 
         e.stopPropagation();
-        finalStableToggle('underline');
+        toggleCustomFormat('underline', 'U');
     });
 }
 
