@@ -328,6 +328,17 @@
     white-space: pre-wrap !important;
 }
 
+        /* FIX: Erweitert den aggressiven Reset auf alle Inline-Formatierungen */
+.note-card b, 
+.note-card strong, 
+.note-card i, 
+.note-card em, 
+.note-card u, 
+.note-card span, 
+.note-card font {
+    color: #ffffff !important;
+}
+
 /* 3. FIX: Sorgt dafür, dass leere Zeilen sichtbar bleiben */
 .note-card div:empty,
 .note-card p:empty {
