@@ -1867,21 +1867,19 @@ indentBtn.addEventListener('click', (e) => {
         window.addEventListener('load', loadNotesFromLocal);
 
 // ==========================================================
-// FINALER, KOMPLETTER FIX: AGGRESSIVE LOGIK FÜR MULTI-TOGGLE (B, I, U)
-// Dieser Block muss GANZ am Ende des <script>-Tags eingefügt werden.
+// FINALER FIX: DEDIZIERTE FUNKTIONEN FÜR ZUVERLÄSSIGES TOGGLE (B, I, U)
 // ==========================================================
 
-// NEUE zentrale Funktion, die Toggling und Fokus GARANTIERT
+// NEUE zentrale Funktion, die Toggling, Auswahl und Fokus GARANTIERT
 function finalToggleFormat(command) {
     const noteEditor = document.getElementById('note-editor');
     
-    // 1. Auswahl wiederherstellen (nutzt Ihre vorhandene Funktion)
-    // Stellt den Cursor/die Markierung wieder her, falls er zwischen Klicks verloren ging.
+    // 1. Cursorposition wiederherstellen (nutzt Ihre vorhandene Funktion)
     if (typeof restoreSelection === 'function') {
         restoreSelection();
     }
     
-    // 2. Befehl ausführen (Toggling)
+    // 2. Befehl ausführen (Toggle-Aktion)
     document.execCommand(command, false, null);
     
     // 3. Auswahl nach der Ausführung erneut speichern
@@ -1889,14 +1887,16 @@ function finalToggleFormat(command) {
         saveSelection(); 
     }
     
-    // 4. Editor neu fokussieren (GARANTIERT, dass die Formate aktiv bleiben)
+    // 4. Editor neu fokussieren (WICHTIG für Kette: B -> I -> U)
     if (noteEditor) {
-        noteEditor.focus();
-    }
-    
-    // 5. Toolbar-Zustand aktualisieren (visuelles Feedback)
-    if (typeof updateToolbarState === 'function') {
-        updateToolbarState();
+        // Verzögerte Fokussierung, um Browser-Events abzuwarten (stabilisiert)
+        setTimeout(() => {
+            noteEditor.focus();
+            // 5. Toolbar-Zustand aktualisieren (damit der nächste Button den richtigen Status sieht)
+            if (typeof updateToolbarState === 'function') {
+                updateToolbarState();
+            }
+        }, 0); 
     }
 }
 
@@ -1904,7 +1904,7 @@ function finalToggleFormat(command) {
 if (typeof boldBtn !== 'undefined' && boldBtn) {
     boldBtn.addEventListener('click', (e) => {
         e.preventDefault(); 
-        e.stopPropagation(); // Stoppt Blasen-Effekte, die den Fokus stören könnten
+        e.stopPropagation(); 
         finalToggleFormat('bold');
     });
 }
