@@ -1210,67 +1210,59 @@ const measureCssValue = (cssValue) => {
             return cleanedHtml;
         };
 
-      const saveNote = () => {
-    // Aktuelle Auswahl verwerfen, damit der Fokus im Editor bleibt, falls er dort war
-    if (document.activeElement === noteEditor) {
-        noteEditor.blur();
-    }
-    const wasEditing = !!editingNoteId;
+        const saveNote = () => {
+            // Aktuelle Auswahl verwerfen, damit der Fokus im Editor bleibt, falls er dort war
+            if (document.activeElement === noteEditor) {
+                noteEditor.blur();
+            }
+            const wasEditing = !!editingNoteId; // Speichert true, wenn wir im Edit-Modus sind
 
-    const title = noteTitleInput.value.trim();
-    // Verwende sanitizeHtml, wie in deinem Code
-    const content = sanitizeHtml(noteEditor.innerHTML); 
-    const containsImage = content.includes('<img');
+            const title = noteTitleInput.value.trim();
+            const content = sanitizeHtml(noteEditor.innerHTML);
 
-    // BEREINIGUNG FÜR DIE LEERE-PRÜFUNG:
-    // Entfernt alle <br>-Tags, andere HTML-Tags und Leerzeichen
-    const contentCheck = content
-        .replace(/<br\s*\/?>/g, '')
-        .replace(/<[^>]*>/g, '') 
-        .trim();
+            if (!title && !content) {
+                showModal("Die Notiz ist leer. Bitte geben Sie einen Titel oder Inhalt ein.");
+                return;
+            }
 
-    // KORREKTE PRÜFUNG: Wenn kein Titel UND kein Bild UND kein sichtbarer Text, dann abbrechen.
-    if (!title && !containsImage && contentCheck === '') {
-        showModal("Die Notiz ist leer. Bitte geben Sie einen Titel oder Inhalt (Text/Bild) ein.");
-        return;
-    }
+            if (editingNoteId) {
+                // Notiz bearbeiten (Edit-Modus)
+                const index = notesData.findIndex(note => note.id === editingNoteId);
+                if (index !== -1) {
+                    notesData[index].title = title;
+                    notesData[index].content = content;
+                    notesData[index].updatedAt = Date.now();
+                }
+                //showModal("Notiz erfolgreich aktualisiert!");
+                editingNoteId = null;
+            } else {
+                // Neue Notiz erstellen
+                const newNote = {
+                    id: generateUniqueId(),
+                    title: title,
+                    content: content,
+                    createdAt: Date.now(),
+                    updatedAt: Date.now(),
+                    color: 'default' 
+                };
+              notesData.unshift(newNote);
+                
+            }
 
-    // ************************************************
-    // *** SPEICHER-LOGIK (Wird jetzt ausgeführt!) ***
-    // ************************************************
+            // Felder zurücksetzen
+            noteTitleInput.value = '';
+            noteEditor.innerHTML = '';
+            
+            // Toolbar-Buttons zurücksetzen
+            document.querySelectorAll('.toolbar-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.dropdown-item').forEach(item => item.classList.remove('active'));
 
-    if (wasEditing) {
-        // Notiz bearbeiten
-        const noteIndex = notesData.findIndex(n => n.id === editingNoteId);
-        if (noteIndex !== -1) {
-            notesData[noteIndex] = {
-                ...notesData[noteIndex],
-                title: title,
-                content: content,
-                updatedAt: Date.now()
-            };
-        }
-        editingNoteId = null;
-    } else {
-        // Neue Notiz erstellen
-        const newNote = {
-            // Annahme: IDs werden über Date.now() generiert
-            id: Date.now().toString(), 
-            title: title,
-            content: content,
-            updatedAt: Date.now(),
-            createdAt: Date.now()
+            saveNotesToLocal();
+            // Notizen neu rendern (mit Suchfilter, falls aktiv)
+            renderNotes(searchInput.value);
+            showModal(wasEditing ? "Notiz erfolgreich aktualisiert!" : "Neue Notiz erfolgreich gespeichert!");
         };
-        notesData.unshift(newNote); 
-    }
 
-    // Felder zurücksetzen und Notizen speichern/rendern
-    noteTitleInput.value = '';
-    noteEditor.innerHTML = '';
-    saveNotesToLocal();
-    renderNotes();
-    updateToolbarState(); 
-};
 
         // ******************************************************
         // ** SORTIERUNGS- & RENDERLOGIK **
@@ -1368,86 +1360,45 @@ notesData.sort((a, b) => {
             renderNotes(searchInput.value);
         };
 
-  const renderNotes = (searchTerm = '') => {
-    
-    // Sortierung der Notizen anwenden (basierend auf der existierenden Logik)
-    const sortedNotes = sortNotes(currentSortMethod);
+        const renderNotes = (filterText = '') => {
+            notesList.innerHTML = '';
+            loadingIndicator.classList.add('hidden');
+            const normalizedFilter = filterText.toLowerCase().trim();
 
-    // Filtern basierend auf dem Suchbegriff
-    const filteredNotes = sortedNotes.filter(note => {
-        const fullText = (note.title + ' ' + note.content).toLowerCase();
-        return fullText.includes(searchTerm.toLowerCase());
-    });
-    
-    notesList.innerHTML = ''; 
+            const filteredNotes = notesData.filter(note => {
+                const matchesTitle = note.title.toLowerCase().includes(normalizedFilter);
+                const matchesContent = note.content.toLowerCase().includes(normalizedFilter);
+                return matchesTitle || matchesContent;
+            });
 
-    // Nachrichtenanzeige
-    if (filteredNotes.length === 0) {
-        if (searchTerm) {
-            noNotesMessage.textContent = 'Keine Notizen gefunden, die dem Suchbegriff entsprechen.';
-        } else {
-            noNotesMessage.textContent = 'Sie haben noch keine Notizen. [cite_start]Fügen Sie eine neue hinzu, um zu beginnen!'; [cite: 60]
-        }
-        noNotesMessage.classList.remove('hidden');
-    } else {
-        noNotesMessage.classList.add('hidden');
-    }
-
-
-    filteredNotes.forEach(note => {
-        const noteCard = document.createElement('div');
-        noteCard.className = 'note-card p-4 rounded-xl shadow-lg border border-gray-700 hover:border-blue-500 transition-all duration-200';
-        noteCard.setAttribute('data-id', note.id);
-        noteCard.setAttribute('draggable', 'true'); 
-        
-        // Füge hier deine Drag-Events ein, falls sie in deiner ursprünglichen Datei existieren.
-
-        const date = new Date(note.updatedAt).toLocaleDateString('de-DE', { 
-            year: 'numeric', month: '2-digit', day: '2-digit', 
-            hour: '2-digit', minute: '2-digit' 
-        });
-
-        // ******************************************************
-        // *** KORRIGIERTE LOGIK FÜR NOTIZKARTEN-INHALT ***
-        // ******************************************************
-        let cardContentHtml = '';
-        const noteContentHtml = note.content;
-
-        // 1. PRÜFUNG: Enthält die Notiz ein Bild?
-        if (noteContentHtml.includes('<img')) {
-            // Finde das erste <img>-Tag.
-            const firstImageMatch = noteContentHtml.match(/<img\s[^>]*src=["']([^"']*)["'][^>]*>/i);
-            
-            if (firstImageMatch && firstImageMatch[0]) {
-                // Bereite das Bild-Tag für die Vorschau vor: Klick-Handler und alte Styles entfernen
-                const imageForCard = firstImageMatch[0]
-                    .replace(/onclick="[^"]*"/g, '') 
-                    .replace(/style="[^"]*"/g, '')   
-                    // Neue, limitierte Vorschau-Styles setzen (fixe Höhe 100px)
-                    .replace('<img', '<img style="object-fit: contain; max-height: 100px; max-width: 100%; display: block; margin: 0 auto; height: 100px; width: auto;"');
-
-                cardContentHtml = `
-                    <div style="max-height: 100px; overflow: hidden; margin-bottom: 8px; text-align: center;">
-                        ${imageForCard}
-                    </div>
-                    <p class="text-xs text-gray-500 italic">[Bild-Notiz]</p>`;
+            if (filteredNotes.length === 0) {
+                noNotesMessage.classList.remove('hidden');
+            } else {
+                noNotesMessage.classList.add('hidden');
             }
-        } 
 
-        // 2. FALLBACK: Wenn kein Bild gefunden wurde, erstelle Text-Snippet
-        if (cardContentHtml === '') {
-            // Entferne alle HTML-Tags für einen sauberen Text-Snippet
-            const strippedText = noteContentHtml.replace(/<[^>]*>/g, ' ').replace(/\s\s+/g, ' ').trim();
-            
-            // Erstelle den Snippet (die ersten 150 Zeichen)
-            const snippet = strippedText.substring(0, 150) + (strippedText.length > 150 ? '...' : '');
-            
-            // Füge den Text-Snippet ein (oder "Leere Notiz", falls alles leer ist)
-            cardContentHtml = `<p class="text-gray-300">${snippet || 'Leere Notiz'}</p>`;
-        }
-    // ******************************************************
-    // *** ENDE NEUE LOGIK ***
-    // ******************************************************
+            filteredNotes.forEach(note => {
+                const noteCard = document.createElement('div');
+                // WICHTIG: data-id muss ein String sein
+                noteCard.dataset.id = String(note.id);
+                noteCard.classList.add('note-card', 'p-4', 'rounded-xl', 'shadow-md', 'border', 'transition-all', 'duration-200', 'hover:shadow-xl');
+                
+                // Drag-and-Drop Attribute
+                if (currentSortMethod === 'unsorted') {
+                    noteCard.draggable = true;
+                    noteCard.classList.add('cursor-grab');
+                } else {
+                    noteCard.draggable = false;
+                    noteCard.classList.remove('cursor-grab');
+                }
+
+                const date = new Date(note.updatedAt).toLocaleDateString('de-DE', {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
                 
 //      <h3 class="text-xl font-bold text-gray-100 mb-2">${note.title || 'Ohne Titel'}</h3>
                 noteCard.innerHTML = `
@@ -1868,50 +1819,7 @@ indentBtn.addEventListener('click', (e) => {
         noteEditor.addEventListener('focus', updateToolbarState);
         noteEditor.addEventListener('blur', updateToolbarState);
 
-// Neue Funktion: Öffnet das Bild in einem neuen Tab (für Vollbildansicht)
-/**
- * Öffnet die angegebene Bildquelle (Base64-String) in einem neuen Tab.
- * @param {string} imgSrc - Der Base64-String der Bildquelle.
- */
-function showImageFullscreen(imgSrc) {
-    window.open(imgSrc, '_blank');
-}
 
-
-// Neuer Event-Listener für das Einfügen (Paste) von Inhalten, der Bilder unterstützt
-noteEditor.addEventListener('paste', function(e) {
-    // Verhindere das Standard-Einfügeverhalten
-    e.preventDefault();
-
-    const clipboardData = e.clipboardData;
-    
-    // 1. Prüfe, ob Bilddateien vorhanden sind
-    if (clipboardData.files.length > 0 && clipboardData.files[0].type.startsWith('image/')) {
-        const imageFile = clipboardData.files[0];
-        const reader = new FileReader();
-
-        // 2. Erzeuge ein Base64-Daten-URL aus der Bilddatei
-        reader.onload = function(readerEvent) {
-            const base64Image = readerEvent.target.result;
-            
-            // 3. Füge das Bild als <img>-Tag mit Skalierung und Klick-Handler ein
-            // HINWEIS: onclick="showImageFullscreen(this.src)" ruft die neue Funktion auf!
-            const imgHtml = `<img src="${base64Image}" 
-                                style="max-width: 100%; height: auto; cursor: pointer; display: block; margin: 10px 0;" 
-                                onclick="showImageFullscreen(this.src)">`;
-            
-            document.execCommand('insertHTML', false, imgHtml);
-            updateToolbarState(); 
-        };
-
-        // Starte das Lesen der Datei
-        reader.readAsDataURL(imageFile);
-    } else {
-        // 4. Fallback: Wenn kein Bild, füge den Text normal ein
-        const text = clipboardData.getData('text/plain');
-        document.execCommand('insertText', false, text);
-    }
-});
         // Initial loading of notes
         window.addEventListener('load', loadNotesFromLocal);
     </script>
