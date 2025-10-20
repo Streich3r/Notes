@@ -1819,7 +1819,50 @@ indentBtn.addEventListener('click', (e) => {
         noteEditor.addEventListener('focus', updateToolbarState);
         noteEditor.addEventListener('blur', updateToolbarState);
 
+// Neue Funktion: Öffnet das Bild in einem neuen Tab (für Vollbildansicht)
+/**
+ * Öffnet die angegebene Bildquelle (Base64-String) in einem neuen Tab.
+ * @param {string} imgSrc - Der Base64-String der Bildquelle.
+ */
+function showImageFullscreen(imgSrc) {
+    window.open(imgSrc, '_blank');
+}
 
+
+// Neuer Event-Listener für das Einfügen (Paste) von Inhalten, der Bilder unterstützt
+noteEditor.addEventListener('paste', function(e) {
+    // Verhindere das Standard-Einfügeverhalten
+    e.preventDefault();
+
+    const clipboardData = e.clipboardData;
+    
+    // 1. Prüfe, ob Bilddateien vorhanden sind
+    if (clipboardData.files.length > 0 && clipboardData.files[0].type.startsWith('image/')) {
+        const imageFile = clipboardData.files[0];
+        const reader = new FileReader();
+
+        // 2. Erzeuge ein Base64-Daten-URL aus der Bilddatei
+        reader.onload = function(readerEvent) {
+            const base64Image = readerEvent.target.result;
+            
+            // 3. Füge das Bild als <img>-Tag mit Skalierung und Klick-Handler ein
+            // HINWEIS: onclick="showImageFullscreen(this.src)" ruft die neue Funktion auf!
+            const imgHtml = `<img src="${base64Image}" 
+                                style="max-width: 100%; height: auto; cursor: pointer; display: block; margin: 10px 0;" 
+                                onclick="showImageFullscreen(this.src)">`;
+            
+            document.execCommand('insertHTML', false, imgHtml);
+            updateToolbarState(); 
+        };
+
+        // Starte das Lesen der Datei
+        reader.readAsDataURL(imageFile);
+    } else {
+        // 4. Fallback: Wenn kein Bild, füge den Text normal ein
+        const text = clipboardData.getData('text/plain');
+        document.execCommand('insertText', false, text);
+    }
+});
         // Initial loading of notes
         window.addEventListener('load', loadNotesFromLocal);
     </script>
