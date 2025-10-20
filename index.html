@@ -1867,63 +1867,68 @@ indentBtn.addEventListener('click', (e) => {
         window.addEventListener('load', loadNotesFromLocal);
 
 // ==========================================================
-// FINALER FIX: DEDIZIERTE FUNKTIONEN FÜR ZUVERLÄSSIGES TOGGLE (B, I, U)
+// FINALER FIX: STABILE VERZÖGERTE FUNKTION FÜR MULTI-TOGGLE (B, I, U)
 // ==========================================================
 
-// NEUE zentrale Funktion, die Toggling, Auswahl und Fokus GARANTIERT
-function finalToggleFormat(command) {
-    const noteEditor = document.getElementById('note-editor');
-    
-    // 1. Cursorposition wiederherstellen (nutzt Ihre vorhandene Funktion)
+const noteEditor = document.getElementById('note-editor');
+
+// Kernfunktion: Führt den Befehl aus und aktualisiert den Zustand
+function executeStableFormat(command) {
+    // Stellt die Cursorposition/Auswahl wieder her
     if (typeof restoreSelection === 'function') {
         restoreSelection();
     }
     
-    // 2. Befehl ausführen (Toggle-Aktion)
+    // Befehl ausführen (Toggle)
     document.execCommand(command, false, null);
     
-    // 3. Auswahl nach der Ausführung erneut speichern
+    // Auswahl speichern und Fokus neu setzen
     if (typeof saveSelection === 'function') {
         saveSelection(); 
     }
-    
-    // 4. Editor neu fokussieren (WICHTIG für Kette: B -> I -> U)
     if (noteEditor) {
-        // Verzögerte Fokussierung, um Browser-Events abzuwarten (stabilisiert)
-        setTimeout(() => {
-            noteEditor.focus();
-            // 5. Toolbar-Zustand aktualisieren (damit der nächste Button den richtigen Status sieht)
-            if (typeof updateToolbarState === 'function') {
-                updateToolbarState();
-            }
-        }, 0); 
+        noteEditor.focus();
+    }
+    
+    // Toolbar-Zustand aktualisieren
+    if (typeof updateToolbarState === 'function') {
+        updateToolbarState();
     }
 }
 
-// 1. Event Listener für BOLD (nutzt die neue, stabile Funktion)
+// Wrapper-Funktion: Verzögert die Ausführung des Befehls (Der Schlüssel für das Stapeln)
+function finalToggleWrapper(command) {
+    // 10ms Verzögerung, um dem Browser Zeit zu geben, den vorherigen execCommand zu verarbeiten.
+    setTimeout(() => {
+        executeStableFormat(command);
+    }, 10); 
+}
+
+
+// 1. Event Listener für BOLD
 if (typeof boldBtn !== 'undefined' && boldBtn) {
     boldBtn.addEventListener('click', (e) => {
         e.preventDefault(); 
-        e.stopPropagation(); 
-        finalToggleFormat('bold');
+        e.stopPropagation();
+        finalToggleWrapper('bold');
     });
 }
 
-// 2. Event Listener für ITALIC (nutzt die neue, stabile Funktion)
+// 2. Event Listener für ITALIC
 if (typeof italicBtn !== 'undefined' && italicBtn) {
     italicBtn.addEventListener('click', (e) => {
         e.preventDefault(); 
         e.stopPropagation();
-        finalToggleFormat('italic');
+        finalToggleWrapper('italic');
     });
 }
 
-// 3. Event Listener für UNDERLINE (nutzt die neue, stabile Funktion)
+// 3. Event Listener für UNDERLINE
 if (typeof underlineBtn !== 'undefined' && underlineBtn) {
     underlineBtn.addEventListener('click', (e) => {
         e.preventDefault(); 
         e.stopPropagation();
-        finalToggleFormat('underline');
+        finalToggleWrapper('underline');
     });
 }
 
