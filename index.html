@@ -1790,6 +1790,31 @@ const exportNotes = () => {
       // boldBtn.addEventListener('click', () => executeFormatAndRestore('bold'));
       //  italicBtn.addEventListener('click', () => executeFormatAndRestore('italic'));
       //  underlineBtn.addEventListener('click', () => executeFormatAndRestore('underline'));
+
+
+boldBtn.addEventListener('click', (e) => {
+    e.preventDefault(); 
+    executeFormatAndRestore('bold');
+});
+
+italicBtn.addEventListener('click', (e) => {
+    e.preventDefault(); 
+    executeFormatAndRestore('italic');
+});
+
+underlineBtn.addEventListener('click', (e) => {
+    e.preventDefault(); 
+    executeFormatAndRestore('underline');
+});
+
+// ZUSÄTZLICHE KORREKTUREN:
+// Der outdent-Button fehlte ebenfalls (nutzt Standard-Formatierungslogik)
+outdentBtn.addEventListener('click', (e) => {
+    e.preventDefault(); 
+    executeFormatAndRestore('outdent');
+});
+
+        
         // NEU: Ruft die Funktion zur dynamischen Einrückbegrenzung auf
 indentBtn.addEventListener('click', (e) => {
     e.stopPropagation();
