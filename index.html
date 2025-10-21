@@ -1788,114 +1788,46 @@ const exportNotes = () => {
 
         // Event Listener für die Toolbar
 /** ---------------------------------------------
- *   MODERNE FORMATIERUNGS-LOGIK MIT LIVE-STATUS
- *   Unterstützt: Fett, Kursiv, Unterstrichen,
- *   Schriftfarbe, Schriftgröße (auf Auswahl)
+ *   STABILE FORMATIERUNGS-LOGIK (B/I/U)
+ *   -> alle kombinierbar
+ *   -> einzeln toggelbar
+ *   -> keine Konflikte durch restoreSelection()
  * --------------------------------------------- */
-
-// ---- B/I/U ----
 const toggleFormat = (command) => {
     const sel = window.getSelection();
     if (!sel.rangeCount || !noteEditor.contains(sel.anchorNode)) return;
 
-    document.execCommand(command, false, null);
     noteEditor.focus();
+
+    // Direkt auf der aktuellen Auswahl arbeiten – kein restoreSelection()
+    document.execCommand(command, false, null);
+
+    // Toolbar aktualisieren
     updateToolbarState();
+
+    // Fokus und Cursorposition beibehalten
+    noteEditor.focus();
 };
 
-boldBtn.addEventListener("mousedown", (e) => {
+// Buttons neu binden
+boldBtn.addEventListener('mousedown', (e) => {
+    e.preventDefault(); // Verhindert, dass die Auswahl verloren geht
+    toggleFormat('bold');
+});
+italicBtn.addEventListener('mousedown', (e) => {
     e.preventDefault();
-    toggleFormat("bold");
+    toggleFormat('italic');
 });
-italicBtn.addEventListener("mousedown", (e) => {
+underlineBtn.addEventListener('mousedown', (e) => {
     e.preventDefault();
-    toggleFormat("italic");
-});
-underlineBtn.addEventListener("mousedown", (e) => {
-    e.preventDefault();
-    toggleFormat("underline");
+    toggleFormat('underline');
 });
 
-// ---- Schriftfarbe ----
-colorDropdownItems.forEach((item) => {
-    item.addEventListener("mousedown", (e) => {
-        e.preventDefault();
-        const colorKey = item.dataset.value;
-        const color = colorMap[colorKey] || "#ffffff";
-        document.execCommand("foreColor", false, color);
-        noteEditor.focus();
-        updateToolbarState();
-    });
-});
-
-// ---- Schriftgröße ----
-const fontSizeMap = {
-    1: "0.8rem",
-    3: "1rem",
-    5: "1.3rem",
-};
-sizeDropdownItems.forEach((item) => {
-    item.addEventListener("mousedown", (e) => {
-        e.preventDefault();
-        const sizeKey = item.dataset.value;
-        document.execCommand("fontSize", false, sizeKey);
-        noteEditor.focus();
-        updateToolbarState();
-    });
-});
-
-// ---- Toolbar-Status live aktualisieren ----
-const updateToolbarState = () => {
-    const sel = window.getSelection();
-    if (!sel.rangeCount || !noteEditor.contains(sel.anchorNode)) {
-        boldBtn.classList.remove("active");
-        italicBtn.classList.remove("active");
-        underlineBtn.classList.remove("active");
-        colorDropdownItems.forEach((i) => i.classList.remove("active"));
-        sizeDropdownItems.forEach((i) => i.classList.remove("active"));
-        return;
-    }
-
-    // --- Textstil ---
-    boldBtn.classList.toggle("active", document.queryCommandState("bold"));
-    italicBtn.classList.toggle("active", document.queryCommandState("italic"));
-    underlineBtn.classList.toggle("active", document.queryCommandState("underline"));
-
-    // --- Schriftfarbe ---
-    colorDropdownItems.forEach((i) => i.classList.remove("active"));
-    let currentColor = document.queryCommandValue("foreColor");
-    if (currentColor) {
-        if (currentColor.startsWith("rgb")) {
-            currentColor = rgbToHex(currentColor);
-        }
-        const colorKey = Object.keys(colorMap).find(
-            (key) => colorMap[key].toLowerCase() === currentColor.toLowerCase()
-        );
-        if (colorKey) {
-            const activeItem = Array.from(colorDropdownItems).find(
-                (i) => i.dataset.value === colorKey
-            );
-            if (activeItem) activeItem.classList.add("active");
-        }
-    }
-
-    // --- Schriftgröße ---
-    sizeDropdownItems.forEach((i) => i.classList.remove("active"));
-    const currentSize = document.queryCommandValue("fontSize");
-    if (currentSize) {
-        const activeItem = Array.from(sizeDropdownItems).find(
-            (i) => i.dataset.value === currentSize
-        );
-        if (activeItem) activeItem.classList.add("active");
-    }
-};
-
-// Live-Update bei Cursorbewegung / Auswahländerung
+        // Live-Update bei Cursorbewegung / Auswahländerung
 noteEditor.addEventListener("keyup", updateToolbarState);
 noteEditor.addEventListener("mouseup", updateToolbarState);
 noteEditor.addEventListener("input", updateToolbarState);
 noteEditor.addEventListener("focus", updateToolbarState);
-
 
 
         // NEU: Ruft die Funktion zur dynamischen Einrückbegrenzung auf
