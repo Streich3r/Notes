@@ -1861,17 +1861,25 @@ indentBtn.addEventListener('click', (e) => {
             updateToolbarState();
         }));
 
-        sizeDropdownItems.forEach(item => item.addEventListener('click', (e) => {
-            e.stopPropagation();
-            executeFormatAndRestore('fontSize', item.dataset.value);
-            sizeDropdownMenu.classList.remove('active');
-        }));
+       sizeDropdownItems.forEach(item => item.addEventListener('mousedown', (e) => {
+    // Auswahl speichern, bevor der Fokus durch den Klick verloren geht
+    saveSelection();
+}));
+sizeDropdownItems.forEach(item => item.addEventListener('click', (e) => {
+    e.stopPropagation();
+    executeFormatAndRestore('fontSize', item.dataset.value);
+    sizeDropdownMenu.classList.remove('active');
+}));
 
-        colorDropdownItems.forEach(item => item.addEventListener('click', (e) => {
-            e.stopPropagation();
-            executeFormatAndRestore('foreColor', colorMap[item.dataset.value]);
-            colorDropdownMenu.classList.remove('active');
-        }));
+colorDropdownItems.forEach(item => item.addEventListener('mousedown', (e) => {
+    saveSelection();
+}));
+colorDropdownItems.forEach(item => item.addEventListener('click', (e) => {
+    e.stopPropagation();
+    executeFormatAndRestore('foreColor', colorMap[item.dataset.value]);
+    colorDropdownMenu.classList.remove('active');
+}));
+
 
         sortDropdownItems.forEach(item => item.addEventListener('click', (e) => {
             e.stopPropagation();
