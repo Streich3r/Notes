@@ -336,14 +336,12 @@
     display: block !important; 
 }
 
-        /* FINALER, AGGRESSIVSTER & FUNKTIONALER RESET */
-.note-card h3, 
-.note-card p, 
-.note-card div {
-    /* ... (Ihre bestehenden Regeln) ... */
-    line-height: 1.2 !important; 
-    color: #ffffff !important;
-    white-space: pre-wrap !important;
+        /* FIX für den EDITOR: Sorgt dafür, dass leere Zeilen in #note-editor sichtbar bleiben */
+#note-editor div:empty,
+#note-editor p:empty {
+    /* Gibt dem leeren Element die Höhe einer einzelnen Textzeile (muss gleich line-height sein) */
+    min-height: 1.2em !important; 
+    display: block !important;
 }
 
 /* FIX 1 (WICHTIG): Stellt die Basis-Farbe des Containers auf Weiss ein. */
