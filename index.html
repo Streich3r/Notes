@@ -485,7 +485,7 @@ rounded-full shadow-lg transform">
                         id="sort-dropdown-btn" 
                         class="calculator-btn w-full p-3 rounded-xl border border-gray-600 bg-gray-800 text-gray-100 text-left">
                         Sortieren 
- nach: Unsortiert
+ nach: Unsortiert (eigen)
                     </button>
                     <div id="sort-dropdown-menu" class="dropdown-menu">
                         <button class="calculator-btn dropdown-item w-full text-left px-4 py-2 rounded-lg active" data-value="unsorted">Unsortiert</button>
@@ -1240,11 +1240,11 @@ const containsImage = content.includes('<img');
 
     const contentCheck = content
 
-      //  .replace(/<br\s*\/?>/g, '')   
+        .replace(/<br\s*\/?>/g, '')   
 
-       // .replace(/<[^>]*>/g, '')      
+        .replace(/<[^>]*>/g, '')      
 
-      //  .trim();                      
+        .trim();                      
 
 
 
@@ -1379,7 +1379,7 @@ notesData.sort((a, b) => {
             
             // UI aktualisieren (Dropdown Text und aktives Element)
             const sortTextMap = {
-                'unsorted': 'Unsortiert', // Stellen Sie sicher, dass 'Unsortiert' hier existiert
+                'unsorted': 'Unsortiert (eigen)', // Stellen Sie sicher, dass 'Unsortiert' hier existiert
                 'newest': 'Datum (neueste zuerst)',
                 'oldest': 'Datum (älteste zuerst)',
                 'title-asc': 'Titel (A-Z)',
